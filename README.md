@@ -52,7 +52,7 @@ Here is a picture of the typical job lifecycle:
 
 You can `put` a job onto the beanstalk queue using the `put` command:
 
-```
+```ruby
 @beanstalk.put "job-data-here"
 ```
 
