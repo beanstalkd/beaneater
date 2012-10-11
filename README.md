@@ -61,7 +61,7 @@ you can set the `priority`, `delay`, and `ttr` of a particular job:
 
 ```ruby
 # defaults are priority 0, delay of 0 and ttr of 120 seconds
-beanstalk.put "job-data-here", 1000, 50, 200
+@beanstalk.put "job-data-here", 1000, 50, 200
 ```
 
 The `priority` argument is an integer < 2**32. Jobs with a smaller priority take precedence over jobs with larger priorities. 
