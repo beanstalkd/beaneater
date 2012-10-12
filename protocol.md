@@ -1,4 +1,4 @@
-# Beanstalkd 
+# Beanstalkd
 
 ## Protocol
 
@@ -8,7 +8,7 @@ The beanstalk protocol runs over TCP using ASCII encoding. Clients connect, send
 
 ### Name convention
 
-Names only supports ASCII strings. 
+Names only supports ASCII strings.
 
 #### Characters Allowed
 
@@ -32,12 +32,12 @@ Names only supports ASCII strings.
 | `OUT_OF_MEMORY\r\n` | The server cannot allocate enough memory for the job. The client should try again later.|
 | `INTERNAL_ERROR\r\n` | This indicates a bug in the server. It should never happen. If it does happen, please report it at http://groups.google.com/group/beanstalk-talk. |
 | `BAD_FORMAT\r\n` | The client sent a command line that was not well-formed. This can happen if the line does not end with \r\n, if non-numeric characters occur where an integer is expected, if the wrong number of arguments are present, or if the command line is mal-formed in any other way. |
-| ``UNKNOWN_COMMAND\r\n` | The client sent a command that the server does not know. |
+| `UNKNOWN_COMMAND\r\n` | The client sent a command that the server does not know. |
 
 
 ### Job Lifecycle
 
-A job in beanstalk gets created by a client with the `put` command. During its life it can be in one of four states: 
+A job in beanstalk gets created by a client with the `put` command. During its life it can be in one of four states:
 
 | Status              | Description   |
 | --------------------| ------------- |
@@ -129,7 +129,7 @@ may be:
  * `JOB_TOO_BIG\r\n` The client has requested to put a job with a body larger than max-job-size bytes.
 
  * `DRAINING\r\n` This means that the server has been put into "drain mode" and is no longer accepting new jobs. The client should try another server or disconnect and try again later.
- 
+
 #### `use` command
 
 The `use` command is for producers. Subsequent put commands will put jobs into the tube specified by this command. If no use command has been issued, jobs will be put into the tube named `default`.
@@ -148,15 +148,168 @@ use <tube>\r\n
 
 #### Worker Commands
 
-A process that wants to consume jobs from the queue uses:
+A process that wants to consume jobs from the queue uses those commands:
 
-1. `reserve`
-2. `delete` 
-3. `release` 
-4. `bury`
+* `reserve`
+* `delete`
+* `release`
+* `bury`
 
 
-##### `reserve` command
+#### `reserve` command
+
+```
+reserve\r\n
+```
+
+Alternatively, you can specify a timeout as follows:
+
+```
+reserve-with-timeout <seconds>\r\n
+```
+
+This will return a newly-reserved job. If no job is available to be reserved, beanstalkd will wait to send a response until one becomes available. Once a job is reserved for the client, the client has limited time to run (TTR) the job before the job times out. When the job times out, the server will put the job back into the ready queue. Both the TTR and the actual time left can be found in response to the `stats-job` command.
+
+A timeout value of `0` will cause the server to immediately return either a response or `TIMED_OUT`.  A positive value of timeout will limit the amount of time the client will block on the reserve request until a job becomes available.
+
+##### `reserve` responses
+
+###### Non-succesful responses
+
+* `DEADLINE_SOON\r\n` During the TTR of a reserved job, the last second is kept by the server as a safety margin, during which the client will not be made to wait for another job. If the client issues a reserve command during the safety margin, or if the safety margin arrives while the client is waiting on a reserve command.
+
+* `TIMED_OUT\r\n` If a non-negative timeout was specified and the timeout exceeded before a job became available, the server will respond with TIMED_OUT.
+
+Otherwise, the only other response to this command is a successful reservation
+in the form of a text line followed by the job body:
+
+####### Succesful response
+
+
+```
+RESERVED <id> <bytes>\r\n
+<data>\r\n
+```
+
+ * `<id>` is the job id -- an integer unique to this job in this instance of beanstalkd.
+
+ * `<bytes>` is an integer indicating the size of the job body, not including the trailing `\r\n"`.
+
+ * `<data>` is the job body -- a sequence of bytes of length <bytes> from the previous line. This is a verbatim copy of the bytes that were originally sent to the server in the put command for this job.
+
+#### `delete` command
+
+The delete command removes a job from the server entirely. It is normally used by the client when the job has successfully run to completion. A client can delete jobs that it has `reserved`, `ready` jobs, `delayed` jobs, and jobs that are
+`buried`. The delete command looks like this:
+
+```
+delete <id>\r\n
+```
+
+##### `delete` options
+
+* `<id>` is the job id to delete.
+
+##### `delete` responses
+
+The client then waits for one line of response, which may be:
+
+ * `DELETED\r\n` to indicate success.
+
+ * `NOT_FOUND\r\n` if the job does not exist or is not either reserved by the client, ready, or buried. This could happen if the job timed out before the client sent the delete command.
+
+#### `release` command
+
+The release command puts a `reserved` job back into the ready queue (and marks its state as `ready`) to be run by any client. It is normally used when the job fails because of a transitory error. It looks like this:
+
+```
+release <id> <pri> <delay>\r\n
+```
+
+##### `release` options
+
+ * `<id>` is the job id to release.
+
+ * `<pri>` is a new priority to assign to the job.
+
+ * `<delay>` is an integer number of seconds to wait before putting the job in
+   the ready queue. The job will be in the "delayed" state during this time.
+
+##### `release` responses
+
+The client expects one line of response, which may be:
+
+ * `RELEASED\r\n` to indicate success.
+
+ * `BURIED\r\n` if the server ran out of memory trying to grow the priority
+   queue data structure.
+
+ * `NOT_FOUND\r\n` if the job does not exist or is not reserved by the client.
+
+#### `touch` command
+
+The `touch` command allows a worker to request more time to work on a job. This is useful for jobs that potentially take a long time, but you still want the benefits of a TTR pulling a job away from an unresponsive worker.  A worker may periodically tell the server that it's still alive and processing a job (e.g. it may do this on `DEADLINE_SOON`).
+
+The touch command looks like this:
+
+```
+touch <id>\r\n
+```
+
+##### `touch` options
+
+* `<id>` is the ID of a job reserved by the current connection.
+
+##### `touch` responses
+
+There are two possible responses:
+
+ * `TOUCHED\r\n` to indicate success.
+
+ * `NOT_FOUND\r\n` if the job does not exist or is not reserved by the client.
+
+#### `watch` command
+
+The `watch` command adds the named tube to the watch list for the current connection. A reserve command will take a job from any of the tubes in the watch list. For each new connection, the watch list initially consists of one tube, named `default`.
+
+```
+watch <tube>\r\n
+```
+
+##### `watch` options
+
+ * `<tube>` is a name at most 200 bytes. It specifies a tube to add to the watch list. If the tube doesn't exist, it will be created.
+
+##### `watch` responses
+
+The reply is:
+
+  * `WATCHING <count>\r\n` `<count>` is the integer number of tubes currently in the watch list.
+
+##### `ignore` command
+
+The `ignore` command is for consumers. It removes the named tube from the watch list for the current connection.
+
+```
+ignore <tube>\r\n
+```
+
+##### `ignore` options
+
+ * `<tube>` is a name at most 200 bytes. It specifies a tube to add to the watch list. If the tube doesn't exist, it will be created.
+
+##### `ignore` command
+
+The reply is one of:
+
+ * `WATCHING <count>\r\n` to indicate success. `<count>` is the integer number of tubes currently in the watch list.
+
+ * `NOT_IGNORED\r\n` if the client attempts to ignore the only tube in its watch list.
+
+
+
+
+
 
 
 
