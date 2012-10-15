@@ -6,7 +6,7 @@ applications by running time-consuming tasks asynchronously.
 
 ## Installation
 
-Install `beanstalk-client` as a gem:
+Install beanstalk-client as a gem:
 
 ```
 gem install beanstalk-client
