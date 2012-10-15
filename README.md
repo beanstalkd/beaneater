@@ -1,18 +1,25 @@
-# BeanEater
+# Beanstalk Ruby Client
 
-BeanEater is the easiest way to interact with beanstalk in ruby. 
-You can access all aspects of the [beanstalk protocol](protocol.md) using
-a familiar ruby DSL.
-
-## Introduction
-
-...introduction here...
+Beanstalk is a simple, fast work queue. Its interface is generic, but was
+originally designed for reducing the latency of page views in high-volume web
+applications by running time-consuming tasks asynchronously.
 
 ## Installation
 
-To install BeanEater, simply...
+Install `beanstalk-client` as a gem:
 
-TODO...fill these in...
+```
+gem install beanstalk-client
+```
+
+or add to your Gemfile:
+
+```ruby
+# Gemfile
+gem 'beanstalk-client'
+```
+
+and run `bundle install` to install the dependency.
 
 ## Usage
 
@@ -23,8 +30,6 @@ To interact with a beanstalk queue, first establish a client connection by provi
 ```ruby
 @beanstalk = Beanstalk::Pool.new(['10.0.1.5:11300'])
 ```
-
-TODO...fill in more connection information??...
 
 ### Tubes
 
@@ -37,7 +42,8 @@ You can specify the tube for a connection with:
 @beanstalk.use "some-tube-here" # 'default' if unspecified
 ```
 
-Tube names are at most 200 bytes. It specifies the tube to use. If the tube does not exist, it will be created.
+Tube names are at most 200 bytes. It specifies the tube to use. 
+If the tube does not exist, it will be created.
 
 ### Jobs
 
@@ -111,23 +117,35 @@ job = @beanstalk.reserve
 # ...job fails...
 job.bury
 ```
-Burying a job means that the job is pulled out of the queue into a special 'holding' area for later inspection or reuse.
-
-TODO...fill in what else can be done to a job...
+Burying a job means that the job is pulled out of the 
+queue into a special 'holding' area for later inspection or reuse.
 
 ### Stats
 
-Beanstalk has plenty of commands for inspecting the state of the queues and jobs.
+Beanstalk has plenty of commands for introspecting the state of the queues and jobs. These methods include:
 
-TODO...fill these in...
+```ruby
+# Get overall stats about the state of beanstalk and processing that has occured
+@beanstalk.stats
 
-### Errors
+# Get statistical information about the specified job if it exists
+@beanstalk.job_stats(some_job_id)
 
-There are a few errors that can be raised during interaction with Beanstalk:
+# Get statistical information about the specified tube if it exists
+@beanstalk.stats_tube(some_tube_name)
 
- * `BeanEater::NotConnected` - This means the client cannot access the beanstalk queue.  Try again later.
- * `BeanEater::OutOfMemory` - The server cannot allocate enough memory for the job. Try again later.
- * `BeanEater::BadFormat` - The client sent a command line that was not well-formed or invalid.
+# The list-tubes command returns a list of all existing tubes
+@beanstalk.list_tubes
+
+# Returns the tube currently being used by the client
+@beanstalk.list_tube_used
+
+# Returns a list tubes currently being watched by the client
+@beanstalk.list_tubes_watched
+```
+
+Be sure to check the [beanstalk protocol](http://github.com/kr/beanstalkd/raw/master/doc/protocol.txt) file for
+a more detailed looks at stats commands.
 
 ## Resources
 
@@ -135,3 +153,11 @@ There are other resources helpful when learning about beanstalk:
 
  * [Beanstalkd homepage](http://kr.github.com/beanstalkd/)
  * [beanstalk-ruby-client](https://github.com/kr/beanstalk-client-ruby)
+ * [beanstalk protocol](http://github.com/kr/beanstalkd/raw/master/doc/protocol.txt)
+
+## Contributors
+
+ - Isaac Feliu
+ - Peter Kieltyka
+ - Martyn Loughran
+ - Dustin Sallings
