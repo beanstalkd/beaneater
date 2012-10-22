@@ -24,8 +24,8 @@ module Beaneater
     # retrieve port
     def parse_addresses(addresses)
       addresses.map do |a|
-        match = /^(?<address>(\w|\.)*)(:?)(?<port>\d*)$/.match(a)
-        { :address => match[:address], :port => match[:port] }
+        address, port = a.split(':')
+        { :address => address, :port => port }
       end
     end
   end
