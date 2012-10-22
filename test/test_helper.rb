@@ -2,7 +2,7 @@ ENV["TEST"] = 'true'
 require 'rubygems'
 require 'minitest/autorun'
 $:.unshift File.expand_path("../../lib")
-require 'mygem'
+require 'beaneater'
 require 'fakeweb'
 require 'mocha'
 
