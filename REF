@@ -1,0 +1,11 @@
+# Summary of what this does
+#
+# @!attribute [r] count
+# @yield [a, b, c] Gives 3 random numbers to the block
+# @param [type] Name description
+# @option name [Types] option_key (default_value) description
+# @return [type] description
+# @raise [Types] description
+# @example
+#  something.foo # => "test"
+#
