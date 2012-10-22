@@ -1,19 +1,19 @@
 module Beaneater
   class Connection
-    attr_accessor :addresses_map, :telnet_connections
+    attr_accessor :telnet_connections
 
     DEFAULT_PORT = 11300
 
     # @beaneater_connection = Beaneater::Connection.new(['localhost:11300'])
     def initialize(addresses)
-      @addresses_map = parse_addresses(addresses)
-      init_telnet
+      init_telnet(addresses)
     end
 
     protected
 
     # Init telnet
-    def init_telnet
+    def init_telnet(addresses)
+      addresses_map = parse_addresses(addresses)
       @telnet_connections ||= []
       addresses_map.each do |a|
         port = a[:port].present? ? a[:port].to_i : DEFAULT_PORT
