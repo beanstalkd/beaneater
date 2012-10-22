@@ -23,7 +23,7 @@ module Beaneater
       def find(id)
 
       end
-      alias_method :find, :peek
+      alias_method :peek, :find
     end
 
     # Instance Methods
