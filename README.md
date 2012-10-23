@@ -1,22 +1,24 @@
-# Beanstalk Ruby Client
+# Beaneater
 
-Beanstalk is a simple, fast work queue. Its interface is generic, but was
+[Beaneater](http://kr.github.com/beanstalkd/) is a simple, fast work queue. Its interface is generic, but was
 originally designed for reducing the latency of page views in high-volume web
-applications by running time-consuming tasks asynchronously.
+applications by running time-consuming tasks asynchronously. 
+Read the [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for
+more detail.
 
 ## Installation
 
-Install beanstalk-client as a gem:
+Install beaneater as a gem:
 
 ```
-gem install beanstalk-client
+gem install beaneater
 ```
 
 or add to your Gemfile:
 
 ```ruby
 # Gemfile
-gem 'beanstalk-client'
+gem 'beaneater'
 ```
 
 and run `bundle install` to install the dependency.
@@ -28,7 +30,7 @@ and run `bundle install` to install the dependency.
 To interact with a beanstalk queue, first establish a client connection by providing host and port:
 
 ```ruby
-@beanstalk = Beanstalk::Pool.new(['10.0.1.5:11300'])
+@beanstalk = Beaneater::Connection.new(['10.0.1.5:11300'])
 ```
 
 ### Tubes
@@ -47,8 +49,8 @@ If the tube does not exist, it will be created.
 
 ### Jobs
 
-A job in beanstalk gets created by a client and includes a 'body' which con contain all relevant job metadata.
-With BeanEater, a job is enqueued onto beanstalk and then later reserved and processed. 
+A job in beanstalk gets created by a client and includes a 'body' which contains all relevant job metadata.
+With beanstalk, a job is enqueued into a tube and then later reserved and processed. 
 Here is a picture of the typical job lifecycle:
 
 ```
@@ -56,7 +58,7 @@ Here is a picture of the typical job lifecycle:
   -----> [READY] ---------> [RESERVED] --------> *poof*
 ```
 
-You can `put` a job onto the beanstalk queue using the `put` command:
+You can put a job onto the beanstalk queue using the `put` command:
 
 ```ruby
 @beanstalk.put "job-data-here"
@@ -125,7 +127,7 @@ queue into a special 'holding' area for later inspection or reuse.
 Beanstalk has plenty of commands for introspecting the state of the queues and jobs. These methods include:
 
 ```ruby
-# Get overall stats about the state of beanstalk and processing that has occured
+# Get overall stats about the job processing that has occured
 @beanstalk.stats
 
 # Get statistical information about the specified job if it exists
@@ -144,16 +146,16 @@ Beanstalk has plenty of commands for introspecting the state of the queues and j
 @beanstalk.list_tubes_watched
 ```
 
-Be sure to check the [beanstalk protocol](http://github.com/kr/beanstalkd/raw/master/doc/protocol.txt) file for
-a more detailed looks at stats commands.
+Be sure to check the [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for
+more details about the stats commands.
 
 ## Resources
 
 There are other resources helpful when learning about beanstalk:
 
  * [Beanstalkd homepage](http://kr.github.com/beanstalkd/)
- * [beanstalk-ruby-client](https://github.com/kr/beanstalk-client-ruby)
- * [beanstalk protocol](http://github.com/kr/beanstalkd/raw/master/doc/protocol.txt)
+ * [beanstalk on github](https://github.com/kr/beanstalkd)
+ * [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md)
 
 ## Contributors
 
