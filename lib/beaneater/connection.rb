@@ -1,6 +1,6 @@
 module Beaneater
   class Connection
-    attr_accessor :sockets
+    attr_accessor :telnet_connections
 
     DEFAULT_PORT = 11300
 
@@ -14,10 +14,10 @@ module Beaneater
     # Init telnet
     def init_telnet(hosts)
       hosts_map = parse_hosts(hosts)
-      @sockets ||= []
+      @telnet_connections ||= []
       hosts_map.each do |h|
         port = h[:port].present? ? h[:port].to_i : DEFAULT_PORT
-        @sockets << TCPSocket.new(h[:host], port)
+        @telnet_connections << Net::Telnet.new('Host' => h[:host], "Port" => port, "Prompt" => /\n\n/)
       end
     end
 
