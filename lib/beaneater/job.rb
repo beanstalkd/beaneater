@@ -6,7 +6,10 @@ module Beaneater
       #  process_one(job)
       # end
       def register(tube_name, options={})
-
+        raise "Tube name is too short, it should be more than 200 bytes" if tube_name.bytes.to_a.inject(:+) < 200
+        @telnet_connections.each do |connect|
+          connect.cmd("watch #{tube_name}") { |c| print c }
+        end
       end
 
       # @beaneater_connection.jobs.process # all described tubes
