@@ -25,7 +25,7 @@ module Beaneater
 
     def used
     end
-  end
+  end # Tubes
 
   class Tube < Command
     def initialize(connection, tube_name)
@@ -50,6 +50,5 @@ module Beaneater
 
     # @beaneater_connection.tubes.find('tube1').name # total-jobs, name ...
     # TODO: define all methods dynamically based on stats response
-
-  end
-end
+  end # Tube
+end # Beaneater
