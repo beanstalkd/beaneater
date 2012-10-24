@@ -1,36 +1,36 @@
 module Beaneater
-  class Tube
+  class Tubes < Command
+    # @beaneater_connection.tubes.find('tube2')
+    def find(tube_name)
+      Tube.new(connection, tube_name)
+    end
 
-    # Class Methods
-    class << self
-      def find_or_create(tube_name)
+    # @beaneater_connection.tubes.reserve('tube2', 'tube3') { |job| process(job) }
+    def reserve(*tube_names)
+    end
 
-      end
+    # @beaneater_connection.tubes.kick(10)
+    def kick(bounds)
+    end
 
-      # @beaneater_connection.tubes.reserve('tube2', 'tube3') { |job| process(job) }
-      def reserve(*tube_names)
-      end
+    #@beaneater_connection.tubes.all
+    # => [<Beaneater::Tube>, <Beaneater::Tube>....]
+    # @beaneater_connection.tubes.watched
+    # @beaneater_connection.tubes.used
+    def all
+    end
 
-      # @beaneater_connection.tubes.find('tube2')
-      def find(tube_name)
-      end
+    def watched
+    end
 
-      # @beaneater_connection.tubes.kick(10)
-      def kick(bounds)
-      end
+    def used
+    end
+  end
 
-      #@beaneater_connection.tubes.all
-      # => [<Beaneater::Tube>, <Beaneater::Tube>....]
-      # @beaneater_connection.tubes.watched
-      # @beaneater_connection.tubes.used
-      def all
-      end
-
-      def watched
-      end
-
-      def used
-      end
+  class Tube < Command
+    def initialize(connection, tube_name)
+      @tube_name = tube_name
+      super(connection)
     end
 
     # Instance Methods
