@@ -1,5 +1,5 @@
 module Beaneater
-  class Job
+  class Job < Command
     # Class Methods
     class << self
       # @beaneater_connection.jobs.register('tube2', :retry_on => [Timeout::Error]) do |job|
