@@ -16,8 +16,8 @@ module Beaneater
       hosts_map = parse_hosts(hosts)
       @telnet_connections ||= []
       hosts_map.each do |h|
-        port = h[:port].present? ? h[:port].to_i : DEFAULT_PORT
-        @telnet_connections << Net::Telnet.new('Host' => h[:host], "Port" => port, "Prompt" => /\n\n/)
+        port = h[:port] ? h[:port].to_i : DEFAULT_PORT
+        @telnet_connections << Net::Telnet.new('Host' => h[:host], "Port" => port, "Prompt" => /\n/)
       end
     end
 
