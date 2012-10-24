@@ -18,6 +18,11 @@ module Beaneater
         parse_response(tc.cmd(options))
       end
     end
+
+    def stats
+      @stats ||= Stats.new(self)
+    end
+
     protected
 
     # Init telnet
