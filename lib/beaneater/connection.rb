@@ -1,3 +1,5 @@
+require 'yaml'
+
 module Beaneater
   class Connection
     attr_accessor :telnet_connections
@@ -9,6 +11,13 @@ module Beaneater
       init_telnet(hosts)
     end
 
+    # cmd("stats", :match => /\n/)
+    def cmd(command, options = {}, &block)
+      telnet_connections.map do |tc|
+        options.merge!("String" => command)
+        parse_response(tc.cmd(options))
+      end
+    end
     protected
 
     # Init telnet
@@ -19,6 +28,13 @@ module Beaneater
         port = h[:port] ? h[:port].to_i : DEFAULT_PORT
         @telnet_connections << Net::Telnet.new('Host' => h[:host], "Port" => port, "Prompt" => /\n/)
       end
+    end
+
+    # Return => ["OK 456", "Body"]
+    def parse_response(res)
+      res_lines = res.split(/\r?\n/)
+      status = res_lines.first
+      { :status => status, :body => YAML.load(res_lines[1..-1].join("\n")) }
     end
 
     # parse hosts
