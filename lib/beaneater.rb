@@ -1,6 +1,6 @@
 require 'net/telnet'
 
-%w(version connection stats tube job).each { |f| require "beaneater/#{f}" }
+%w(version command connection stats tube job).each { |f| require "beaneater/#{f}" }
 
 module Beaneater
 
