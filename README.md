@@ -36,16 +36,13 @@ To interact with a beanstalk queue, first establish a client connection by provi
 ### Tubes
 
 The system has one or more tubes which contain jobs. Each tube consists of a ready queue and a delay queue for jobs. 
-When a client connects, its watch list is initially just the tube named `default`. 
-If it submits jobs without having sent a `use` command, they will live in the tube named `default`.
-You can specify the tube for a connection with:
+When a client connects, its watch list is initially just the tube named `default`. You can fetch a tube for use with:
 
 ```ruby
-@beanstalk.use "some-tube-here" # 'default' if unspecified
+@tube = @beanstalk.tubes.find "some-tube-here"
 ```
 
-Tube names are at most 200 bytes. It specifies the tube to use. 
-If the tube does not exist, it will be created.
+Tube names are at most 200 bytes. It specifies the tube to use. If the tube does not exist, it will be automatically created.
 
 ### Jobs
 
@@ -58,10 +55,10 @@ Here is a picture of the typical job lifecycle:
   -----> [READY] ---------> [RESERVED] --------> *poof*
 ```
 
-You can put a job onto the beanstalk queue using the `put` command:
+You can put a job onto the beanstalk queue using the `put` command on a tube:
 
 ```ruby
-@beanstalk.put "job-data-here"
+@tube.put "job-data-here"
 ```
 
 You can also specify additional metadata to control job processing parameters. Specifically,
@@ -69,7 +66,7 @@ you can set the `priority`, `delay`, and `ttr` of a particular job:
 
 ```ruby
 # defaults are priority 0, delay of 0 and ttr of 120 seconds
-@beanstalk.put "job-data-here", 1000, 50, 200
+@tube.put "job-data-here", :pri => 1000, :delay => 50, :ttr => 200
 ```
 
 The `priority` argument is an integer < 2**32. Jobs with a smaller priority take precedence over jobs with larger priorities. 
@@ -78,35 +75,21 @@ The `ttr` argument is the time to run -- is an integer number of seconds to allo
 
 ### Processing Jobs
 
-In order to process jobs, the worker first needs to specify which tubes to `watch` for new jobs:
+In order to process jobs, the worker can use `reserve` passing in the tubes to watch which will return the
+first available job and return the job for processing:
 
 ```ruby
-@beanstalk = Beanstalk::Pool.new(['10.0.1.5:11300'])
-@beanstalk.watch('some-tube-name')
-@beanstalk.watch('some-other-tune')
-```
-
-and perhaps even which tubes to `ignore` (including 'default'):
-
-```ruby
-@beanstalk.ignore('default')
-```
-
-and then we can begin to `reserve` jobs. This will find the first job available and 
-return the job for processing: 
-
-```ruby
-job = @beanstalk.reserve
+@beanstalk = Beaneater::Connection.new(['10.0.1.5:11300'])
+job = @beanstalk.reserve('some-tube-name', 'some-other-tube')
 # => <Beanstalk::Job>
 puts job.body
 # prints 'job-data-here'
 ```
 
-You can process each new job as they become available using a loop:
+You can process every new job as they become available using a block:
 
 ```ruby
-loop do
-  job = beanstalk.reserve # waits for a job
+@beanstalk.jobs.process('some-tube-name', 'some-other-tube') do |job|
   puts job.body # prints "hello"
   job.delete # remove job after processing
 end
@@ -115,35 +98,34 @@ end
 Beanstalk jobs can also be buried if they fail, rather than deleted:
 
 ```ruby
-job = @beanstalk.reserve
+job = @beanstalk.reserve('some-tube-name')
 # ...job fails...
 job.bury
 ```
-Burying a job means that the job is pulled out of the 
-queue into a special 'holding' area for later inspection or reuse.
+Burying a job means that the job is pulled out of the queue into a special 'holding' area for later inspection or reuse.
 
 ### Stats
 
 Beanstalk has plenty of commands for introspecting the state of the queues and jobs. These methods include:
 
 ```ruby
-# Get overall stats about the job processing that has occured
+# Get overall stats about the job processing that has occurred
 @beanstalk.stats
 
 # Get statistical information about the specified job if it exists
-@beanstalk.job_stats(some_job_id)
+@beanstalk.job.find(some_job_id).stats
 
 # Get statistical information about the specified tube if it exists
-@beanstalk.stats_tube(some_tube_name)
+@beanstalk.tubes.find(some_tube_name).stats
 
 # The list-tubes command returns a list of all existing tubes
-@beanstalk.list_tubes
+@beanstalk.tubes.all
 
 # Returns the tube currently being used by the client
-@beanstalk.list_tube_used
+@beanstalk.tubes.used
 
 # Returns a list tubes currently being watched by the client
-@beanstalk.list_tubes_watched
+@beanstalk.tubes.watched
 ```
 
 Be sure to check the [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for
@@ -159,7 +141,5 @@ There are other resources helpful when learning about beanstalk:
 
 ## Contributors
 
- - Isaac Feliu
- - Peter Kieltyka
- - Martyn Loughran
- - Dustin Sallings
+ - [Nico Taing](https://github.com/Nico-Taing)
+ - [Nathan Esquenazi](https://github.com/nesquena)
