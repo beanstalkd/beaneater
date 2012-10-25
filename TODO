@@ -1,1 +1,3 @@
 - Make sure connections are closed
+- Make sure docs and functionality match up with 
+  - http://beanstalkc.readthedocs.org/en/latest/tutorial.html#advanced-operation
