@@ -8,15 +8,23 @@ module Beaneater
       @connection = connection
     end
 
-    # cmd('use foo')
-    # cmd('stats', :merge => true)
-    def cmd(body, options={}, &block)
+    # transmit_to_all('use foo')
+    # transmit_to_all('stats', :merge => true)
+    def transmit_to_all(body, options={}, &block)
       merge = options.delete(:merge)
-      res = connection.cmd(body, options, &block)
+      res = connection.transmit_to_all(body, options, &block)
       if merge
         res = { :status => res.first[:status], :body => sum_hashes(res.map { |r| r[:body] }) }
       end
       res
+    end
+
+    def method_missing(name, *args, &block)
+      if connection.respond_to?(name)
+        connection.send(name, *args, &block)
+      else
+        super
+      end
     end
 
     protected
