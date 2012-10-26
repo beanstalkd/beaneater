@@ -4,33 +4,39 @@ require File.expand_path('../test_helper', __FILE__)
 
 describe Beaneater::Stats do
   before do
-    @conn =  stub(:cmd => [{ :body => { 'x' => 1, 'y-z' => 2 }}, {:body => { 'x' => 3,'y-z' => 4 }}])
+    @conn =  stub(:transmit_to_all => [{ :body => { 'uptime' => 1, 'cmd-use' => 2 }}, {:body => { 'uptime' => 3,'cmd-use' => 4 }}])
     @stats = Beaneater::Stats.new(@conn)
   end
 
   describe 'for #[]' do
     it "should return stats by key" do
-      assert_equal 4, @stats[:x]
+      assert_equal 4, @stats[:uptime]
     end
 
     it "should return stats by underscore key" do
-      assert_equal 6, @stats[:'y_z']
+      assert_equal 6, @stats[:'cmd_use']
     end
   end #[]
 
   describe 'for #keys' do
     it "should return list of keys" do
-      assert_equal ['x', 'y_z'].sort, @stats.keys.sort
+      assert_equal 44, @stats.keys.size
+      assert @stats.keys.include?('uptime'), "Expected keys to include 'uptime'"
+      assert @stats.keys.include?('cmd_use'), "Expected keys to include 'cmd-use'"
     end
   end #keys
 
   describe 'for #method_missing' do
     it "should return stats by key" do
-      assert_equal 4, @stats.x
+      assert_equal 4, @stats.uptime
     end
 
     it "should return stats by underscore key" do
-      assert_equal 6, @stats.y_z
+      assert_equal 6, @stats.cmd_use
+    end
+
+    it "should raise NoMethodError" do
+      assert_raises(NoMethodError) { @stats.cmd }
     end
   end #method_missing
 end # Beaneater::Stats
