@@ -11,12 +11,16 @@ module Beaneater
       init_telnet(hosts)
     end
 
-    # cmd("stats", :match => /\n/)
-    def cmd(command, options = {}, &block)
+    # transmit_to_all("stats", :match => /\n/)
+    def transmit_to_all(command, options = {}, &block)
       telnet_connections.map do |tc|
-        options.merge!("String" => command)
-        parse_response(tc.cmd(options))
+        transmit_to_conn(tc, command, options, &block)
       end
+    end
+
+    # transmit_to_rand("stats", :match => /\n/)
+    def transmit_to_rand(command, options = {}, &block)
+      transmit_to_conn(telnet_connections.sample, command, options, &block)
     end
 
     def stats
@@ -28,6 +32,12 @@ module Beaneater
     end
 
     protected
+
+    # transmit_to_conn(tc, "stats", :match => /\n/) { |r| puts r }
+    def transmit_to_conn(telnet_connection, command, options={}, &block)
+      options.merge!("String" => command)
+      parse_response(telnet_connection.cmd(options, &block))
+    end
 
     # Init telnet
     def init_telnet(hosts)
@@ -43,7 +53,10 @@ module Beaneater
     def parse_response(res)
       res_lines = res.split(/\r?\n/)
       status = res_lines.first
-      { :status => status, :body => YAML.load(res_lines[1..-1].join("\n")) }
+      status, id = status.scan(/\w+/)
+      response = { :status => status, :body => YAML.load(res_lines[1..-1].join("\n")) }
+      response[:id] = id if id
+      response
     end
 
     # parse hosts

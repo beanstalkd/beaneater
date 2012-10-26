@@ -25,18 +25,38 @@ describe Beaneater::Connection do
     end
   end #new
 
-  describe 'for #cmd' do
+  describe 'for #transmit_to_all' do
     before do
       @hosts = ['localhost', 'localhost']
       @bc = Beaneater::Connection.new(@hosts)
     end
 
     it "should return yaml loaded response" do
-      res = @bc.cmd 'stats'
+      res = @bc.transmit_to_all 'stats'
       assert_equal 2, res.size
       refute_nil res.first[:body]['current-connections']
     end
-  end #cmd
+  end #transmit_to_all
+
+  describe 'for #transmit_to_rand' do
+    before do
+      @hosts = ['localhost', 'localhost']
+      @bc = Beaneater::Connection.new(@hosts)
+    end
+
+    it "should return yaml loaded response" do
+      res = @bc.transmit_to_rand 'stats'
+      refute_nil res[:body]['current-connections']
+      assert_equal 'OK', res[:status]
+    end
+
+    it "should return id" do
+      Net::Telnet.any_instance.expects(:cmd).with('String' => 'foo').returns('INSERTED 254')
+      res = @bc.transmit_to_rand 'foo'
+      assert_equal '254', res[:id]
+      assert_equal 'INSERTED', res[:status]
+    end
+  end #transmit_to_rand
 
   describe 'for #stats' do
     before do
