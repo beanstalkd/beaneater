@@ -8,6 +8,33 @@ describe Beaneater::Job do
     @tube  = @pool.tubes.find 'tube'
   end
 
+  describe "for #release" do
+    before do
+      @time = Time.now.to_i
+      @tube.put "foo release #{@time}", :pri => 5
+    end
+
+    it("should be released with same pri") do
+      job = @tube.reserve
+      assert_equal "foo release #{@time}", job.body
+      assert_equal 'reserved', job.stats.state
+      job.release
+      assert_equal 'ready', job.stats.state
+      assert_equal 5, job.stats.pri
+      assert_equal 0, job.stats.delay
+    end
+
+    it("should be released with new pri") do
+      job = @tube.reserve
+      assert_equal "foo release #{@time}", job.body
+      assert_equal 'reserved', job.stats.state
+      job.release :pri => 10, :delay => 2
+      assert_equal 'delayed', job.stats.state
+      assert_equal 10, job.stats.pri
+      assert_equal 2, job.stats.delay
+    end
+  end # release
+
   describe "for #delete" do
     before do
       @tube.put 'foo'
@@ -19,11 +46,21 @@ describe Beaneater::Job do
       job.delete
       assert_nil @tube.peek(:ready)
     end
-
-    after do
-      cleanup_tubes!(['tube'])
-    end
   end # delete
+
+  describe "for #touch" do
+    before do
+      @tube.put 'foo touch', :ttr => 1
+    end
+
+    it("should be toucheable") do
+      job = @tube.reserve
+      assert_equal 'foo touch', job.body
+      job.touch
+      assert_equal 1, job.stats.reserves
+      job.delete
+    end
+  end # touch
 
   describe "for #stats" do
     before do
@@ -35,9 +72,9 @@ describe Beaneater::Job do
       assert_equal 'tube', @job.stats['tube']
       assert_equal 'ready', @job.stats.state
     end
-
-    after do
-      cleanup_tubes!(['tube'])
-    end
   end # stats
+
+  after do
+    cleanup_tubes!(['tube'])
+  end
 end # Beaneater::Tubes
