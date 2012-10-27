@@ -15,6 +15,10 @@ tube = bc.tubes.find('tube2')
 puts tube
 
 # Put job onto tube
+response = tube.put "foo bar", :priority => 1000, :ttr => 10, :delay => 0
+p tube.peek :ready
+p bc.tubes.watched
+
 
 # Reserve job from tube
 
