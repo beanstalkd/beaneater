@@ -28,6 +28,12 @@ module Beaneater
       Job.new(res) if res
     end
 
+    # Reserves job from tube
+    def reserve(&block)
+      pool.tubes.watch!(self.name)
+      pool.tubes.reserve(&block)
+    end
+
     def stats
     end
 
