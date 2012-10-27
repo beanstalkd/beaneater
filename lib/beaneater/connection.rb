@@ -20,10 +20,7 @@ module Beaneater
     def to_s
       "#<Beaneater::Connection host=#{host.inspect} port=#{port.inspect}>"
     end
-
-    def inspect
-      "#<Beaneater::Connection host=#{host.inspect} port=#{port.inspect}>"
-    end
+    alias :inspect :to_s
 
     protected
 

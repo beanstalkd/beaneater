@@ -51,9 +51,6 @@ module Beaneater
     def to_s
       "#<Beaneater::Tube name=#{name.inspect}>"
     end
-
-    def inspect
-      "#<Beaneater::Tube name=#{name.inspect}>"
-    end
+    alias :inspect :to_s
   end # Tube
 end # Beaneater
