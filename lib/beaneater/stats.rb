@@ -32,5 +32,5 @@ module Beaneater
     def data
       StatStruct.from_hash(transmit_to_all('stats', :merge => true)[:body])
     end
-  end
-end
+  end # Stats
+end # Beaneater

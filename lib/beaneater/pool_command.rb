@@ -37,5 +37,5 @@ module Beaneater
     def combine_stats(k, a, b)
       ['name', 'version', 'pid'].include?(k) ? Set[a] + Set[b] : a + b
     end
-  end
-end
+  end # PoolCommand
+end # Beaneater

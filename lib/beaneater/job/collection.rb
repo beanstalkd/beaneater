@@ -25,4 +25,4 @@ module Beaneater
     end
     alias_method :peek, :find
   end # Jobs
-end
+end # Beaneater

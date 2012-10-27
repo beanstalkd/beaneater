@@ -42,5 +42,5 @@ module Beaneater
       response[:connection] = self
       response
     end
-  end
-end
+  end # Connection
+end # Beaneater
