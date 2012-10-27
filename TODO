@@ -1,24 +1,8 @@
-- Make sure connections are closed
+- Make sure connections are properly closed
 - Make sure docs and functionality match up with
   - http://beanstalkc.readthedocs.org/en/latest/tutorial.html#advanced-operation
+- Add retry to connection calling (lookup retry_wrap, call_wrap)
+- Raise exceptions for fail cases (see NotConnected, BadFormat, etc)
+- Add tests for threaded operation (see beanstalk client tests)
+- Add 'tube clear' in test helper as method in tubes?
 - Make default ttr, delay and priority configurable?
-- add retry to connection calling (lookup retry_wrap)
-- Raise exceptions in connection (see NotConnected)
-- Add tests for threaded operation
-
-# Clear the tubes
-@tubes = ['tube', 'tube2']
-@tubes.each do |tube|
- begin
-   stats = @beanstalk.stats_tube tube
-   num_jobs = stats['current-jobs-ready']
-   @beanstalk.watch tube
-   num_jobs.times do
-     job = @beanstalk.reserve
-     job.delete
-   end
-   @beanstalk.ignore tube
- #rescue Beaneater::NotFoundError
- #  next # skip tube
- end
-end
