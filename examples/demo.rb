@@ -50,6 +50,10 @@ job = tube.reserve
 p bc.tubes.reserve
 jid = job.id
 
+# pause tube
+puts step("Pause tube")
+p tube.pause(1)
+
 # Register and process jobs
 puts step("Process jobs")
 
@@ -75,9 +79,5 @@ p job.delete
 # list tubes
 puts step("List tubes")
 p bc.tubes.watched
-
-# pause tube
-puts step("Pause tube")
-
-# resume tube
-puts step("Resume tube")
+p bc.tubes.used
+p bc.tubes.all

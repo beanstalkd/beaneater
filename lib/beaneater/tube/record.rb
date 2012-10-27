@@ -42,6 +42,7 @@ module Beaneater
 
     # @beaneater_connection.tubes.find(123).pause(120)
     def pause(delay)
+      transmit_to_all("pause-tube #{name} #{delay}")
     end
 
     # @beaneater_connection.tubes.find('tube1').name # total-jobs, name ...

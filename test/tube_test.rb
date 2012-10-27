@@ -61,6 +61,20 @@ describe Beaneater::Tube do
     end
   end # reserve
 
+  describe "for #pause" do
+    before do
+      @time = Time.now.to_i
+      @tube = Beaneater::Tube.new(@pool, 'bam')
+      @tube.put "foo pause #{@time}"
+    end
+
+    it "should allow tube pause" do
+      assert_equal 0, @tube.stats.pause
+      @tube.pause(1)
+      assert_equal 1, @tube.stats.pause
+    end
+  end # pause
+
   describe "for #stats" do
     before do
       @time = Time.now.to_i
