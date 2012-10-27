@@ -2,7 +2,7 @@ module Beaneater
   class Tube < PoolCommand
     # TODO Make it configurable?
     DEFAULT_DELAY = 0
-    DEFAULT_PRIORITY = 2**31 # 2**32 is the highest priority
+    DEFAULT_PRIORITY = 2**31 # 2**32 is the highest pri
     DEFAULT_TTR = 1
 
     attr_reader :name
@@ -12,11 +12,11 @@ module Beaneater
       super(pool)
     end
 
-    # @beaneater_tube.put "data", :priority => 1000, :ttr => 10, :delay => 5
+    # @beaneater_tube.put "data", :pri => 1000, :ttr => 10, :delay => 5
     def put(data, options={})
       transmit_to_all "use #{@name}"
-      options = { :priority => DEFAULT_PRIORITY, :delay => DEFAULT_DELAY, :ttr => DEFAULT_TTR }.merge(options)
-      cmd_options = "#{options[:priority]} #{options[:delay]} #{options[:ttr]} #{data.bytesize}"
+      options = { :pri => DEFAULT_PRIORITY, :delay => DEFAULT_DELAY, :ttr => DEFAULT_TTR }.merge(options)
+      cmd_options = "#{options[:pri]} #{options[:delay]} #{options[:ttr]} #{data.bytesize}"
       command = "put #{cmd_options}\n#{data}"
       transmit_to_rand(command)
     end

@@ -54,13 +54,14 @@ describe Beaneater::Tubes do
     before do
       @pool  = Beaneater::Pool.new(['localhost'])
       @tube  = @pool.tubes.find 'tube'
-      @tube.put 'foo'
+      @time = Time.now.to_i
+      @tube.put "foo reserve #{@time}"
     end
 
     it("should reserve job") do
       @pool.tubes.watch 'tube'
       job = @pool.tubes.reserve
-      assert_equal 'foo', job.body
+      assert_equal "foo reserve #{@time}", job.body
       job.delete
     end
 
@@ -68,7 +69,7 @@ describe Beaneater::Tubes do
       @pool.tubes.watch 'tube'
       job = nil
       @pool.tubes.reserve { |j| job = j; job.delete }
-      assert_equal 'foo', job.body
+      assert_equal "foo reserve #{@time}", job.body
     end
 
     after do
