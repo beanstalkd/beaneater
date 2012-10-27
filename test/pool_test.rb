@@ -56,7 +56,21 @@ describe Beaneater::Pool do
       assert_equal '254', res[:id]
       assert_equal 'INSERTED', res[:status]
     end
-  end #transmit_to_rand
+  end # transmit_to_rand
+
+  describe 'for #transmit_until_res' do
+    before do
+      @hosts = ['localhost', 'localhost']
+      @bp = Beaneater::Pool.new(@hosts)
+      Beaneater::Connection.any_instance.expects(:transmit).with('foo', {}).twice.
+      returns({:status => "FAILED", :body => 'x'}).then.
+      returns({:status => "OK", :body => 'y'}).then.returns({:status => "OK", :body => 'z'})
+    end
+
+    it "should returns first matching status" do
+      assert_equal 'y', @bp.transmit_until_res('foo', :status => 'OK')[:body]
+    end
+  end
 
   describe 'for #stats' do
     before do

@@ -29,9 +29,10 @@ module Beaneater
 
     # transmit_until_res('peek-ready', :status => "FOUND", &block)
     def transmit_until_res(command, options={}, &block)
+      status_expected  = options.delete(:status)
       connections.each do |c|
         res = c.transmit(command, options, &block)
-        return res if res[:status] == options[:status]
+        return res if res[:status] == status_expected
       end
       nil
     end
