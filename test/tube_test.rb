@@ -5,12 +5,11 @@ require File.expand_path('../test_helper', __FILE__)
 describe Beaneater::Tube do
   before do
     @pool = Beaneater::Pool.new(['localhost'])
+    @tube = Beaneater::Tube.new(@pool, 'baz')
   end
 
   describe "for #put" do
     before do
-      @pool = Beaneater::Pool.new(['localhost'])
-      @tube = Beaneater::Tube.new(@pool, 'baz')
       @time = Time.now.to_i
     end
 
@@ -27,8 +26,6 @@ describe Beaneater::Tube do
 
   describe "for #peek" do
     before do
-      @pool = Beaneater::Pool.new(['localhost'])
-      @tube = Beaneater::Tube.new(@pool, 'baz')
       @time = Time.now.to_i
     end
 
@@ -49,8 +46,6 @@ describe Beaneater::Tube do
 
   describe "for #reserve" do
     before do
-      @pool = Beaneater::Pool.new(['localhost'])
-      @tube = Beaneater::Tube.new(@pool, 'jaz')
       @time = Time.now.to_i
       @tube.put "foo #{@time}", :delay => 0
     end
@@ -64,7 +59,20 @@ describe Beaneater::Tube do
       @tube.reserve { |j| job = j }
       assert_equal "foo #{@time}", job.body
     end
-  end
+  end # reserve
+
+  describe "for #stats" do
+    before do
+      @time = Time.now.to_i
+      @tube.put "foo #{@time}"
+      @stats = @tube.stats
+    end
+
+    it "should return total number of jobs in tube" do
+      assert_equal 1, @stats['current_jobs_ready']
+      assert_equal 0, @stats['current_jobs_delayed']
+    end
+  end # stats
 
   after do
     cleanup_tubes!(['baz', 'jaz'])

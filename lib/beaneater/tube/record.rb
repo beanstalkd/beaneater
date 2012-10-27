@@ -34,7 +34,11 @@ module Beaneater
       pool.tubes.reserve(&block)
     end
 
+    # Returns stats for this tube
     def stats
+      # TODO allow dot notation and clean this up?
+      transmit_to_all("stats-tube #{name}", :merge => true)[:body].
+        inject({}) { |r, (k, v)| r[k.gsub(/-/, '_')] = v; r }
     end
 
     # @beaneater_connection.tubes.find(123).pause(120)
