@@ -243,5 +243,5 @@ There are other resources helpful when learning about beanstalk:
 
 ## Contributors
 
- - [Nico Taing](https://github.com/Nico-Taing)
- - [Nathan Esquenazi](https://github.com/nesquena)
+ - [Nico Taing](https://github.com/Nico-Taing) - Creator and co-maintainer
+ - [Nathan Esquenazi](https://github.com/nesquena) - Contributor and co-maintainer
