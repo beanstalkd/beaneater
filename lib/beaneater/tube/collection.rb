@@ -5,11 +5,12 @@ module Beaneater
       Tube.new(self.pool, tube_name)
     end
 
-    # @beaneater_connection.tubes.reserve('tube2', 'tube3') { |job| process(job) }
-    def reserve(*tube_names, &block)
+    # @beaneater_connection.tubes.reserve { |job| process(job) }
+    def reserve(&block)
       res = transmit_to_rand 'reserve'
       job = Job.new(res)
-      block.call(job)
+      block.call(job) if block_given?
+      job
     end
 
     # @beaneater_connection.tubes.kick(10)
@@ -37,8 +38,9 @@ module Beaneater
     end
 
     def watch!(*tube_names)
-      ignore!(*watched)
+      old_tubes = watched.map(&:to_s) - tube_names.map(&:to_s)
       watch(*tube_names)
+      ignore!(*old_tubes)
     end
 
     def ignore!(*names)
@@ -46,7 +48,5 @@ module Beaneater
         transmit_to_all "ignore #{w}"
       end
     end
-
-
   end # Tubes
 end # Beaneater
