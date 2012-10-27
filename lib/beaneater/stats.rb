@@ -1,40 +1,36 @@
+require 'beaneater/stats/fast_struct'
+require 'beaneater/stats/stat_struct'
+
 module Beaneater
   class Stats < PoolCommand
-    KEYS = %w(current-jobs-urgent current-jobs-ready current-jobs-reserved
-              current-jobs-delayed current-jobs-buried cmd-put cmd-peek
-              cmd-peek-ready cmd-peek-delayed cmd-peek-buried cmd-reserve
-              cmd-use cmd-watch cmd-ignore cmd-delete cmd-release cmd-bury
-              cmd-kick cmd-stats cmd-stats-job cmd-stats-tube cmd-list-tubes
-              cmd-list-tube-used cmd-list-tubes-watched cmd-pause-tube
-              job-timeouts total-jobs max-job-size current-tubes current-connections
-              current-producers current-workers current-waiting total-connections
-              pid version rusage-utime rusage-stime uptime binlog-oldest-index
-              binlog-current-index binlog-max-size binlog-records-written
-              binlog-records-migrated)
-
-
-    # bs.stats['total_connections']
-    def [](k)
-      body[k.to_s.gsub(/_/, '-')]
-    end
-
+    # Returns keys for the stats data
     def keys
-      KEYS.map { |k| k.to_s.gsub(/-/, '_') }
+      data.keys
     end
 
-    # bs.stats.total_connections
+    # Returns value based on hash lookup
+    def [](val)
+      data[val]
+    end
+
+    # Defines a cached method for looking up data for specified key
+    # Protects against infinite loops by checking stacktrace
     def method_missing(name, *args, &block)
-      if keys.include?(name.to_s)
-        self[name]
-      else
+      if caller.first !~ /`(method_missing|data')/ && data.keys.include?(name.to_s)
+        self.class.class_eval <<-CODE, __FILE__, __LINE__
+          def #{name}; data[#{name.inspect}]; end
+        CODE
+        data[name.to_s]
+      else # no key matches or caught infinite loop
         super
       end
     end
 
     protected
 
-    def body
-      transmit_to_all('stats', :merge => true)[:body]
+    # Returns struct based on merged stats data
+    def data
+      StatStruct.from_hash(transmit_to_all('stats', :merge => true)[:body])
     end
   end
 end
