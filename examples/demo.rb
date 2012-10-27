@@ -13,9 +13,7 @@ puts bc
 # Print out key stats
 puts step("Print Stats")
 p bc.stats.keys
-p bc.stats.total_connections
-p bc.stats[:total_connections]
-p bc.stats['total_connections']
+p [bc.stats.total_connections, bc.stats[:total_connections], bc.stats['total_connections']]
 
 # find tube
 puts step("Find tube")
@@ -50,8 +48,17 @@ jid = job.id
 puts step("Pause tube")
 p tube.pause(1)
 
-# Register and process jobs
+# Register jobs
+puts step("Register jobs for tubes")
+puts "INCOMPLETE".red
+# bc.jobs.register('tube2', :retry_on => [Timeout::Error]) do |job|
+#  process_one(job)
+# end
+
+# Process jobs
 puts step("Process jobs")
+# bc.jobs.process
+puts "INCOMPLETE".red
 
 # Get job from id (peek job)
 puts step("Get job from id")
@@ -75,5 +82,6 @@ p job.delete
 # list tubes
 puts step("List tubes")
 p bc.tubes.watched
+puts "INCOMPLETE".red
 p bc.tubes.used
 p bc.tubes.all
