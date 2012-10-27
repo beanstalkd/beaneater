@@ -136,7 +136,7 @@ print job.stats.state # => 'delayed'
 
 You can also 'delete' jobs that are completed:
 
-```
+```ruby
 job = @beanstalk.tubes.reserve
 # ...process job...
 job.delete
@@ -153,7 +153,7 @@ print job.stats.state # => 'buried'
 Burying a job means that the job is pulled out of the queue into a special 'holding' area for later inspection or reuse.
 To reanimate a buried job, you can mark buried jobs as ready with 'kick':
 
-```
+```ruby
 @beanstalk.tubes.watch!('some-tube')
 @beanstalk.tubes.kick(3)
 ```
