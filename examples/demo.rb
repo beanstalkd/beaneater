@@ -53,8 +53,10 @@ jid = job.id
 # Register and process jobs
 puts step("Process jobs")
 
-# Get job from id
+# Get job from id (peek job)
 puts step("Get job from id")
+p bc.jobs.find(jid)
+p bc.jobs.peek(jid)
 
 # Check job stats
 puts step("Get job stats")
@@ -62,17 +64,13 @@ p job.stats.keys
 p job.stats.tube
 p job.stats.state
 
-# peek job
-puts step("Peek job")
+# bury job
+puts step("Bury job")
+p job.bury
 
 # delete job
 puts step("Delete job")
-
-# bury job
-puts step("Bury job")
-
-# kick job
-puts step("Kick job")
+p job.delete
 
 # list tubes
 puts step("List tubes")

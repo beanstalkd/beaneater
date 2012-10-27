@@ -5,7 +5,7 @@ require File.expand_path('../test_helper', __FILE__)
 describe Beaneater::Tubes do
   describe "for #find" do
     before do
-      @pool  =  stub
+      @pool  = stub
       @tubes = Beaneater::Tubes.new(@pool)
     end
 

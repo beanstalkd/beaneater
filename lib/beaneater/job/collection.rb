@@ -18,8 +18,10 @@ module Beaneater
 
     end
 
+    # @beaneater_connection.jobs.find(123)
     def find(id)
-
+      res = transmit_until_res("peek #{id}", :status => "FOUND")
+      Job.new(res) if res
     end
     alias_method :peek, :find
   end # Jobs

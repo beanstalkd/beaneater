@@ -10,6 +10,10 @@ module Beaneater
       @stats ||= Stats.new(self)
     end
 
+    def jobs
+      @jobs ||= Jobs.new(self)
+    end
+
     def tubes
       @tubes ||= Tubes.new(self)
     end

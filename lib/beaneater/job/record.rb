@@ -45,7 +45,7 @@ module Beaneater
 
     # Returns string representation of job
     def to_s
-      "#<Beaneater::Job body=#{body.inspect}>"
+      "#<Beaneater::Job id=#{id} body=#{body.inspect}>"
     end
     alias :inspect :to_s
 
