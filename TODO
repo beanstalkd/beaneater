@@ -1,8 +1,9 @@
+- Add YARD docs for all classes (see REF file)
 - Make sure connections are properly closed
 - Make sure docs and functionality match up with
   - http://beanstalkc.readthedocs.org/en/latest/tutorial.html#advanced-operation
 - Add retry to connection calling (lookup retry_wrap, call_wrap)
 - Raise exceptions for fail cases (see NotConnected, BadFormat, etc)
 - Add tests for threaded operation (see beanstalk client tests)
-- Add 'tube clear' in test helper as method in tubes?
+- Add 'tube clear' in test helper as a method in tubes? (tube.clear!)
 - Make default ttr, delay and priority configurable?
