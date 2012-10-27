@@ -28,7 +28,7 @@ puts tube
 
 # Put job onto tube
 puts step("Put job")
-response = tube.put "foo bar", :priority => 1000, :ttr => 10, :delay => 0
+response = tube.put "foo bar", :pri => 1000, :ttr => 10, :delay => 0
 puts response
 
 # peek tube
