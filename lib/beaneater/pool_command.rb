@@ -30,7 +30,8 @@ module Beaneater
     protected
 
     def sum_hashes(hs)
-      hs.inject({}){ |a,b| a.merge(b) { |k,o,n| combine_stats(k, o, n)}}
+      hs.select { |h| h.is_a?(Hash) }.
+        inject({}) { |a,b| a.merge(b) { |k,o,n| combine_stats(k, o, n) } }
     end
 
     def combine_stats(k, a, b)
