@@ -39,9 +39,9 @@ describe Beaneater::PoolCommand do
         assert_equal Set[1.1, 1.2], cmd[:body]['version']
       end
     end # merged command
-  end #transmit_to_all
+  end # transmit_to_all
 
-  describe 'for method missing' do
+  describe 'for #method_missing' do
     describe '#transmit_to_rand' do
       before do
         @pool = stub
@@ -52,7 +52,7 @@ describe Beaneater::PoolCommand do
       it 'delegates to connection' do
         assert_equal 'OK', @command.transmit_to_rand('foo')
       end
-    end #transmit_to_rand
+    end # transmit_to_rand
 
     describe 'invalid method' do
       before do
@@ -63,6 +63,6 @@ describe Beaneater::PoolCommand do
       it 'raises no method error' do
         assert_raises(NoMethodError) { @command.foo('foo') }
       end
-    end #transmit_to_rand
+    end # transmit_to_rand
   end
 end # Beaneater::PoolCommand

@@ -11,7 +11,7 @@ describe Beaneater::Tubes do
 
     it("should return Tube obj") { assert_kind_of Beaneater::Tube, @tubes.find(:foo) }
     it("should return Tube name") { assert_equal :foo, @tubes.find(:foo).name }
-  end #find
+  end # find
 
   describe "for #watch & #watched" do
     before do
@@ -23,7 +23,7 @@ describe Beaneater::Tubes do
       @pool.tubes.watch('bar')
       assert_equal ['default', 'foo', 'bar'].sort, @pool.tubes.watched.sort
     end
-  end
+  end # watch!
 
   describe "for #watch!" do
     before do
@@ -35,7 +35,7 @@ describe Beaneater::Tubes do
       @pool.tubes.watch!('bar')
       assert_equal ['bar'].sort, @pool.tubes.watched.sort
     end
-  end
+  end # watch!
 
   describe "for #ignore!" do
     before do
@@ -48,7 +48,7 @@ describe Beaneater::Tubes do
       @pool.tubes.ignore!('foo')
       assert_equal ['default', 'bar'].sort, @pool.tubes.watched.sort
     end
-  end
+  end # ignore!
 
   describe "for #reserve" do
     before do

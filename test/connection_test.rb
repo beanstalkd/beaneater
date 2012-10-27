@@ -16,7 +16,7 @@ describe Beaneater::Connection do
       assert_equal 'localhost', telops["Host"]
       assert_equal 11300, telops["Port"]
     end
-  end #new
+  end # new
 
   describe 'for #transmit' do
     before do

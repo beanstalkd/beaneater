@@ -23,7 +23,7 @@ describe Beaneater::Pool do
     it "should init 4 connections" do
       assert_equal 4, @bp.connections.size
     end
-  end #new
+  end # new
 
   describe 'for #transmit_to_all' do
     before do
@@ -36,7 +36,7 @@ describe Beaneater::Pool do
       assert_equal 2, res.size
       refute_nil res.first[:body]['current-connections']
     end
-  end #transmit_to_all
+  end # transmit_to_all
 
   describe 'for #transmit_to_rand' do
     before do
@@ -70,7 +70,7 @@ describe Beaneater::Pool do
     it "should returns first matching status" do
       assert_equal 'y', @bp.transmit_until_res('foo', :status => 'OK')[:body]
     end
-  end
+  end # transmit_until_res
 
   describe 'for #stats' do
     before do
@@ -79,7 +79,7 @@ describe Beaneater::Pool do
     end
 
     it("should return stats object"){ assert_kind_of Beaneater::Stats, @bp.stats }
-  end #stats
+  end # stats
 
   describe 'for #tubes' do
     before do
@@ -88,6 +88,6 @@ describe Beaneater::Pool do
     end
 
     it("should return Tubes object"){ assert_kind_of Beaneater::Tubes, @bp.tubes }
-  end #tubes
+  end # tubes
 
 end # Beaneater::Pool

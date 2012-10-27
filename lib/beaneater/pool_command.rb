@@ -22,7 +22,7 @@ module Beaneater
     def method_missing(name, *args, &block)
       if pool.respond_to?(name)
         pool.send(name, *args, &block)
-      else
+      else # not a known pool command
         super
       end
     end
