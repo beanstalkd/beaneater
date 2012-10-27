@@ -17,17 +17,17 @@ module Beaneater
     def kick(bounds)
     end
 
-    #@beaneater_connection.tubes.all
-    # => [<Beaneater::Tube>, <Beaneater::Tube>....]
-    # @beaneater_connection.tubes.watched
-    # @beaneater_connection.tubes.used
+    # @beaneater_connection.tubes.all
     def all
     end
 
+    # @beaneater_connection.tubes.watched
+    # TODO should return tube objects?
     def watched
       transmit_to_rand('list-tubes-watched')[:body]
     end
 
+    # @beaneater_connection.tubes.used
     def used
     end
 
