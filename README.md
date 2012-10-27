@@ -183,7 +183,7 @@ or you can peek at jobs on a tube:
 Instead of using `watch` and `reserve`, you can also use the higher level `register` and `process` methods to
 process jobs. First you can 'register' how to handle jobs from various tubes:
 
-```
+```ruby
 @beanstalk.jobs.register('some-tube-name', :retry_on => [Timeout::Error]) do |job|
   do_something(job)
 end
