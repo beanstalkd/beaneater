@@ -19,6 +19,7 @@ module Beaneater
       res
     end
 
+    # Delegate missing methods to pool
     def method_missing(name, *args, &block)
       if pool.respond_to?(name)
         pool.send(name, *args, &block)
@@ -29,11 +30,13 @@ module Beaneater
 
     protected
 
+    # Selects hashes and then merges the values
     def sum_hashes(hs)
       hs.select { |h| h.is_a?(Hash) }.
         inject({}) { |a,b| a.merge(b) { |k,o,n| combine_stats(k, o, n) } }
     end
 
+    # Combine two values for given key
     def combine_stats(k, a, b)
       ['name', 'version', 'pid'].include?(k) ? Set[a] + Set[b] : a + b
     end

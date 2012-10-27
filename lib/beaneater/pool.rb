@@ -37,8 +37,7 @@ module Beaneater
       connections.each do |conn|
         res = conn.transmit(command, options, &block)
         return res if res[:status] == status_expected
-      end
-      nil
+      end && nil
     end
   end # Pool
 end # Beaneater

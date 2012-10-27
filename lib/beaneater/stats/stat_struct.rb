@@ -9,12 +9,13 @@ module Beaneater
       self.new(underscore_hash)
     end
 
-    # Access keys with hash notation
+    # Access values with hash notation
     # struct['key']
     def [](key)
       self.send(key.to_s)
     end
 
+    # Returns keys stored by this struct
     def keys
       @hash.keys.map{ |k| k.to_s }
     end

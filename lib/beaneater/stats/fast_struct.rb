@@ -1,6 +1,7 @@
 module Beaneater
+  #
+  # Borrowed from:
   # https://github.com/dolzenko/faster_open_struct/blob/master/lib/faster_open_struct.rb
-  # ## Faster::OpenStruct
   #
   # Up to 40 (!) times more memory efficient version of OpenStruct
   #

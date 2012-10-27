@@ -14,21 +14,26 @@ module Beaneater
     end
 
     # @beaneater_connection.tubes.kick(10)
+    # TODO complete
     def kick(bounds)
     end
 
     # @beaneater_connection.tubes.all
+    # TODO complete with tests
     def all
+      # transmit_to_rand('list-tubes')[:body]
+    end
+
+    # @beaneater_connection.tubes.used
+    # TODO complete with tests
+    def used
+      # transmit_to_rand('list-tubes-used')[:body]
     end
 
     # @beaneater_connection.tubes.watched
     # TODO should return tube objects?
     def watched
       transmit_to_rand('list-tubes-watched')[:body]
-    end
-
-    # @beaneater_connection.tubes.used
-    def used
     end
 
     def watch(*names)
