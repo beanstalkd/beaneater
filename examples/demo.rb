@@ -38,10 +38,17 @@ p tube.peek :ready
 # watch tube
 bc.tubes.watch!('tube2')
 
+# Check tube stats
+puts step("Get tube stats")
+p tube.stats.keys
+p tube.stats.name
+p tube.stats.current_jobs_ready
+
 # Reserve job from tube
 puts step("Reserve job")
-p tube.reserve
+job = tube.reserve
 p bc.tubes.reserve
+jid = job.id
 
 # Register and process jobs
 puts step("Process jobs")
@@ -51,6 +58,9 @@ puts step("Get job from id")
 
 # Check job stats
 puts step("Get job stats")
+p job.stats.keys
+p job.stats.tube
+p job.stats.state
 
 # peek job
 puts step("Peek job")
