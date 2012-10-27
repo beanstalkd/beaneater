@@ -2,7 +2,7 @@ $:.unshift("../lib")
 require 'beaneater'
 
 # Establish a pool of beanstalks
-bc = Beaneater::Connection.new(['localhost'])
+bc = Beaneater::Pool.new(['localhost', 'localhost:11301', 'localhost:11302'])
 
 # Print out key stats
 p bc.stats.keys
