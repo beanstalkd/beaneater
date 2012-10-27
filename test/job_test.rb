@@ -8,6 +8,33 @@ describe Beaneater::Job do
     @tube  = @pool.tubes.find 'tube'
   end
 
+  describe "for #bury" do
+    before do
+      @time = Time.now.to_i
+      @tube.put "foo bury #{@time}", :pri => 5
+    end
+
+    it("should be buried with same pri") do
+      job = @tube.reserve
+      assert_equal "foo bury #{@time}", job.body
+      assert_equal 'reserved', job.stats.state
+      job.bury
+      assert_equal 'buried', job.stats.state
+      assert_equal 5, job.stats.pri
+      assert_equal "foo bury #{@time}", @tube.peek(:buried).body
+    end
+
+    it("should be released with new pri") do
+      job = @tube.reserve
+      assert_equal "foo bury #{@time}", job.body
+      assert_equal 'reserved', job.stats.state
+      job.bury(:pri => 10)
+      assert_equal 'buried', job.stats.state
+      assert_equal 10, job.stats.pri
+      assert_equal "foo bury #{@time}", @tube.peek(:buried).body
+    end
+  end # bury
+
   describe "for #release" do
     before do
       @time = Time.now.to_i

@@ -8,7 +8,13 @@ module Beaneater
       @connection = res[:connection]
     end
 
-    # beaneater_connection.jobs.find(123).release
+    # beaneater_connection.jobs.find(123).bury(:pri => 10)
+    def bury(options={})
+      options = { :pri => stats.pri }.merge(options)
+      connection.transmit("bury #{id} #{options[:pri]}")
+    end
+
+    # beaneater_connection.jobs.find(123).release(:pri => 10, :delay => 5)
     def release(options={})
       options = { :pri => stats.pri, :delay => stats.delay }.merge(options)
       connection.transmit("release #{id} #{options[:pri]} #{options[:delay]}")
