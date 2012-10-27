@@ -1,5 +1,5 @@
 module Beaneater
-  class Stats < Command
+  class Stats < PoolCommand
     KEYS = %w(current-jobs-urgent current-jobs-ready current-jobs-reserved
               current-jobs-delayed current-jobs-buried cmd-put cmd-peek
               cmd-peek-ready cmd-peek-delayed cmd-peek-buried cmd-reserve

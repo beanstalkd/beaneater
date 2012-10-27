@@ -2,24 +2,24 @@
 
 require File.expand_path('../test_helper', __FILE__)
 
-describe Beaneater::Command do
+describe Beaneater::PoolCommand do
 
   describe 'for #new' do
     before do
-      @conn = stub
-      @command = Beaneater::Command.new(@conn)
+      @pool = stub
+      @command = Beaneater::PoolCommand.new(@pool)
     end
 
-    it "should store connection" do
-      assert_equal @conn, @command.connection
+    it "should store pool" do
+      assert_equal @pool, @command.pool
     end
   end #new
 
   describe 'for #transmit_to_all' do
     describe 'for regular command' do
       before do
-        @conn = stub(:transmit_to_all => "OK")
-        @command = Beaneater::Command.new(@conn)
+        @pool = stub(:transmit_to_all => "OK")
+        @command = Beaneater::PoolCommand.new(@pool)
       end
 
       it "can run regular command" do
@@ -29,8 +29,8 @@ describe Beaneater::Command do
 
     describe 'for merged command' do
       before do
-        @conn = stub(:transmit_to_all => [{ :body => { 'x' => 1, 'version' => 1.1 }}, {:body => { 'x' => 3,'version' => 1.2 }}])
-        @command = Beaneater::Command.new(@conn)
+        @pool = stub(:transmit_to_all => [{ :body => { 'x' => 1, 'version' => 1.1 }}, {:body => { 'x' => 3,'version' => 1.2 }}])
+        @command = Beaneater::PoolCommand.new(@pool)
       end
 
       it "can run merge command" do
@@ -44,9 +44,9 @@ describe Beaneater::Command do
   describe 'for method missing' do
     describe '#transmit_to_rand' do
       before do
-        @conn = stub
-        @conn.expects(:transmit_to_rand).with('foo').returns('OK')
-        @command = Beaneater::Command.new(@conn)
+        @pool = stub
+        @pool.expects(:transmit_to_rand).with('foo').returns('OK')
+        @command = Beaneater::PoolCommand.new(@pool)
       end
 
       it 'delegates to connection' do
@@ -56,8 +56,8 @@ describe Beaneater::Command do
 
     describe 'invalid method' do
       before do
-        @conn = stub
-        @command = Beaneater::Command.new(@conn)
+        @pool = stub
+        @command = Beaneater::PoolCommand.new(@pool)
       end
 
       it 'raises no method error' do
@@ -65,4 +65,4 @@ describe Beaneater::Command do
       end
     end #transmit_to_rand
   end
-end # Beaneater::Command
+end # Beaneater::PoolCommand

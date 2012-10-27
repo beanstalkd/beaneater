@@ -1,18 +1,18 @@
 require 'set'
 
 module Beaneater
-  class Command
-    attr_reader :connection
+  class PoolCommand
+    attr_reader :pool
 
-    def initialize(connection)
-      @connection = connection
+    def initialize(pool)
+      @pool = pool
     end
 
     # transmit_to_all('use foo')
     # transmit_to_all('stats', :merge => true)
     def transmit_to_all(body, options={}, &block)
       merge = options.delete(:merge)
-      res = connection.transmit_to_all(body, options, &block)
+      res = pool.transmit_to_all(body, options, &block)
       if merge
         res = { :status => res.first[:status], :body => sum_hashes(res.map { |r| r[:body] }) }
       end
@@ -20,8 +20,8 @@ module Beaneater
     end
 
     def method_missing(name, *args, &block)
-      if connection.respond_to?(name)
-        connection.send(name, *args, &block)
+      if pool.respond_to?(name)
+        pool.send(name, *args, &block)
       else
         super
       end
