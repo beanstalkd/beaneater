@@ -72,7 +72,7 @@ describe Beaneater::Tubes do
     end
 
     after do
-      cleanup_tubes!(['foo', 'tube']) if @tube.peek(:ready)
+      cleanup_tubes!(['foo', 'tube'])
     end
   end # reserve
 end # Beaneater::Tubes

@@ -9,25 +9,20 @@ require 'mocha'
 FakeWeb.allow_net_connect = false
 
 class MiniTest::Unit::TestCase
-  def cleanup_tubes!(tubes)
-    tubes.each do |t|
-      begin
-        Timeout.timeout(1) do
-          @pool.tubes.watch!(t)
-          tube = @pool.tubes.find(t)
-          if tube.peek(:delayed)
-            while delayed = tube.peek(:delayed) do
-              delayed.delete
-            end
-          else
-            @pool.tubes.reserve do |job|
-              job.delete
-            end
-          end
+
+  # Cleans up all jobs from tubes
+  # cleanup_tubes!(['foo'], @bp)
+  def cleanup_tubes!(tubes, bp=nil)
+    bp ||= @pool
+    tubes.each do |name|
+      bp.tubes.watch!(name)
+      tube = bp.tubes.find(name)
+      %w(delayed buried ready).each do |state|
+        while job = tube.peek(state.to_sym)
+          job.delete
         end
-      rescue Timeout::Error
-        # nothing
       end
+      bp.tubes.ignore!(name)
     end
   end
 end

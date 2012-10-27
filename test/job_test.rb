@@ -19,7 +19,7 @@ describe Beaneater::Job do
     end
 
     after do
-      cleanup_tubes!(['tube']) if @tube.peek(:ready)
+      cleanup_tubes!(['tube'])
     end
   end # delete
 end # Beaneater::Tubes
