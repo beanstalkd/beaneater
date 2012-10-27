@@ -12,7 +12,7 @@ module Beaneater
       super(pool)
     end
 
-    # Instance Methods
+    # @beaneater_tube.put "data", :priority => 1000, :ttr => 10, :delay => 5
     def put(data, options={})
       transmit_to_all "use #{@name}"
       options = { :priority => DEFAULT_PRIORITY, :delay => DEFAULT_DELAY, :ttr => DEFAULT_TTR }.merge(options)
@@ -36,9 +36,8 @@ module Beaneater
 
     # Returns stats for this tube
     def stats
-      # TODO allow dot notation and clean this up?
-      transmit_to_all("stats-tube #{name}", :merge => true)[:body].
-        inject({}) { |r, (k, v)| r[k.gsub(/-/, '_')] = v; r }
+      res = transmit_to_all("stats-tube #{name}", :merge => true)
+      StatStruct.from_hash(res[:body])
     end
 
     # @beaneater_connection.tubes.find(123).pause(120)
