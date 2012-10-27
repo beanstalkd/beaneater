@@ -6,6 +6,7 @@ module Beaneater
     end
 
     # @beaneater_connection.tubes.reserve { |job| process(job) }
+    # TODO Allow reserve to have a timeout specified
     def reserve(&block)
       res = transmit_to_rand 'reserve'
       job = Job.new(res)
@@ -15,7 +16,7 @@ module Beaneater
 
     # @beaneater_connection.tubes.kick(10)
     # TODO complete
-    def kick(bounds)
+    def kick(bounds=1)
     end
 
     # @beaneater_connection.tubes.all
