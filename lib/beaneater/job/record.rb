@@ -8,35 +8,29 @@ module Beaneater
       @connection = res[:connection]
     end
 
-    # Instance Methods
-    # @beaneater_tube.put "data", :priority => 1000, :ttr => 10, :delay => 5
-    def put(data, options={})
-
-    end
-
     # @beaneater_connection.jobs.find(123).kick
     def kick
 
     end
 
+    # @beaneater_connection.jobs.find(123).delete
     def delete
       connection.transmit("delete #{id}")
     end
 
     ### Stats
     # @beaneater_connection.jobs.find(123).ttr # id, state, pro, age, ...
-    # TODO: define all methods dynamically based on stats response
-
+    # TODO raise exception if job not found??
     def stats
+      res = connection.transmit("stats-job #{id}")
+      StatStruct.from_hash(res[:body])
     end
 
+    # Returns string representation of job
     def to_s
       "#<Beaneater::Job body=#{body.inspect}>"
     end
-
-    def inspect
-      "#<Beaneater::Job id=#{id} body=#{body.inspect}>"
-    end
+    alias :inspect :to_s
 
   end # Job
 end # Beaneater
