@@ -101,6 +101,35 @@ describe Beaneater::Job do
     end
   end # stats
 
+  describe "for #reserved?" do
+    before do
+      @tube.put 'foo'
+      @job = @tube.peek(:ready)
+    end
+
+    it("should have stats") do
+      assert_equal false, @job.reserved?
+      job = @tube.reserve
+      assert_equal job.id, @job.id
+      assert_equal true, @job.reserved?
+      @job.delete
+      assert_equal nil, @job.reserved?
+    end
+  end # reserved?
+
+  describe "for #tube" do
+    before do
+      @tube.put 'bar'
+      @job = @tube.peek(:ready)
+    end
+
+    it("should have stats") do
+      job = @tube.reserve
+      assert_equal @tube.name, job.tube
+      job.release
+    end
+  end # tube
+
   after do
     cleanup_tubes!(['tube'])
   end

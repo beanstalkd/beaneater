@@ -43,6 +43,16 @@ module Beaneater
     def kick
     end
 
+    # Returns true if the job is reserved
+    def reserved?
+      self.stats && self.stats.state == "reserved"
+    end
+
+    # Returns the name of the tube this job is in
+    def tube
+      self.stats && self.stats.tube
+    end
+
     # Returns string representation of job
     def to_s
       "#<Beaneater::Job id=#{id} body=#{body.inspect}>"
