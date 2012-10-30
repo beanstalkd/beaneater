@@ -37,6 +37,7 @@ module Beaneater
       res_lines = res.split(/\r?\n/)
       status = res_lines.first
       status, id = status.scan(/\w+/)
+      raise UnexpectedResponse.from_response(status) if UnexpectedResponse::ERROR_STATES.include?(status)
       response = { :status => status, :body => YAML.load(res_lines[1..-1].join("\n")) }
       response[:id] = id if id
       response[:connection] = self

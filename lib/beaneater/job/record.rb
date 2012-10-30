@@ -36,6 +36,8 @@ module Beaneater
     def stats
       res = connection.transmit("stats-job #{id}")
       StatStruct.from_hash(res[:body])
+    rescue NotFoundError
+      # returns nil
     end
 
     # @beaneater_connection.jobs.find(123).kick

@@ -103,6 +103,8 @@ describe Beaneater::Tubes do
       @pool.tubes.reserve
       res = @pool.tubes.reserve(0)
       assert_nil res
+      res2 = @pool.tubes.reserve(0)
+      assert_nil res2
     end
 
     after do

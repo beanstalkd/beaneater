@@ -25,7 +25,9 @@ module Beaneater
     def peek(state)
       transmit_to_all "use #{@name}"
       res = transmit_until_res "peek-#{state}", :status => "FOUND"
-      Job.new(res) if res
+      Job.new(res)
+    rescue Beaneater::NotFoundError => ex
+      # Return nil if not found
     end
 
     # Reserves job from tube
@@ -38,6 +40,8 @@ module Beaneater
     def stats
       res = transmit_to_all("stats-tube #{name}", :merge => true)
       StatStruct.from_hash(res[:body])
+    rescue NotFoundError
+      # returns nil
     end
 
     # @beaneater_connection.tubes.find(123).pause(120)

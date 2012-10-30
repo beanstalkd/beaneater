@@ -45,6 +45,10 @@ describe Beaneater::Tube do
 
       assert_equal "foo buried #{@time}", @tube.peek(:buried).body
     end
+
+    it "should return nil for empty peek" do
+      assert_nil @tube.peek(:buried)
+    end
   end # peek
 
   describe "for #reserve" do
@@ -88,6 +92,10 @@ describe Beaneater::Tube do
     it "should return total number of jobs in tube" do
       assert_equal 1, @stats['current_jobs_ready']
       assert_equal 0, @stats.current_jobs_delayed
+    end
+
+    it "should return nil for empty tube" do
+      assert_nil @pool.tubes.find('fake_tube').stats
     end
   end # stats
 

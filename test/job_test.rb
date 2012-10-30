@@ -99,6 +99,11 @@ describe Beaneater::Job do
       assert_equal 'tube', @job.stats['tube']
       assert_equal 'ready', @job.stats.state
     end
+
+    it "should return nil for deleted job with no stats" do
+      @job.delete
+      assert_nil @job.stats
+    end
   end # stats
 
   describe "for #reserved?" do
