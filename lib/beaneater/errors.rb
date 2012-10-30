@@ -1,4 +1,8 @@
 module Beaneater
+  class NotConnected < RuntimeError; end
+  class WaitingForJobError < RuntimeError; end
+  class InvalidTubeName < RuntimeError; end
+
   class UnexpectedResponse < RuntimeError
     ERROR_STATES = %w(OUT_OF_MEMORY INTERNAL_ERROR
       BAD_FORMAT UNKNOWN_COMMAND JOB_TOO_BIG DRAINING
@@ -24,6 +28,4 @@ module Beaneater
   class ExpectedCRLFError < UnexpectedResponse; end
   class JobTooBigError < UnexpectedResponse; end
   class TimedOutError < UnexpectedResponse; end
-  class WaitingForJobError < RuntimeError; end
-  class InvalidTubeName < RuntimeError; end
 end

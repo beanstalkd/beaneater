@@ -51,7 +51,7 @@ describe Beaneater::Pool do
     end
 
     it "should return id" do
-      Net::Telnet.any_instance.expects(:cmd).with('String' => 'foo').returns('INSERTED 254')
+      Net::Telnet.any_instance.expects(:cmd).with(has_entries('String' => 'foo')).returns('INSERTED 254')
       res = @bp.transmit_to_rand 'foo'
       assert_equal '254', res[:id]
       assert_equal 'INSERTED', res[:status]
