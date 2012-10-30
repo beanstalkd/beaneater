@@ -2,7 +2,7 @@ module Beaneater
   class Tube < PoolCommand
     # TODO Make it configurable?
     DEFAULT_DELAY = 0
-    DEFAULT_PRIORITY = 2**31 # 2**32 is the highest pri
+    DEFAULT_PRIORITY = 2**31 # 0 is the highest pri
     DEFAULT_TTR = 1
 
     attr_reader :name
