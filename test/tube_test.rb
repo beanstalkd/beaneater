@@ -39,9 +39,12 @@ describe Beaneater::Tube do
       assert_equal "foo ready #{@time}", @tube.peek(:ready).body
     end
 
-    # it "should peek buried" do
-    #   TODO add bury test
-    # end
+    it "should peek buried" do
+      @tube.put "foo buried #{@time}"
+      @tube.reserve.bury
+
+      assert_equal "foo buried #{@time}", @tube.peek(:buried).body
+    end
   end # peek
 
   describe "for #reserve" do
