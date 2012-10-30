@@ -40,8 +40,7 @@ p tube.stats.current_jobs_ready
 
 # Reserve job from tube
 puts step("Reserve job")
-job = tube.reserve
-p bc.tubes.reserve
+p job = bc.tubes.reserve
 jid = job.id
 
 # pause tube
@@ -50,15 +49,26 @@ p tube.pause(1)
 
 # Register jobs
 puts step("Register jobs for tubes")
-puts "INCOMPLETE".red
-# bc.jobs.register('tube2', :retry_on => [Timeout::Error]) do |job|
-#  process_one(job)
-# end
+bc.jobs.register('tube_test', :retry_on => [Timeout::Error]) do |job|
+ p 'tube_test'
+ p job
+ raise Beaneater::Jobs::AbortProcessException
+end
+
+bc.jobs.register('tube_test2', :retry_on => [Timeout::Error]) do |job|
+ p 'tube_test2'
+ p job
+ raise Beaneater::Jobs::AbortProcessException
+end
+
+p bc.jobs.process_jobs
+
+response = bc.tubes.find('tube_test').put "foo register", :pri => 1000, :ttr => 10, :delay => 0
+response = bc.tubes.find('tube_test2').put "foo baz", :pri => 1000, :ttr => 10, :delay => 0
 
 # Process jobs
 puts step("Process jobs")
-# bc.jobs.process
-puts "INCOMPLETE".red
+2.times { bc.jobs.process! }
 
 # Get job from id (peek job)
 puts step("Get job from id")
@@ -82,6 +92,5 @@ p job.delete
 # list tubes
 puts step("List tubes")
 p bc.tubes.watched
-puts "INCOMPLETE".red
 p bc.tubes.used
 p bc.tubes.all
