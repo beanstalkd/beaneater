@@ -23,13 +23,13 @@ module Beaneater
     # @beaneater_connection.tubes.all
     # TODO complete with tests
     def all
-      # transmit_to_rand('list-tubes')[:body]
+      transmit_to_rand('list-tubes')[:body]
     end
 
     # @beaneater_connection.tubes.used
     # TODO complete with tests
     def used
-      # transmit_to_rand('list-tubes-used')[:body]
+      transmit_to_rand('list-tube-used')[:id]
     end
 
     # @beaneater_connection.tubes.watched

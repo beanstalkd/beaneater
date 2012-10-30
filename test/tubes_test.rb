@@ -23,7 +23,33 @@ describe Beaneater::Tubes do
       @pool.tubes.watch('bar')
       assert_equal ['default', 'foo', 'bar'].sort, @pool.tubes.watched.sort
     end
-  end # watch!
+  end # watch! & watched
+
+  describe "for #all" do
+    before do
+      @pool = Beaneater::Pool.new(['localhost'])
+      @pool.tubes.find('foo').put 'bar'
+      @pool.tubes.find('bar').put 'foo'
+    end
+
+    it 'should retrieve all tubes' do
+      ['default', 'foo', 'bar'].each do |t|
+        assert @pool.tubes.all.include?(t)
+      end
+    end
+  end # all
+
+  describe "for #used" do
+    before do
+      @pool = Beaneater::Pool.new(['localhost'])
+      @pool.tubes.find('foo').put 'bar'
+      @pool.tubes.find('bar').put 'foo'
+    end
+
+    it 'should retrieve used tube' do
+      assert_equal'bar', @pool.tubes.used
+    end
+  end # used
 
   describe "for #watch!" do
     before do
