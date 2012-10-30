@@ -13,6 +13,22 @@ describe Beaneater::Tubes do
     it("should return Tube name") { assert_equal :foo, @tubes.find(:foo).name }
   end # find
 
+  describe "for #use" do
+    before do
+      @pool = Beaneater::Pool.new(['localhost'])
+    end
+
+    it "should switch to used tube for valid name" do
+      tube = Beaneater::Tube.new(@pool, 'some_name')
+      @pool.tubes.use('some_name')
+      assert_equal 'some_name', @pool.tubes.used
+    end
+
+    it "should raise for invalid tube name" do
+      assert_raises(Beaneater::InvalidTubeName) { @pool.tubes.use('; ') }
+    end
+  end # use
+
   describe "for #watch & #watched" do
     before do
       @pool = Beaneater::Pool.new(['localhost'])

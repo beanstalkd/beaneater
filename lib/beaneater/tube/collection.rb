@@ -16,6 +16,13 @@ module Beaneater
       nil # returns no job
     end
 
+    # Uses specified tube
+    def use(tube)
+      res = transmit_to_all "use #{tube}"
+    rescue BadFormatError
+      raise InvalidTubeName, "Tube cannot be named '#{tube}'"
+    end
+
     # @beaneater_connection.tubes.kick(10)
     # TODO complete
     def kick(bounds=1)
