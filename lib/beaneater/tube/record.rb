@@ -45,9 +45,6 @@ module Beaneater
       transmit_to_all("pause-tube #{name} #{delay}")
     end
 
-    # @beaneater_connection.tubes.find('tube1').name # total-jobs, name ...
-    # TODO: define all methods dynamically based on stats response
-
     def to_s
       "#<Beaneater::Tube name=#{name.inspect}>"
     end
