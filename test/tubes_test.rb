@@ -39,6 +39,10 @@ describe Beaneater::Tubes do
       @pool.tubes.watch('bar')
       assert_equal ['default', 'foo', 'bar'].sort, @pool.tubes.watched.sort
     end
+
+    it 'should raise invalid name for bad tube' do
+      assert_raises(Beaneater::InvalidTubeName) { @pool.tubes.watch('; ') }
+    end
   end # watch! & watched
 
   describe "for #all" do
