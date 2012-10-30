@@ -7,8 +7,9 @@ module Beaneater
 
     # @beaneater_connection.tubes.reserve { |job| process(job) }
     # TODO Allow reserve to have a timeout specified
-    def reserve(&block)
-      res = transmit_to_rand 'reserve'
+    def reserve(timeout=nil, &block)
+      res = transmit_to_rand(timeout ? "reserve-with-timeout #{timeout}" : 'reserve')
+      return nil unless res[:status] == 'RESERVED'
       job = Job.new(res)
       block.call(job) if block_given?
       job

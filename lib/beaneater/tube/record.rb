@@ -29,9 +29,9 @@ module Beaneater
     end
 
     # Reserves job from tube
-    def reserve(&block)
+    def reserve(timeout=nil, &block)
       pool.tubes.watch!(self.name)
-      pool.tubes.reserve(&block)
+      pool.tubes.reserve(timeout, &block)
     end
 
     # Returns stats for this tube

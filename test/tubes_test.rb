@@ -72,6 +72,13 @@ describe Beaneater::Tubes do
       assert_equal "foo reserve #{@time}", job.body
     end
 
+    it("should reserve job with block and timeout") do
+      @pool.tubes.watch 'tube'
+      @pool.tubes.reserve
+      res = @pool.tubes.reserve(0)
+      assert_nil res
+    end
+
     after do
       cleanup_tubes!(['foo', 'tube'])
     end
