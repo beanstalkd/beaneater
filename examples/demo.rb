@@ -52,13 +52,13 @@ puts step("Register jobs for tubes")
 bc.jobs.register('tube_test', :retry_on => [Timeout::Error]) do |job|
  p 'tube_test'
  p job
- raise Beaneater::Jobs::AbortProcessException
+ raise Beaneater::AbortProcessingError
 end
 
 bc.jobs.register('tube_test2', :retry_on => [Timeout::Error]) do |job|
  p 'tube_test2'
  p job
- raise Beaneater::Jobs::AbortProcessException
+ raise Beaneater::AbortProcessingError
 end
 
 p bc.jobs.processors

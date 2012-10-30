@@ -1,7 +1,6 @@
 module Beaneater
+  class AbortProcessingError < RuntimeError; end
   class Jobs < PoolCommand
-    class AbortProcessException < StandardError; end
-
     attr_reader :processors
 
     MAX_RETRIES = 3
@@ -28,7 +27,7 @@ module Beaneater
         begin
           processor[:block].call(job)
           job.delete
-        rescue AbortProcessException
+        rescue AbortProcessingError
           break
         rescue *processor[:retry_on]
           job.release(:delay => release_delay) if job.stats.releases < processor[:max_retries]

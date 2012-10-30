@@ -51,7 +51,7 @@ describe Beaneater::Jobs do
       @jobs.register('tube_success', :retry_on => [Timeout::Error]) do |job|
         # p job.body
         $foo << job.body
-        raise Beaneater::Jobs::AbortProcessException if job.body =~ /abort/
+        raise Beaneater::AbortProcessingError if job.body =~ /abort/
       end
 
       @jobs.register('tube_release', :retry_on => [Timeout::Error], :max_retries => 2) do |job|
