@@ -34,12 +34,12 @@ describe Beaneater::Jobs do
     end
 
     it "should store processor" do
-      assert_equal 'tube', @jobs.process_jobs.keys.first
-      assert_equal [Timeout::Error], @jobs.process_jobs.values.first[:retry_on]
+      assert_equal 'tube', @jobs.processors.keys.first
+      assert_equal [Timeout::Error], @jobs.processors.values.first[:retry_on]
     end
 
     it "should store block for 'tube'" do
-      @jobs.process_jobs['tube'][:block].call nil
+      @jobs.processors['tube'][:block].call nil
       assert_equal 1, $foo
     end
   end # register!

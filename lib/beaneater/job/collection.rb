@@ -2,7 +2,7 @@ module Beaneater
   class Jobs < PoolCommand
     class AbortProcessException < StandardError; end
 
-    attr_reader :process_jobs
+    attr_reader :processors
 
     MAX_RETRIES = 3
     RELEASE_DELAY = 1
@@ -11,30 +11,31 @@ module Beaneater
     #  process_one(job)
     # end
     def register(tube_name, options={}, &block)
-      @process_jobs ||= {}
+      @processors ||= {}
       max_retries = options[:max_retries] || MAX_RETRIES
       retry_on = Array(options[:retry_on])
-      @process_jobs[tube_name.to_s] = { :block => block, :retry_on => retry_on, :max_retries => max_retries }
+      @processors[tube_name.to_s] = { :block => block, :retry_on => retry_on, :max_retries => max_retries }
     end
 
     # @beaneater_connection.jobs.process # all described tubes
     # release_delay
     def process!(options={})
       release_delay = options.delete(:release_delay) || RELEASE_DELAY
-      tubes.watch!(*process_jobs.keys)
+      tubes.watch!(*processors.keys)
       loop do
         job = tubes.reserve
-        processor = process_jobs[job.stats.tube]
+        processor = processors[job.tube]
         begin
-          processor[:block].call job
+          processor[:block].call(job)
           job.delete
         rescue AbortProcessException
-          job.bury
           break
         rescue *processor[:retry_on]
-          job.stats.releases >= processor[:max_retries] ? job.bury : job.release(:delay => release_delay)
-        rescue
+          job.release(:delay => release_delay) if job.stats.releases < processor[:max_retries]
+        rescue StandardError => e # handles unspecified errors
           job.bury
+        ensure # bury if still reserved
+          job.bury if job.reserved?
         end
       end
     end

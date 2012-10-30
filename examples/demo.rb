@@ -61,7 +61,7 @@ bc.jobs.register('tube_test2', :retry_on => [Timeout::Error]) do |job|
  raise Beaneater::Jobs::AbortProcessException
 end
 
-p bc.jobs.process_jobs
+p bc.jobs.processors
 
 response = bc.tubes.find('tube_test').put "foo register", :pri => 1000, :ttr => 10, :delay => 0
 response = bc.tubes.find('tube_test2').put "foo baz", :pri => 1000, :ttr => 10, :delay => 0
