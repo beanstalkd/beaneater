@@ -1,0 +1,274 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Beaneater by Nico-Taing</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">Beaneater</h1>
+        <p class="header">Best way to consume beanstalkd</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/Nico-Taing/beaneater/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/Nico-Taing/beaneater/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/Nico-Taing/beaneater">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/Nico-Taing">Nico-Taing</a></p>
+
+
+      </header>
+      <section>
+        <h1>Beaneater</h1>
+
+<p><a href="http://kr.github.com/beanstalkd/">Beaneater</a> is a simple, fast work queue. Its interface is generic, but was
+originally designed for reducing the latency of page views in high-volume web
+applications by running time-consuming tasks asynchronously. 
+Read the <a href="https://github.com/kr/beanstalkd/blob/master/doc/protocol.md">beanstalk protocol</a> for more detail.</p>
+
+<h2>Installation</h2>
+
+<p>Install beaneater as a gem:</p>
+
+<pre><code>gem install beaneater
+</code></pre>
+
+<p>or add this to your Gemfile:</p>
+
+<div class="highlight"><pre><span class="c1"># Gemfile</span>
+<span class="n">gem</span> <span class="s1">'beaneater'</span>
+</pre></div>
+
+<p>and run <code>bundle install</code> to install the dependency.</p>
+
+<h2>Usage</h2>
+
+<h3>Connection</h3>
+
+<p>To interact with a beanstalk queue, first establish a client connection by providing host and port:</p>
+
+<div class="highlight"><pre><span class="vi">@beanstalk</span> <span class="o">=</span> <span class="no">Beaneater</span><span class="o">::</span><span class="no">Connection</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="o">[</span><span class="s1">'10.0.1.5:11300'</span><span class="o">]</span><span class="p">)</span>
+</pre></div>
+
+<h3>Tubes</h3>
+
+<p>The system has one or more tubes which contain jobs. Each tube consists of a ready, delay, and buried queue for jobs. 
+Tubes can have jobs inserted (put) in to used tubes and jobs pulled out (reserved) from watched tubes.
+You can fetch a tube reference:</p>
+
+<div class="highlight"><pre><span class="vi">@tube</span> <span class="o">=</span> <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">find</span> <span class="s2">"some-tube-here"</span>
+</pre></div>
+
+<p>When a client connects, its watch list is initially just the tube named <code>default</code>.<br>
+Tube names are at most 200 bytes. It specifies the tube to use. If the tube does not exist, it will be automatically created.
+You can also see lists of tubes in various states:</p>
+
+<div class="highlight"><pre><span class="c1"># The list-tubes command returns a list of all existing tubes</span>
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">all</span>
+
+<span class="c1"># Returns the tube currently being used by the client (for insertion)</span>
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">used</span>
+
+<span class="c1"># Returns a list tubes currently being watched by the client (for consumption)</span>
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">watched</span>
+</pre></div>
+
+<p>To recap: each beanstalkd client manages two separate concerns: which tube newly created jobs are put into, 
+and which tube(s) jobs are reserved from. Accordingly, there are two separate sets of functions for these concerns:</p>
+
+<ul>
+<li>
+<code>use</code> and <code>using</code> affect where put places jobs;</li>
+<li>
+<code>watch</code> and <code>watching</code> control where reserve takes jobs from.</li>
+</ul><p>Note that these concerns are fully orthogonal: for example, when you use a tube, it is not automatically watch-ed. 
+Neither does watch-ing a tube affect the tube you are using.</p>
+
+<h3>Jobs</h3>
+
+<p>A job in beanstalk gets created by a client and includes a 'body' which contains all relevant job metadata.
+With beanstalk, a job is enqueued into a tube and then later reserved and processed. 
+Here is a picture of the typical job lifecycle:</p>
+
+<pre><code>   put            reserve               delete
+  -----&gt; [READY] ---------&gt; [RESERVED] --------&gt; *poof*
+</code></pre>
+
+<p>You can put a job onto the beanstalk queue using the <code>put</code> command on a tube:</p>
+
+<div class="highlight"><pre><span class="vi">@tube</span><span class="o">.</span><span class="n">put</span> <span class="s2">"job-data-here"</span>
+</pre></div>
+
+<p>You can also specify additional metadata to control job behavior. In particular,
+you can specify the <code>priority</code>, <code>delay</code>, and <code>ttr</code> of a particular job:</p>
+
+<div class="highlight"><pre><span class="c1"># defaults are priority 0, delay of 0 and ttr of 120 seconds</span>
+<span class="vi">@tube</span><span class="o">.</span><span class="n">put</span> <span class="s2">"job-data-here"</span><span class="p">,</span> <span class="ss">:pri</span> <span class="o">=&gt;</span> <span class="mi">1000</span><span class="p">,</span> <span class="ss">:delay</span> <span class="o">=&gt;</span> <span class="mi">50</span><span class="p">,</span> <span class="ss">:ttr</span> <span class="o">=&gt;</span> <span class="mi">200</span>
+</pre></div>
+
+<p>The <code>priority</code> argument is an integer &lt; 2**32. Jobs with a smaller priority take precedence over jobs with larger priorities. 
+The <code>delay</code> argument is an integer number of seconds to wait before putting the job in the ready queue.
+The <code>ttr</code> argument is the time to run -- is an integer number of seconds to allow a worker to run this job. </p>
+
+<h3>Processing Jobs (Manual)</h3>
+
+<p>In order to process jobs, the worker should first specify the intended tubes to watch. If not specified, 
+this will default to watching just the <code>default</code> tube.</p>
+
+<div class="highlight"><pre><span class="vi">@beanstalk</span> <span class="o">=</span> <span class="no">Beaneater</span><span class="o">::</span><span class="no">Connection</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="o">[</span><span class="s1">'10.0.1.5:11300'</span><span class="o">]</span><span class="p">)</span>
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">watch!</span><span class="p">(</span><span class="s1">'some-tube-name'</span><span class="p">,</span> <span class="s1">'some-other-tube'</span><span class="p">)</span>
+</pre></div>
+
+<p>Then you can use the <code>reserve</code> method which will return the
+first available job within the watched tubes:</p>
+
+<div class="highlight"><pre><span class="n">job</span> <span class="o">=</span> <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">reserve</span>
+<span class="c1"># =&gt; &lt;Beaneater::Job id=5 body="foo"&gt;</span>
+<span class="nb">puts</span> <span class="n">job</span><span class="o">.</span><span class="n">body</span>
+<span class="c1"># prints 'job-data-here'</span>
+<span class="nb">print</span> <span class="n">job</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">state</span> <span class="c1"># =&gt; 'reserved'</span>
+</pre></div>
+
+<p>By default, reserve will wait indefinitely for a job, if you want to specify a timeout,
+simply pass the timeout (in seconds):</p>
+
+<div class="highlight"><pre><span class="n">job</span> <span class="o">=</span> <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">reserve</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="c1"># wait 5 secs</span>
+<span class="c1"># =&gt; &lt;Beaneater::Job id=5 body="foo"&gt;</span>
+</pre></div>
+
+<p>You can 'release' jobs back onto a queue to retry them later:</p>
+
+<div class="highlight"><pre><span class="n">job</span> <span class="o">=</span> <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">reserve</span>
+<span class="c1"># ...job has ephemeral fail...</span>
+<span class="n">job</span><span class="o">.</span><span class="n">release</span> <span class="ss">:delay</span> <span class="o">=&gt;</span> <span class="mi">5</span>
+<span class="nb">print</span> <span class="n">job</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">state</span> <span class="c1"># =&gt; 'delayed'</span>
+</pre></div>
+
+<p>You can also 'delete' jobs that are completed:</p>
+
+<div class="highlight"><pre><span class="n">job</span> <span class="o">=</span> <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">reserve</span>
+<span class="c1"># ...process job...</span>
+<span class="n">job</span><span class="o">.</span><span class="n">delete</span>
+</pre></div>
+
+<p>Beanstalk jobs can also be buried if they fail, rather than being deleted:</p>
+
+<div class="highlight"><pre><span class="n">job</span> <span class="o">=</span> <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">reserve</span>
+<span class="c1"># ...job fails...</span>
+<span class="n">job</span><span class="o">.</span><span class="n">bury</span>
+<span class="nb">print</span> <span class="n">job</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">state</span> <span class="c1"># =&gt; 'buried'</span>
+</pre></div>
+
+<p>Burying a job means that the job is pulled out of the queue into a special 'holding' area for later inspection or reuse.
+To reanimate a buried job, you can mark buried jobs as ready with 'kick':</p>
+
+<div class="highlight"><pre><span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">watch!</span><span class="p">(</span><span class="s1">'some-tube'</span><span class="p">)</span>
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">kick</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+
+<p>This would kick 3 buried jobs for 'some-tube' back to the 'ready' state. Jobs can also be
+inspected using the 'peek' commands. To find and peek at a particular job:</p>
+
+<div class="highlight"><pre><span class="vi">@beanstalk</span><span class="o">.</span><span class="n">jobs</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
+<span class="c1"># =&gt; &lt;Beaneater::Job id=123 body="foo"&gt;</span>
+</pre></div>
+
+<p>or you can peek at jobs on a tube:</p>
+
+<div class="highlight"><pre><span class="vi">@tube</span> <span class="o">=</span> <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">'foo'</span><span class="p">)</span>
+<span class="vi">@tube</span><span class="o">.</span><span class="n">peek</span><span class="p">(</span><span class="ss">:ready</span><span class="p">)</span>
+<span class="c1"># =&gt; &lt;Beaneater::Job id=123 body="ready"&gt;</span>
+<span class="vi">@tube</span><span class="o">.</span><span class="n">peek</span><span class="p">(</span><span class="ss">:buried</span><span class="p">)</span>
+<span class="c1"># =&gt; &lt;Beaneater::Job id=456 body="buried"&gt;</span>
+<span class="vi">@tube</span><span class="o">.</span><span class="n">peek</span><span class="p">(</span><span class="ss">:delayed</span><span class="p">)</span>
+<span class="c1"># =&gt; &lt;Beaneater::Job id=789 body="delayed"&gt;</span>
+</pre></div>
+
+<h3>Processing Jobs (Automatic)</h3>
+
+<p>Instead of using <code>watch</code> and <code>reserve</code>, you can also use the higher level <code>register</code> and <code>process</code> methods to
+process jobs. First you can 'register' how to handle jobs from various tubes:</p>
+
+<div class="highlight"><pre><span class="vi">@beanstalk</span><span class="o">.</span><span class="n">jobs</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">'some-tube-name'</span><span class="p">,</span> <span class="ss">:retry_on</span> <span class="o">=&gt;</span> <span class="o">[</span><span class="no">Timeout</span><span class="o">::</span><span class="no">Error</span><span class="o">]</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">job</span><span class="o">|</span>
+  <span class="n">do_something</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">jobs</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">'some-other-name'</span><span class="p">,</span> <span class="ss">:retry_on</span> <span class="o">=&gt;</span> <span class="o">[</span><span class="no">SomeCustomException</span><span class="o">]</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">job</span><span class="o">|</span>
+  <span class="n">do_something_else</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>Once you have registered the handlers for known tubes, calling <code>process!</code> will begin an 'infinite' 
+loop processing jobs as defined by the register blocks:</p>
+
+<div class="highlight"><pre><span class="vi">@beanstalk</span><span class="o">.</span><span class="n">jobs</span><span class="o">.</span><span class="n">process!</span>
+</pre></div>
+
+<p>Process runs the following pseudo-code steps:</p>
+
+<ol>
+<li>watch all registered tubes</li>
+<li>reserve the next job</li>
+<li>once job is reserved, invoke the registered handler based on the tube name</li>
+<li>if no exceptions occur, delete the job (success!)</li>
+<li>if 'retry_on' exceptions occur, call 'release' (retry!)</li>
+<li>if other exception occurs, call 'bury' (error!)</li>
+<li>repeat steps 2-5</li>
+</ol><p>This is well-suited for a 'worker' job processing process.</p>
+
+<h3>Stats</h3>
+
+<p>Beanstalk has plenty of commands for introspecting the state of the queues and jobs. These methods include:</p>
+
+<div class="highlight"><pre><span class="c1"># Get overall stats about the job processing that has occurred</span>
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">stats</span>
+<span class="c1"># =&gt; { 'current-connections': 1, 'current-jobs-buried': 0, 'current-jobs-delayed': 0, ... }</span>
+
+<span class="c1"># Get statistical information about the specified job if it exists</span>
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">job</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">some_job_id</span><span class="p">)</span><span class="o">.</span><span class="n">stats</span>
+<span class="c1"># =&gt; {'age': 0, 'id': 2, 'state': 'reserved', 'tube': 'default', ... }</span>
+
+<span class="c1"># Get statistical information about the specified tube if it exists</span>
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">'some_tube_name'</span><span class="p">)</span><span class="o">.</span><span class="n">stats</span>
+<span class="c1"># =&gt; { 'some_tube_name': '', 'current-jobs-ready': 0, 'current-jobs-reserved': 0  }</span>
+</pre></div>
+
+<p>Be sure to check the <a href="https://github.com/kr/beanstalkd/blob/master/doc/protocol.md">beanstalk protocol</a> for
+more details about the stats commands.</p>
+
+<h2>Resources</h2>
+
+<p>There are other resources helpful when learning about beanstalk:</p>
+
+<ul>
+<li><a href="http://kr.github.com/beanstalkd/">Beanstalkd homepage</a></li>
+<li><a href="https://github.com/kr/beanstalkd">beanstalk on github</a></li>
+<li><a href="https://github.com/kr/beanstalkd/blob/master/doc/protocol.md">beanstalk protocol</a></li>
+</ul><h2>Contributors</h2>
+
+<ul>
+<li>
+<a href="https://github.com/Nico-Taing">Nico Taing</a> - Creator and co-maintainer</li>
+<li>
+<a href="https://github.com/nesquena">Nathan Esquenazi</a> - Contributor and co-maintainer</li>
+</ul>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
+  </body>
+</html>
