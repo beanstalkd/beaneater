@@ -84,14 +84,14 @@ You can easily get a list of all, used or watched tubes:
 You can also temporarily 'pause' the execution of a tube by specifying the time:
 
 ```ruby
-tube = @beanstalk.tubes.find("some-tube-here")
+tube = @beanstalk.tubes["some-tube-here"]
 tube.pause(3) # pauses tube for 3 seconds
 ```
 
 or even clear the tube of all jobs:
 
 ```ruby
-tube = @beanstalk.tubes.find("some-tube-here")
+tube = @beanstalk.tubes["some-tube-here"]
 tube.clear # tube will now be empty
 ```
 
@@ -206,7 +206,7 @@ Burying a job means that the job is pulled out of the queue into a special 'hold
 To reanimate this job later, you can 'kick' buried jobs back into being ready:
 
 ```ruby
-@beanstalk.tubes.find('some-tube').kick(3)
+@beanstalk.tubes['some-tube'].kick(3)
 ```
 
 This kicks 3 buried jobs for 'some-tube' back into the 'ready' state. Jobs can also be
@@ -233,11 +233,11 @@ When dealing with jobs there are a few other useful commands available:
 
 ```ruby
 job = @beanstalk.tubes.reserve
-job.tube      # => "some-tube-name"
-job.reserved? # => true
-job.exists?   # => false
+print job.tube      # => "some-tube-name"
+print job.reserved? # => true
+print job.exists?   # => true
 job.delete
-job.exists?   # => false
+print job.exists?   # => false
 ```
 
 ### Processing Jobs (Automatically)
@@ -300,9 +300,9 @@ beanstalk overall:
 
 ```ruby
 # Get overall stats about the job processing that has occurred
-@beanstalk.stats
+print @beanstalk.stats
 # => { 'current_connections': 1, 'current_jobs_buried': 0, 'current_jobs_delayed': 0, ... }
-@beanstalk.stats.current_connections
+print @beanstalk.stats.current_connections
 # => 1
 ```
 
@@ -310,7 +310,7 @@ For stats on a particular tube:
 
 ```ruby
 # Get statistical information about the specified tube if it exists
-@beanstalk.tubes.find('some_tube_name').stats
+print @beanstalk.tubes['some_tube_name'].stats
 # => { 'current_jobs_ready': 0, 'current_jobs_reserved': 0, 'current_jobs_buried': 0, ...  }
 ```
 
@@ -318,7 +318,7 @@ For stats on an individual job:
 
 ```ruby
 # Get statistical information about the specified job if it exists
-@beanstalk.job.find(some_job_id).stats
+print @beanstalk.jobs[some_job_id].stats
 # => {'age': 0, 'id': 2, 'state': 'reserved', 'tube': 'default', ... }
 ```
 
