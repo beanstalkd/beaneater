@@ -16,7 +16,7 @@ module Beaneater
     # transmit("stats", :match => /\n/) { |r| puts r }
     def transmit(command, options={}, &block)
       options.merge!("String" => command, "FailEOF" => true)
-      parse_response(command, telnet_call(options, &block))
+      telnet_call(options, &block)
     end
 
     def to_s
@@ -55,7 +55,7 @@ module Beaneater
     def telnet_call(*args, &block)
       retries = 0
       begin
-        telnet_connection.cmd(*args, &block)
+        parse_response(args.first['String'], telnet_connection.cmd(*args, &block))
       rescue EOFError, Errno::ECONNRESET, Errno::EPIPE => ex
         @telnet_connection = establish_connection
         if retries < MAX_RETRIES
@@ -64,9 +64,6 @@ module Beaneater
         else # finished retrying, fail out
           raise(NotConnected, "Could not call '#{@host}:#{@port}'")
         end
-      rescue DrainingError # TODO actually raise this draining error, and handle
-        # Don't reconnect -- we're not interested in this server
-        # retry
       end
     end # telnet_call
   end # Connection
