@@ -14,7 +14,6 @@ module Beaneater
 
     # @beaneater_tube.put "data", :pri => 1000, :ttr => 10, :delay => 5
     def put(data, options={})
-      retries = 1
       tubes.use(self.name)
       options = { :pri => DEFAULT_PRIORITY, :delay => DEFAULT_DELAY, :ttr => DEFAULT_TTR }.merge(options)
       cmd_options = "#{options[:pri]} #{options[:delay]} #{options[:ttr]} #{data.bytesize}"
@@ -34,6 +33,12 @@ module Beaneater
     def reserve(timeout=nil, &block)
       pool.tubes.watch!(self.name)
       pool.tubes.reserve(timeout, &block)
+    end
+
+    # @beaneater_connection.tubes.kick(10)
+    def kick(bounds=1)
+      tubes.use(self.name)
+      transmit_to_rand("kick #{bounds}")
     end
 
     # Returns stats for this tube

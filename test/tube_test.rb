@@ -116,6 +116,24 @@ describe Beaneater::Tube do
     end
   end # stats
 
+  describe "for #kick" do
+    before do
+      @time, @time2 = 2.times.map { Time.now.to_i }
+      @tube.put "kick #{@time}"
+      @tube.put "kick #{@time2}"
+
+      2.times.map { @tube.reserve.bury }
+    end
+
+    it "should kick 2 buried jobs" do
+      assert_equal 2, @tube.stats.current_jobs_buried
+      @tube.kick(2)
+      assert_equal 0, @tube.stats.current_jobs_buried
+      assert_equal 2, @tube.stats.current_jobs_ready
+    end
+
+  end
+
   after do
     cleanup_tubes!(['baz'])
   end

@@ -20,11 +20,6 @@ module Beaneater
       raise InvalidTubeName, "Tube cannot be named '#{tube}'"
     end
 
-    # @beaneater_connection.tubes.kick(10)
-    # TODO complete
-    def kick(bounds=1)
-    end
-
     # @beaneater_connection.tubes.all
     def all
       transmit_to_rand('list-tubes')[:body]
