@@ -89,23 +89,23 @@ A job at any given time is in one of three states: **ready**, **delayed**, or **
  * A **delayed** job is waiting to become ready after the specified delay.
  * A **buried** job has been reserved and buried, will not be reprocessed and is isolated for later use.
 
-Similarly, there are several action that can be performed on a given job:
+In addition, there are several actions that can be performed on a given job:
  
  * You can **reserve** which locks a job from the ready queue for processing.
  * You can **touch** which extends the time before a job is autoreleased back to ready.
  * You can **release** which places a reserved job back onto the ready queue.
- * You can **delete** which removes the job from the tube entirely. 
- * You can **bury** which places the job into the buried state.
- * You can **kick** which places a job from the buried queue back to ready.
+ * You can **delete** which removes a job from beanstalk. 
+ * You can **bury** which places a reserved job into the buried state.
+ * You can **kick** which places a buried job from the buried queue back to ready.
 
-You can put a job onto the beanstalk queue using the `put` command on a tube:
+You can insert a job onto a beanstalk tube using the `put` command:
 
 ```ruby
 @tube.put "job-data-here"
 ```
 
-You can also specify additional metadata to control job behavior. In particular,
-you can specify the `priority`, `delay`, and `ttr` of a particular job:
+Each job has various metadata associated such as `priority`, `delay`, and `ttr` which can be 
+specified as part of the `put` command:
 
 ```ruby
 # defaults are priority 0, delay of 0 and ttr of 120 seconds
@@ -116,18 +116,17 @@ The `priority` argument is an integer < 2**32. Jobs with a smaller priority take
 The `delay` argument is an integer number of seconds to wait before putting the job in the ready queue.
 The `ttr` argument is the time to run -- is an integer number of seconds to allow a worker to run this job. 
 
-### Processing Jobs (Manual)
+### Processing Jobs (Manually)
 
-In order to process jobs, the worker should first specify the intended tubes to watch. If not specified, 
-this will default to watching just the `default` tube.
+In order to process jobs, the client should first specify the intended tubes to be watched. If not specified, 
+this will default to watching just the `default` tube. 
 
 ```ruby
 @beanstalk = Beaneater::Connection.new(['10.0.1.5:11300'])
 @beanstalk.tubes.watch!('some-tube-name', 'some-other-tube')
 ```
 
-Then you can use the `reserve` method which will return the
-first available job within the watched tubes:
+Then you can use the `reserve` command which will return the first available job within the watched tubes:
 
 ```ruby
 job = @beanstalk.tubes.reserve
@@ -137,16 +136,15 @@ puts job.body
 print job.stats.state # => 'reserved'
 ```
 
-By default, reserve will wait indefinitely for a job, if you want to specify a timeout,
-simply pass the timeout (in seconds):
-
+By default, reserve will wait indefinitely for the next job. If you want to specify a timeout,
+simply pass that in seconds into the command:
 
 ```ruby
-job = @beanstalk.tubes.reserve(5) # wait 5 secs
+job = @beanstalk.tubes.reserve(5) # wait 5 secs for a job, then return
 # => <Beaneater::Job id=5 body="foo">
 ```
 
-You can 'release' jobs back onto the ready queue to retry them later:
+You can 'release' a reserved job back onto the ready queue to retry later:
 
 ```ruby
 job = @beanstalk.tubes.reserve
@@ -171,23 +169,24 @@ job = @beanstalk.tubes.reserve
 job.bury
 print job.stats.state # => 'buried'
 ```
+
 Burying a job means that the job is pulled out of the queue into a special 'holding' area for later inspection or reuse.
-To reanimate a buried job, you can mark buried jobs as ready with 'kick':
+To reanimate this job later, you can 'kick' buried jobs back into being ready:
 
 ```ruby
 @beanstalk.tubes.watch!('some-tube')
 @beanstalk.tubes.kick(3)
 ```
 
-This would kick 3 buried jobs for 'some-tube' back to the 'ready' state. Jobs can also be
-inspected using the 'peek' commands. To find and peek at a particular job:
+This kicks 3 buried jobs for 'some-tube' back into the 'ready' state. Jobs can also be
+inspected using the 'peek' commands. To find and peek at a particular job based on the id:
 
 ```ruby
 @beanstalk.jobs.find(123)
 # => <Beaneater::Job id=123 body="foo">
 ```
 
-or you can peek at jobs on a tube:
+or you can peek at jobs within a tube:
 
 ```ruby
 @tube = @beanstalk.tubes.find('foo')
@@ -199,7 +198,7 @@ or you can peek at jobs on a tube:
 # => <Beaneater::Job id=789 body="delayed">
 ```
 
-### Processing Jobs (Automatic)
+### Processing Jobs (Automatically)
 
 Instead of using `watch` and `reserve`, you can also use the higher level `register` and `process` methods to
 process jobs. First you can 'register' how to handle jobs from various tubes:
@@ -231,7 +230,26 @@ Process runs the following pseudo-code steps:
  1. if other exception occurs, call 'bury' (error!)
  1. repeat steps 2-5
 
-This is well-suited for a 'worker' job processing process.
+This is well-suited for a 'worker' job processing daemon.
+
+### Handling Errors
+
+While using Beaneater, certain errors may be encountered. Errors are encountered when
+a command is sent to beanstalk and something unexpected happens. The most common errors
+are listed below:
+
+| Errors                      | Description   |
+| --------------------        | ------------- |
+| Beaneater::NotConnected     | Client connection to beanstalk cannot be established. |
+| Beaneater::InvalidTubeName  | Specified tube name for use or watch is not valid.    |
+| Beaneater::NotFoundError    | Specified job or tube could not be found.             |
+| Beaneater::TimedOutError    | Job could not be reserved within time specified.      |
+
+There are other exceptions that are less common such as `OutOfMemoryError`, `DrainingError`,
+`DeadlineSoonError`, `InternalError`, `BadFormatError`, `UnknownCommandError`,
+`ExpectedCRLFError`, `JobTooBigError`, `NotIgnoredError`. Be sure to check the 
+[beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for more information.
+
 
 ### Stats
 
