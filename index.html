@@ -37,7 +37,61 @@ originally designed for reducing the latency of page views in high-volume web
 applications by running time-consuming tasks asynchronously. 
 Read the <a href="https://github.com/kr/beanstalkd/blob/master/doc/protocol.md">beanstalk protocol</a> for more detail.</p>
 
+<h2>Why Beanstalk?</h2>
+
+<p>Illya has an excellent blog post
+<a href="http://www.igvita.com/2010/05/20/scalable-work-queues-with-beanstalk/">Scalable Work Queues with Beanstalk</a> and
+Adam Wiggins posted <a href="http://adam.heroku.com/past/2010/4/24/beanstalk_a_simple_and_fast_queueing_backend/">an excellent comparison</a>.</p>
+
+<p>You will quickly see that <strong>beanstalkd</strong> is an underrated but incredible project that is extremely well-suited as a job queue.
+Significantly better suited for this task than Redis or a database. Beanstalk is a simple,
+and a very fast work queue service rolled into a single binary - it is the memcached of work queues.
+Originally built to power the backend for the 'Causes' Facebook app, it is a mature and production ready open source project.
+<a href="http://www.postrank.com">PostRank</a> uses beanstalk to reliably process millions of jobs a day.</p>
+
+<p>A single instance of Beanstalk is perfectly capable of handling thousands of jobs a second (or more, depending on your job size)
+because it is an in-memory, event-driven system. Powered by libevent under the hood,
+it requires zero setup (launch and forget, à la memcached), optional log based persistence, an easily parsed ASCII protocol,
+and a rich set of tools for job management that go well beyond a simple FIFO work queue.</p>
+
+<p>Beanstalk supports the following features natively, out of the box, without any questions asked:</p>
+
+<ul>
+<li>
+<strong>Parallel Queues</strong> - Supports multiple work queues created on demand.</li>
+<li>
+<strong>Reliable</strong> - Beanstalk’s reserve, work, delete cycle ensures reliable processing.</li>
+<li>
+<strong>Scheduling</strong> - Delay enqueuing jobs by a specified interval to schedule processing later.</li>
+<li>
+<strong>Fast</strong> - Processes thousands of jobs per second; <strong>significantly</strong> <a href="http://adam.heroku.com/past/2010/4/24/beanstalk_a_simple_and_fast_queueing_backend">faster than alternatives</a>.</li>
+<li>
+<strong>Priorities</strong> - Specify priority so important jobs can be processed quickly.</li>
+<li>
+<strong>Persistence</strong> - Jobs are stored in memory for speed, but logged to disk for safe keeping.</li>
+<li>
+<strong>Federation</strong> - Horizontal scalability provided through federation by the client.</li>
+<li>
+<strong>Buried jobs</strong> - Bury any job which causes an error for later debugging and inspection.</li>
+</ul><p>Keep in mind that these features are supported out of the box with beanstalk and require no special code within this gem to support.
+In the end, <strong>beanstalk is the ideal job queue</strong> while also being ridiculously easy to install and setup.</p>
+
 <h2>Installation</h2>
+
+<p>Install beanstalkd:</p>
+
+<p>Mac OS</p>
+
+<pre><code>brew update
+brew install beanstalkd
+beanstalkd -p 11300
+</code></pre>
+
+<p>Ubuntu</p>
+
+<pre><code>apt-get install beanstalkd
+beanstalkd -p 11300
+</code></pre>
 
 <p>Install beaneater as a gem:</p>
 
