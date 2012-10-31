@@ -10,12 +10,16 @@ module Beaneater
     def initialize(address)
       @address = address
       @telnet_connection = establish_connection
+      @mutex = Mutex.new
     end
 
     # transmit("stats", :match => /\n/) { |r| puts r }
     def transmit(command, options={}, &block)
+      @mutex.lock
       options.merge!("String" => command, "FailEOF" => true)
       parse_response(command, telnet_connection.cmd(options, &block))
+    ensure
+      @mutex.unlock
     end
 
     def to_s

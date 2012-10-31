@@ -8,22 +8,25 @@ module Beaneater
 
     def initialize(pool, name)
       @name = name
+      @mutex = Mutex.new
       super(pool)
     end
 
     # @beaneater_tube.put "data", :pri => 1000, :ttr => 10, :delay => 5
     def put(data, options={})
-      tubes.use(self.name)
-      options = { :pri => DEFAULT_PRIORITY, :delay => DEFAULT_DELAY, :ttr => DEFAULT_TTR }.merge(options)
-      cmd_options = "#{options[:pri]} #{options[:delay]} #{options[:ttr]} #{data.bytesize}"
-      transmit_to_rand("put #{cmd_options}\n#{data}")
+      safe_use do
+        options = { :pri => DEFAULT_PRIORITY, :delay => DEFAULT_DELAY, :ttr => DEFAULT_TTR }.merge(options)
+        cmd_options = "#{options[:pri]} #{options[:delay]} #{options[:ttr]} #{data.bytesize}"
+        transmit_to_rand("put #{cmd_options}\n#{data}")
+      end
     end
 
     # Accepts :ready, :delayed, :buried
     def peek(state)
-      transmit_to_all "use #{@name}"
-      res = transmit_until_res "peek-#{state}", :status => "FOUND"
-      Job.new(res)
+      safe_use do
+        res = transmit_until_res "peek-#{state}", :status => "FOUND"
+        Job.new(res)
+      end
     rescue Beaneater::NotFoundError => ex
       # Return nil if not found
     end
@@ -36,8 +39,7 @@ module Beaneater
 
     # @beaneater_connection.tubes.kick(10)
     def kick(bounds=1)
-      tubes.use(self.name)
-      transmit_to_rand("kick #{bounds}")
+      safe_use { transmit_to_rand("kick #{bounds}") }
     end
 
     # Returns stats for this tube
@@ -55,5 +57,15 @@ module Beaneater
       "#<Beaneater::Tube name=#{name.inspect}>"
     end
     alias :inspect :to_s
+
+    protected
+
+    def safe_use(&block)
+      @mutex.lock
+      tubes.use(self.name)
+      yield
+    ensure
+      @mutex.unlock
+    end
   end # Tube
 end # Beaneater
