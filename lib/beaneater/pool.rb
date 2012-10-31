@@ -44,6 +44,14 @@ module Beaneater
       end && nil
     end
 
+    # Closes all connections within pool
+    def close
+      while @connections.any?
+        conn = @connections.pop
+        conn.close
+      end
+    end
+
     protected
 
     # safe_transmit { conn.transmit('foo') }

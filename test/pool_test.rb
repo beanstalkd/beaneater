@@ -121,4 +121,15 @@ describe Beaneater::Pool do
     end
   end
 
+  describe "for #close" do
+    it "should support closing the pool" do
+      connection = @bp.connections.first
+      assert_equal 2, @bp.connections.size
+      assert_kind_of Beaneater::Connection, connection
+      assert_kind_of Net::Telnet, connection.telnet_connection
+      @bp.close
+      assert_equal 0, @bp.connections.size
+      assert_nil connection.telnet_connection
+    end
+  end # close
 end # Beaneater::Pool
