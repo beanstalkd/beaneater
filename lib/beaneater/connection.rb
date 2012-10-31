@@ -5,7 +5,6 @@ module Beaneater
     attr_reader :telnet_connection, :address, :host, :port
 
     DEFAULT_PORT = 11300
-    MAX_RETRIES = 3
 
     # @beaneater_connection = Beaneater::Connection.new(['localhost:11300'])
     def initialize(address)
@@ -16,7 +15,7 @@ module Beaneater
     # transmit("stats", :match => /\n/) { |r| puts r }
     def transmit(command, options={}, &block)
       options.merge!("String" => command, "FailEOF" => true)
-      telnet_call(options, &block)
+      parse_response(command, telnet_connection.cmd(options, &block))
     end
 
     def to_s
@@ -49,22 +48,5 @@ module Beaneater
       response[:connection] = self
       response
     end
-
-    # telnet_call 'stats'
-    # options: "String", "Match", "Timeout", "FailEOF"
-    def telnet_call(*args, &block)
-      retries = 0
-      begin
-        parse_response(args.first['String'], telnet_connection.cmd(*args, &block))
-      rescue EOFError, Errno::ECONNRESET, Errno::EPIPE => ex
-        @telnet_connection = establish_connection
-        if retries < MAX_RETRIES
-          retries += 1
-          retry
-        else # finished retrying, fail out
-          raise(NotConnected, "Could not call '#{@host}:#{@port}'")
-        end
-      end
-    end # telnet_call
   end # Connection
 end # Beaneater
