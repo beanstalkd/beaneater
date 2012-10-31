@@ -10,7 +10,8 @@ describe Beaneater::Tubes do
     end
 
     it("should return Tube obj") { assert_kind_of Beaneater::Tube, @tubes.find(:foo) }
-    it("should return Tube name") { assert_equal :foo, @tubes.find(:foo).name }
+    it("should return Tube name") { assert_equal "foo", @tubes.find(:foo).name }
+    it("should support hash syntax") { assert_equal "bar", @tubes["bar"].name }
   end # find
 
   describe "for #use" do

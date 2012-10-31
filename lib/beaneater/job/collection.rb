@@ -7,6 +7,7 @@ module Beaneater
     RELEASE_DELAY = 1
 
     # @beaneater_connection.jobs.find(123)
+    # @beaneater_connection.jobs[123]
     def find(id)
       res = transmit_until_res("peek #{id}", :status => "FOUND")
       Job.new(res)
@@ -14,6 +15,7 @@ module Beaneater
       nil
     end
     alias_method :peek, :find
+    alias_method :[], :find
 
     # @beaneater_connection.jobs.register('tube2', :retry_on => [Timeout::Error]) do |job|
     #  process_one(job)

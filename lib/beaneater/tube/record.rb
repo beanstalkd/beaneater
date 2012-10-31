@@ -7,7 +7,7 @@ module Beaneater
     attr_reader :name
 
     def initialize(pool, name)
-      @name = name
+      @name = name.to_s
       @mutex = Mutex.new
       super(pool)
     end

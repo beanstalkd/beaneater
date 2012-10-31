@@ -20,6 +20,14 @@ describe Beaneater::Jobs do
       assert_equal "foo find #{@time}", @jobs.find(@job.id).body
     end
 
+    it "should return job using peek" do
+      assert_equal "foo find #{@time}", @jobs.find(@job.id).body
+    end
+
+    it "should return job using hash syntax" do
+      assert_equal "foo find #{@time}", @jobs.find(@job.id).body
+    end
+
     it "should return nil for invalid id" do
       assert_nil @jobs.find(-1)
     end

@@ -6,9 +6,11 @@ module Beaneater
     end
 
     # @beaneater_connection.tubes.find('tube2')
+    # @beaneater_connection.tubes['tube2']
     def find(tube_name)
       Tube.new(self.pool, tube_name)
     end
+    alias_method :[], :find
 
     # @beaneater_connection.tubes.reserve { |job| process(job) }
     def reserve(timeout=nil, &block)
