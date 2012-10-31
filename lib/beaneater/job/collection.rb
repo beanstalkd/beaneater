@@ -43,7 +43,7 @@ module Beaneater
         rescue StandardError => e # handles unspecified errors
           job.bury
         ensure # bury if still reserved
-          job.bury if job.reserved?
+          job.bury if job.exists? && job.reserved?
         end
       end
     end # process!
