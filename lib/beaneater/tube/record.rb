@@ -14,18 +14,20 @@ module Beaneater
 
     # @beaneater_tube.put "data", :pri => 1000, :ttr => 10, :delay => 5
     def put(data, options={})
-      transmit_to_all "use #{@name}"
+      retries = 1
+      tubes.use(self.name)
       options = { :pri => DEFAULT_PRIORITY, :delay => DEFAULT_DELAY, :ttr => DEFAULT_TTR }.merge(options)
       cmd_options = "#{options[:pri]} #{options[:delay]} #{options[:ttr]} #{data.bytesize}"
-      command = "put #{cmd_options}\n#{data}"
-      transmit_to_rand(command)
+      transmit_to_rand("put #{cmd_options}\n#{data}")
     end
 
     # Accepts :ready, :delayed, :buried
     def peek(state)
       transmit_to_all "use #{@name}"
       res = transmit_until_res "peek-#{state}", :status => "FOUND"
-      Job.new(res) if res
+      Job.new(res)
+    rescue Beaneater::NotFoundError => ex
+      # Return nil if not found
     end
 
     # Reserves job from tube

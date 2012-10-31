@@ -13,6 +13,22 @@ describe Beaneater::Tubes do
     it("should return Tube name") { assert_equal :foo, @tubes.find(:foo).name }
   end # find
 
+  describe "for #use" do
+    before do
+      @pool = Beaneater::Pool.new(['localhost'])
+    end
+
+    it "should switch to used tube for valid name" do
+      tube = Beaneater::Tube.new(@pool, 'some_name')
+      @pool.tubes.use('some_name')
+      assert_equal 'some_name', @pool.tubes.used
+    end
+
+    it "should raise for invalid tube name" do
+      assert_raises(Beaneater::InvalidTubeName) { @pool.tubes.use('; ') }
+    end
+  end # use
+
   describe "for #watch & #watched" do
     before do
       @pool = Beaneater::Pool.new(['localhost'])
@@ -22,6 +38,10 @@ describe Beaneater::Tubes do
       @pool.tubes.watch('foo')
       @pool.tubes.watch('bar')
       assert_equal ['default', 'foo', 'bar'].sort, @pool.tubes.watched.sort
+    end
+
+    it 'should raise invalid name for bad tube' do
+      assert_raises(Beaneater::InvalidTubeName) { @pool.tubes.watch('; ') }
     end
   end # watch! & watched
 
@@ -100,9 +120,21 @@ describe Beaneater::Tubes do
 
     it("should reserve job with block and timeout") do
       @pool.tubes.watch 'tube'
+      job = nil
+      res = @pool.tubes.reserve(0)  { |j| job = j; job.delete }
+      assert_equal "foo reserve #{@time}", job.body
+    end
+
+    it "should raise TimedOutError with timeout" do
+      @pool.tubes.watch 'tube'
+      @pool.tubes.reserve(0)  { |j| job = j; job.delete }
+      assert_raises(Beaneater::TimedOutError) { @pool.tubes.reserve(0) }
+    end
+
+    it "should raise DeadlineSoonError without timeout" do
+      @pool.tubes.watch 'tube'
       @pool.tubes.reserve
-      res = @pool.tubes.reserve(0)
-      assert_nil res
+      assert_raises(Beaneater::DeadlineSoonError) { @pool.tubes.reserve(0) }
     end
 
     after do

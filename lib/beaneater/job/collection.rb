@@ -6,6 +6,15 @@ module Beaneater
     MAX_RETRIES = 3
     RELEASE_DELAY = 1
 
+    # @beaneater_connection.jobs.find(123)
+    def find(id)
+      res = transmit_until_res("peek #{id}", :status => "FOUND")
+      Job.new(res)
+    rescue Beaneater::NotFoundError => ex
+      nil
+    end
+    alias_method :peek, :find
+
     # @beaneater_connection.jobs.register('tube2', :retry_on => [Timeout::Error]) do |job|
     #  process_one(job)
     # end
@@ -34,16 +43,9 @@ module Beaneater
         rescue StandardError => e # handles unspecified errors
           job.bury
         ensure # bury if still reserved
-          job.bury if job.reserved?
+          job.bury if job.exists? && job.reserved?
         end
       end
-    end
-
-    # @beaneater_connection.jobs.find(123)
-    def find(id)
-      res = transmit_until_res("peek #{id}", :status => "FOUND")
-      Job.new(res) if res
-    end
-    alias_method :peek, :find
+    end # process!
   end # Jobs
 end # Beaneater
