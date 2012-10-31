@@ -1,5 +1,10 @@
 module Beaneater
   class Tubes < PoolCommand
+    def initialize(pool)
+      @last_used = 'default'
+      super
+    end
+
     # @beaneater_connection.tubes.find('tube2')
     def find(tube_name)
       Tube.new(self.pool, tube_name)
@@ -15,7 +20,9 @@ module Beaneater
 
     # Uses specified tube
     def use(tube)
+      return tube if @last_used == tube
       res = transmit_to_all "use #{tube}"
+      @last_used = tube
     rescue BadFormatError
       raise InvalidTubeName, "Tube cannot be named '#{tube}'"
     end

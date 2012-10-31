@@ -24,15 +24,16 @@ describe Beaneater::Tube do
     end
 
     it "should try to put 2 times before put successfully" do
-      Beaneater::Tubes.any_instance.expects(:use).once
-      Beaneater::Connection.any_instance.expects(:transmit).times(2).
+      Beaneater::Connection.any_instance.expects(:transmit).once.with(includes('use baz'), {})
+      Beaneater::Connection.any_instance.expects(:transmit).times(2).with(includes("bar put #{@time}"), {}).
         raises(Beaneater::DrainingError.new(nil, nil)).then.returns('foo')
       assert_equal 'foo', @tube.put("bar put #{@time}")
     end
 
     it "should try to put 3 times before to raise" do
-      Beaneater::Tubes.any_instance.expects(:use).once
-      Beaneater::Connection.any_instance.expects(:transmit).times(3).raises(Beaneater::DrainingError.new(nil, nil))
+      Beaneater::Connection.any_instance.expects(:transmit).once.with(includes('use baz'), {})
+      Beaneater::Connection.any_instance.expects(:transmit).with(includes("bar put #{@time}"), {}).
+        times(3).raises(Beaneater::DrainingError.new(nil, nil))
       assert_raises(Beaneater::DrainingError) { @tube.put "bar put #{@time}" }
     end
 
