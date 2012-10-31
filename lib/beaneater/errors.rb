@@ -10,7 +10,7 @@ module Beaneater
 
     attr_reader :status, :cmd
 
-    def initialize(status, cmd)
+    def initialize(status=nil, cmd=nil)
       @status, @cmd = status, cmd
       super("Response failed with: #{status}")
     end
