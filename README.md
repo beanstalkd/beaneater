@@ -35,7 +35,7 @@ To interact with a beanstalk queue, first establish a connection by providing a 
 ### Tubes
 
 Beanstalkd has one or more tubes which can contain any number of jobs. 
-Each tube consists of a __ready__, __delayed__, and __buried__ queue for jobs. 
+Each tube consists of a _ready_, _delayed_, and _buried_ queue for jobs. 
 To interact with a tube, first `find` the tube:
 
 ```ruby
