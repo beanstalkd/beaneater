@@ -47,4 +47,18 @@ describe Beaneater::Connection do
       assert_equal 'INSERTED', res[:status]
     end
   end # transmit
+
+  describe 'for #close' do
+    before do
+      @host = 'localhost'
+      @bc = Beaneater::Connection.new(@host)
+    end
+
+    it "should clear telnet connection" do
+      assert_kind_of Net::Telnet, @bc.telnet_connection
+      @bc.close
+      assert_nil @bc.telnet_connection
+      assert_raises(Beaneater::NotConnected) { @bc.transmit 'stats' }
+    end
+  end # close
 end # Beaneater::Connection

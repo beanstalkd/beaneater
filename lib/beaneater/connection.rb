@@ -16,10 +16,20 @@ module Beaneater
     # transmit("stats", :match => /\n/) { |r| puts r }
     def transmit(command, options={}, &block)
       @mutex.lock
-      options.merge!("String" => command, "FailEOF" => true)
-      parse_response(command, telnet_connection.cmd(options, &block))
+      if telnet_connection
+        options.merge!("String" => command, "FailEOF" => true)
+        parse_response(command, telnet_connection.cmd(options, &block))
+      else # no telnet_connection
+        raise NotConnected, "Connection to beanstalk '#{@host}:#{@port}' is closed!" unless telnet_connection
+      end
     ensure
       @mutex.unlock
+    end
+
+    # Closes the beanstalk connection
+    def close
+      @telnet_connection.close
+      @telnet_connection = nil
     end
 
     def to_s
