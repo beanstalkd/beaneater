@@ -55,11 +55,11 @@ module Beaneater
     def watch!(*tube_names)
       old_tubes = watched.map(&:name) - tube_names.map(&:to_s)
       watch(*tube_names)
-      ignore!(*old_tubes)
+      ignore(*old_tubes)
     end
 
     # @beaneater_connection.tubes.ignore('foo', 'bar')
-    def ignore!(*names)
+    def ignore(*names)
       names.each do |w|
         transmit_to_all "ignore #{w}"
       end

@@ -83,7 +83,7 @@ describe Beaneater::Tubes do
     end
   end # watch!
 
-  describe "for #ignore!" do
+  describe "for #ignore" do
     before do
       @pool = Beaneater::Pool.new(['localhost'])
     end
@@ -91,10 +91,10 @@ describe Beaneater::Tubes do
     it 'should ignore specified tubes' do
       @pool.tubes.watch('foo')
       @pool.tubes.watch('bar')
-      @pool.tubes.ignore!('foo')
+      @pool.tubes.ignore('foo')
       assert_equal ['default', 'bar'].sort, @pool.tubes.watched.map(&:name).sort
     end
-  end # ignore!
+  end # ignore
 
   describe "for #reserve" do
     before do

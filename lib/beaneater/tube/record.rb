@@ -62,7 +62,7 @@ module Beaneater
           job.delete
         end
       end
-      pool.tubes.ignore!(name)
+      pool.tubes.ignore(name)
     rescue Beaneater::UnexpectedResponse
       # swallow any issues
     end
@@ -74,6 +74,7 @@ module Beaneater
 
     protected
 
+    # safe_use { transmit_to_rand("kick 1") }
     def safe_use(&block)
       @mutex.lock
       tubes.use(self.name)
