@@ -24,14 +24,16 @@ and a rich set of tools for job management that go well beyond a simple FIFO wor
 
 Beanstalk supports the following features natively, out of the box, without any questions asked:
 
- * **Parallel Queues** - Supports multiple work queues created on demand.
- * **Reliable** - Beanstalk’s reserve, work, delete cycle ensures reliable processing.
- * **Scheduling** - Delay enqueuing jobs by a specified interval to schedule processing later.
- * **Fast** - Processes thousands of jobs per second; **significantly** [faster than alternatives](http://adam.heroku.com/past/2010/4/24/beanstalk_a_simple_and_fast_queueing_backend).
- * **Priorities** - Specify priority so important jobs can be processed quickly.
- * **Persistence** - Jobs are stored in memory for speed, but logged to disk for safe keeping.
- * **Federation** - Horizontal scalability provided through federation by the client.
- * **Buried jobs** - Bury any job which causes an error for later debugging and inspection.
+| Feature | Description                     |
+| ------- | ------------------------------- |
+| **Parallel Queues** | Supports multiple work queues created on demand. |
+| **Reliable**        | Beanstalk’s reserve, work, delete cycle ensures reliable processing. |
+| **Scheduling**      | Delay enqueuing jobs by a specified interval to schedule processing later |
+| **Fast**            | Processes thousands of jobs per second; **significantly** [faster than alternatives](http://adam.heroku.com/past/2010/4/24/beanstalk_a_simple_and_fast_queueing_backend). |
+| **Priorities**      | Specify priority so important jobs can be processed quickly. |
+| **Persistence**     | Jobs are stored in memory for speed, but logged to disk for safe keeping. |
+| **Federation**      | Horizontal scalability provided through federation by the client. |
+| **Buried jobs**     | Bury any job which causes an error for later debugging and inspection.|
 
 Keep in mind that these features are supported out of the box with beanstalk and require no special code within this gem to support.
 In the end, **beanstalk is the ideal job queue** while also being ridiculously easy to install and setup.
@@ -164,18 +166,20 @@ Each job is enqueued into a tube and later reserved and processed. Here is a pic
 
 A job at any given time is in one of three states: **ready**, **delayed**, or **buried**:
 
- * A **ready** job is waiting to be 'reserved' and processed after being 'put' onto a tube.
- * A **delayed** job is waiting to become ready after the specified delay.
- * A **buried** job has been reserved and buried, will not be reprocessed and is isolated for later use.
+| State   | Description                     |
+| ------- | ------------------------------- |
+| ready   | waiting to be `reserved` and processed after being `put` onto a tube. |
+| delayed | waiting to become `ready` after the specified delay. |
+| buried  | waiting to be kicked, usually after job fails to process |
 
-In addition, there are several actions that can be performed on a given job:
+In addition, there are several actions that can be performed on a given job, you can:
  
- * You can **reserve** which locks a job from the ready queue for processing.
- * You can **touch** which extends the time before a job is autoreleased back to ready.
- * You can **release** which places a reserved job back onto the ready queue.
- * You can **delete** which removes a job from beanstalk. 
- * You can **bury** which places a reserved job into the buried state.
- * You can **kick** which places a buried job from the buried queue back to ready.
+ * **reserve** which locks a job from the ready queue for processing.
+ * **touch** which extends the time before a job is autoreleased back to ready.
+ * **release** which places a reserved job back onto the ready queue.
+ * **delete** which removes a job from beanstalk. 
+ * **bury** which places a reserved job into the buried state.
+ * **kick** which places a buried job from the buried queue back to ready.
 
 You can insert a job onto a beanstalk tube using the `put` command:
 
