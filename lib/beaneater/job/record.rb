@@ -32,12 +32,9 @@ module Beaneater
 
     ### Stats
     # @beaneater_connection.jobs.find(123).ttr # id, state, pro, age, ...
-    # TODO raise exception if job not found??
     def stats
       res = connection.transmit("stats-job #{id}")
       StatStruct.from_hash(res[:body])
-    rescue NotFoundError
-      # returns nil
     end
 
     # @beaneater_connection.jobs.find(123).kick
@@ -47,7 +44,14 @@ module Beaneater
 
     # Returns true if the job is reserved
     def reserved?
-      self.stats && self.stats.state == "reserved"
+      self.stats.state == "reserved"
+    end
+
+    # Returns if job exists
+    def exists?
+      !!self.stats
+    rescue Beaneater::NotFoundError
+      false
     end
 
     # Returns the name of the tube this job is in

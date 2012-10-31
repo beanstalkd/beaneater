@@ -102,7 +102,7 @@ describe Beaneater::Job do
 
     it "should return nil for deleted job with no stats" do
       @job.delete
-      assert_nil @job.stats
+      assert_raises(Beaneater::NotFoundError) { @job.stats }
     end
   end # stats
 
@@ -118,9 +118,23 @@ describe Beaneater::Job do
       assert_equal job.id, @job.id
       assert_equal true, @job.reserved?
       @job.delete
-      assert_equal nil, @job.reserved?
+      assert_raises(Beaneater::NotFoundError) { @job.reserved? }
     end
   end # reserved?
+
+  describe "for #exists?" do
+    before do
+      @tube.put 'foo'
+      @job = @tube.peek(:ready)
+    end
+
+    it("should exists") { assert @job.exists? }
+
+    it "should not exist" do
+      @job.delete
+      assert !@job.exists?
+    end
+  end # exists?
 
   describe "for #tube" do
     before do
