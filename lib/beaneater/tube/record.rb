@@ -4,6 +4,7 @@ module Beaneater
     DEFAULT_DELAY = 0
     DEFAULT_PRIORITY = 2**31 # 0 is the highest pri
     DEFAULT_TTR = 1
+    PUT_MAX_RETRIES = 3
 
     attr_reader :name
 
@@ -14,11 +15,21 @@ module Beaneater
 
     # @beaneater_tube.put "data", :pri => 1000, :ttr => 10, :delay => 5
     def put(data, options={})
+      retries = 1
       tubes.use(self.name)
       options = { :pri => DEFAULT_PRIORITY, :delay => DEFAULT_DELAY, :ttr => DEFAULT_TTR }.merge(options)
       cmd_options = "#{options[:pri]} #{options[:delay]} #{options[:ttr]} #{data.bytesize}"
       command = "put #{cmd_options}\n#{data}"
-      transmit_to_rand(command)
+      begin
+        transmit_to_rand(command)
+      rescue DrainingError => e # TODO actually raise this draining error, and handle
+        if retries < PUT_MAX_RETRIES
+          retries += 1
+          retry
+        else # finished retrying, fail out
+          raise e
+        end
+      end
     end
 
     # Accepts :ready, :delayed, :buried
@@ -40,8 +51,6 @@ module Beaneater
     def stats
       res = transmit_to_all("stats-tube #{name}", :merge => true)
       StatStruct.from_hash(res[:body])
-    rescue NotFoundError
-      # returns nil
     end
 
     # @beaneater_connection.tubes.find(123).pause(120)

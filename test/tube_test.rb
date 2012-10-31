@@ -22,6 +22,22 @@ describe Beaneater::Tube do
       @tube.put "delayed put #{@time}", :delay => 1
       assert_equal "delayed put #{@time}", @tube.peek(:delayed).body
     end
+
+    it "should try to put 2 times before to raise before to put successfuly" do
+      Beaneater::Tubes.any_instance.expects(:use).once
+      Beaneater::Pool.any_instance.expects(:transmit_to_rand).times(2).
+        raises(Beaneater::DrainingError).then.returns('foo')
+      assert_equal 'foo', @tube.put("bar put #{@time}")
+    end
+
+    it "should try to put 3 times before to raise" do
+      Beaneater::Pool.any_instance.expects(:transmit_to_rand).times(3).raises(Beaneater::DrainingError)
+      assert_raises(Beaneater::DrainingError) { @tube.put "bar put #{@time}" }
+    end
+
+    after do
+      Beaneater::Pool.any_instance.unstub(:transmit_to_rand)
+    end
   end # put
 
   describe "for #peek" do
@@ -94,8 +110,8 @@ describe Beaneater::Tube do
       assert_equal 0, @stats.current_jobs_delayed
     end
 
-    it "should return nil for empty tube" do
-      assert_nil @pool.tubes.find('fake_tube').stats
+    it "should raise error for empty tube" do
+      assert_raises(Beaneater::NotFoundError) { @pool.tubes.find('fake_tube').stats }
     end
   end # stats
 
