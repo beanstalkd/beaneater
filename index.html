@@ -56,24 +56,44 @@ and a rich set of tools for job management that go well beyond a simple FIFO wor
 
 <p>Beanstalk supports the following features natively, out of the box, without any questions asked:</p>
 
-<ul>
-<li>
-<strong>Parallel Queues</strong> - Supports multiple work queues created on demand.</li>
-<li>
-<strong>Reliable</strong> - Beanstalk’s reserve, work, delete cycle ensures reliable processing.</li>
-<li>
-<strong>Scheduling</strong> - Delay enqueuing jobs by a specified interval to schedule processing later.</li>
-<li>
-<strong>Fast</strong> - Processes thousands of jobs per second; <strong>significantly</strong> <a href="http://adam.heroku.com/past/2010/4/24/beanstalk_a_simple_and_fast_queueing_backend">faster than alternatives</a>.</li>
-<li>
-<strong>Priorities</strong> - Specify priority so important jobs can be processed quickly.</li>
-<li>
-<strong>Persistence</strong> - Jobs are stored in memory for speed, but logged to disk for safe keeping.</li>
-<li>
-<strong>Federation</strong> - Horizontal scalability provided through federation by the client.</li>
-<li>
-<strong>Buried jobs</strong> - Bury any job which causes an error for later debugging and inspection.</li>
-</ul><p>Keep in mind that these features are supported out of the box with beanstalk and require no special code within this gem to support.
+<table>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+</tr>
+<tr>
+<td><strong>Parallel Queues</strong></td>
+<td>Supports multiple work queues created on demand.</td>
+</tr>
+<tr>
+<td><strong>Reliable</strong></td>
+<td>Beanstalk’s reserve, work, delete cycle ensures reliable processing.</td>
+</tr>
+<tr>
+<td><strong>Scheduling</strong></td>
+<td>Delay enqueuing jobs by a specified interval to schedule processing later</td>
+</tr>
+<tr>
+<td><strong>Fast</strong></td>
+<td>Processes thousands of jobs per second; <strong>significantly</strong> <a href="http://adam.heroku.com/past/2010/4/24/beanstalk_a_simple_and_fast_queueing_backend">faster than alternatives</a>.</td>
+</tr>
+<tr>
+<td><strong>Priorities</strong></td>
+<td>Specify priority so important jobs can be processed quickly.</td>
+</tr>
+<tr>
+<td><strong>Persistence</strong></td>
+<td>Jobs are stored in memory for speed, but logged to disk for safe keeping.</td>
+</tr>
+<tr>
+<td><strong>Federation</strong></td>
+<td>Horizontal scalability provided through federation by the client.</td>
+</tr>
+<tr>
+<td><strong>Buried jobs</strong></td>
+<td>Bury any job which causes an error for later debugging and inspection.</td>
+</tr>
+</table><p>Keep in mind that these features are supported out of the box with beanstalk and require no special code within this gem to support.
 In the end, <strong>beanstalk is the ideal job queue</strong> while also being ridiculously easy to install and setup.</p>
 
 <h2>Installation</h2>
@@ -194,19 +214,38 @@ Each job is enqueued into a tube and later reserved and processed. Here is a pic
 
 <p>A job at any given time is in one of three states: <strong>ready</strong>, <strong>delayed</strong>, or <strong>buried</strong>:</p>
 
-<ul>
-<li>A <strong>ready</strong> job is waiting to be 'reserved' and processed after being 'put' onto a tube.</li>
-<li>A <strong>delayed</strong> job is waiting to become ready after the specified delay.</li>
-<li>A <strong>buried</strong> job has been reserved and buried, will not be reprocessed and is isolated for later use.</li>
-</ul><p>In addition, there are several actions that can be performed on a given job:</p>
+<table>
+<tr>
+<th>State</th>
+<th>Description</th>
+</tr>
+<tr>
+<td>ready</td>
+<td>waiting to be <code>reserved</code> and processed after being <code>put</code> onto a tube.</td>
+</tr>
+<tr>
+<td>delayed</td>
+<td>waiting to become <code>ready</code> after the specified delay.</td>
+</tr>
+<tr>
+<td>buried</td>
+<td>waiting to be kicked, usually after job fails to process</td>
+</tr>
+</table><p>In addition, there are several actions that can be performed on a given job, you can:</p>
 
 <ul>
-<li>You can <strong>reserve</strong> which locks a job from the ready queue for processing.</li>
-<li>You can <strong>touch</strong> which extends the time before a job is autoreleased back to ready.</li>
-<li>You can <strong>release</strong> which places a reserved job back onto the ready queue.</li>
-<li>You can <strong>delete</strong> which removes a job from beanstalk. </li>
-<li>You can <strong>bury</strong> which places a reserved job into the buried state.</li>
-<li>You can <strong>kick</strong> which places a buried job from the buried queue back to ready.</li>
+<li>
+<strong>reserve</strong> which locks a job from the ready queue for processing.</li>
+<li>
+<strong>touch</strong> which extends the time before a job is autoreleased back to ready.</li>
+<li>
+<strong>release</strong> which places a reserved job back onto the ready queue.</li>
+<li>
+<strong>delete</strong> which removes a job from beanstalk. </li>
+<li>
+<strong>bury</strong> which places a reserved job into the buried state.</li>
+<li>
+<strong>kick</strong> which places a buried job from the buried queue back to ready.</li>
 </ul><p>You can insert a job onto a beanstalk tube using the <code>put</code> command:</p>
 
 <div class="highlight"><pre><span class="vi">@tube</span><span class="o">.</span><span class="n">put</span> <span class="s2">"job-data-here"</span>
