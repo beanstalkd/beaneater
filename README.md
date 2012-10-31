@@ -35,31 +35,36 @@ To interact with a beanstalk queue, first establish a connection by providing a 
 ### Tubes
 
 Beanstalkd has one or more tubes which can contain any number of jobs. 
+Jobs can be inserted (put) into the used tube and pulled out (reserved) from watched tubes. 
 Each tube consists of a _ready_, _delayed_, and _buried_ queue for jobs. 
-To interact with a tube, first `find` the tube:
-
-```ruby
-@tube = @beanstalk.tubes.find "some-tube-here"
-```
 
 When a client connects, its watch list is initially just the tube named `default`.  
 Tube names are at most 200 bytes. It specifies the tube to use. If the tube does not exist, it will be automatically created.
 
-Tubes can have jobs inserted (put) into the used tube and jobs pulled out (reserved) from watched tubes. 
-You can also see lists of tubes in various states:
+To interact with a tube, first `find` the tube:
+
+```ruby
+@tube = @beanstalk.tubes.find "some-tube-here"
+# => <Tube name='some-tube-here'>
+```
+
+You can easily get a list of all, used or watched tubes:
 
 ```ruby
 # The list-tubes command returns a list of all existing tubes
 @beanstalk.tubes.all
+# => [<Tube name='foo'>, <Tube name='bar'>]
 
 # Returns the tube currently being used by the client (for insertion)
 @beanstalk.tubes.used
+# => <Tube name='bar'>
 
 # Returns a list tubes currently being watched by the client (for consumption)
 @beanstalk.tubes.watched
+# => [<Tube name='foo'>]
 ```
 
-To recap: each beanstalkd client manages two separate concerns: which tube newly created jobs are put into, 
+In summary, each beanstalk client manages two separate concerns: which tube newly created jobs are put into, 
 and which tube(s) jobs are reserved from. Accordingly, there are two separate sets of functions for these concerns:
 
   * **use** and **using** affect where 'put' places jobs
