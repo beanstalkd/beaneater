@@ -11,8 +11,7 @@ module Beaneater
       res = transmit_until_res("peek #{id}", :status => "FOUND")
       Job.new(res)
     rescue Beaneater::NotFoundError => ex
-      # TODO really rescue with nil here??
-      # Return nil if not found
+      nil
     end
     alias_method :peek, :find
 
