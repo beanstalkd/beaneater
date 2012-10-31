@@ -131,7 +131,15 @@ describe Beaneater::Tubes do
       assert_raises(Beaneater::TimedOutError) { @pool.tubes.reserve(0) }
     end
 
-    it "should raise DeadlineSoonError without timeout" do
+    it "should raise TimedOutError no delete, with timeout" do
+      @pool.tubes.watch 'tube'
+      @pool.tubes.reserve(0)
+      assert_raises(Beaneater::TimedOutError) { @pool.tubes.reserve(0) }
+    end
+
+    it "should raise DeadlineSoonError with ttr 1" do
+      @tube.reserve.delete
+      @tube.put "foo reserve #{@time}", :ttr => 1
       @pool.tubes.watch 'tube'
       @pool.tubes.reserve
       assert_raises(Beaneater::DeadlineSoonError) { @pool.tubes.reserve(0) }

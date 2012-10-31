@@ -52,7 +52,7 @@ module Beaneater
       begin
         yield
       rescue DrainingError, EOFError, Errno::ECONNRESET, Errno::EPIPE => ex
-        # TODO remove faulty connections ?
+        # TODO remove faulty connections from pool?
         # https://github.com/kr/beanstalk-client-ruby/blob/master/lib/beanstalk-client/connection.rb#L405-410
         if retries < MAX_RETRIES
           retries += 1
