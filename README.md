@@ -35,7 +35,8 @@ To interact with a beanstalk queue, first establish a connection by providing a 
 ### Tubes
 
 Beanstalkd has one or more tubes which can contain any number of jobs. 
-Each tube consists of a ready, delayed, and buried queue for jobs. To interact with a tube, first `find` the tube:
+Each tube consists of a __ready__, __delayed__, and __buried__ queue for jobs. 
+To interact with a tube, first `find` the tube:
 
 ```ruby
 @tube = @beanstalk.tubes.find "some-tube-here"
@@ -61,8 +62,8 @@ You can also see lists of tubes in various states:
 To recap: each beanstalkd client manages two separate concerns: which tube newly created jobs are put into, 
 and which tube(s) jobs are reserved from. Accordingly, there are two separate sets of functions for these concerns:
 
-  * `use` and `using` affect where 'put' places jobs
-  * `watch` and `watching` control where reserve takes jobs from
+  * **use** and **using** affect where 'put' places jobs
+  * **watch** and **watching** control where reserve takes jobs from
 
 Note that these concerns are fully orthogonal: for example, when you 'use' a tube, it is not automatically 'watched'. 
 Neither does 'watching' a tube affect the tube you are 'using'.
