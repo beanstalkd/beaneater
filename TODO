@@ -1,5 +1,4 @@
 - Add YARD docs for all classes (see REF file)
-- Make sure connections are properly closed
 - Make sure docs and functionality match up with
   - http://beanstalkc.readthedocs.org/en/latest/tutorial.html#advanced-operation
 - Add tests for threaded operation (see beanstalk client tests)
