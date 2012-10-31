@@ -132,8 +132,25 @@ describe Beaneater::Tube do
       assert_equal 0, @tube.stats.current_jobs_buried
       assert_equal 2, @tube.stats.current_jobs_ready
     end
+  end # kick
 
-  end
+  describe "for #clear" do
+    @time = Time.now.to_i
+    before do
+      2.times { |i| @tube.put "to clear success #{i} #{@time}" }
+      2.times { |i| @tube.put "to clear delayed #{i} #{@time}", :delay => 5 }
+      2.times { |i| @tube.put "to clear bury #{i} #{@time}", :pri => 1 }
+      @tube.reserve.bury while @tube.peek(:ready).stats['pri'] == 1
+    end
+
+    it "should clear all jobs in tube" do
+      tube_counts = lambda { %w(ready buried delayed).map { |s| @tube.stats["current_jobs_#{s}"] } }
+      assert_equal [2, 2, 2], tube_counts.call
+      @tube.clear
+      stats = @tube.stats
+      assert_equal [0, 0, 0], tube_counts.call
+    end
+  end # clear
 
   after do
     cleanup_tubes!(['baz'])

@@ -53,6 +53,20 @@ module Beaneater
       transmit_to_all("pause-tube #{name} #{delay}")
     end
 
+    # Clears all unreserved jobs from the tube
+    # @beaneater_connection.tubes.find(123).clear
+    def clear
+      pool.tubes.watch!(self.name)
+      %w(delayed buried ready).each do |state|
+        while job = self.peek(state.to_sym)
+          job.delete
+        end
+      end
+      pool.tubes.ignore!(name)
+    rescue Beaneater::UnexpectedResponse
+      # swallow any issues
+    end
+
     def to_s
       "#<Beaneater::Tube name=#{name.inspect}>"
     end
