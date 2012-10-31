@@ -235,7 +235,9 @@ Beanstalk has plenty of commands for introspecting the state of the queues and j
 ```ruby
 # Get overall stats about the job processing that has occurred
 @beanstalk.stats
-# => { 'current-connections': 1, 'current-jobs-buried': 0, 'current-jobs-delayed': 0, ... }
+# => { 'current_connections': 1, 'current_jobs_buried': 0, 'current_jobs_delayed': 0, ... }
+@beanstalk.stats.current_connections
+# => 1
 
 # Get statistical information about the specified job if it exists
 @beanstalk.job.find(some_job_id).stats
@@ -243,7 +245,7 @@ Beanstalk has plenty of commands for introspecting the state of the queues and j
 
 # Get statistical information about the specified tube if it exists
 @beanstalk.tubes.find('some_tube_name').stats
-# => { 'some_tube_name': '', 'current-jobs-ready': 0, 'current-jobs-reserved': 0  }
+# => { 'current_jobs_ready': 0, 'current_jobs_reserved': 0, 'current_jobs_buried': 0, ...  }
 ```
 
 Be sure to check the [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for
