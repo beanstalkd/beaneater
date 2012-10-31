@@ -30,16 +30,15 @@ module Beaneater
       connection.transmit("touch #{id}")
     end
 
-    ### Stats
+    # @beaneater_connection.jobs.find(123).kick
+    def kick
+      connection.transmit("kick-job #{id}")
+    end
+
     # @beaneater_connection.jobs.find(123).ttr # id, state, pro, age, ...
     def stats
       res = connection.transmit("stats-job #{id}")
       StatStruct.from_hash(res[:body])
-    end
-
-    # @beaneater_connection.jobs.find(123).kick
-    def kick
-      connection.transmit("kick-job #{id}")
     end
 
     # Returns true if the job is reserved

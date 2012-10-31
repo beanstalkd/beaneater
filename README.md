@@ -26,17 +26,16 @@ and run `bundle install` to install the dependency.
 
 ### Connection
 
-To interact with a beanstalk queue, first establish a client connection by providing host and port:
+To interact with a beanstalk queue, first establish a connection by providing a set of addresses:
 
 ```ruby
-@beanstalk = Beaneater::Connection.new(['10.0.1.5:11300'])
+@beanstalk = Beaneater::Pool.new(['10.0.1.5:11300'])
 ```
 
 ### Tubes
 
-The system has one or more tubes which contain jobs. Each tube consists of a ready, delay, and buried queue for jobs. 
-Tubes can have jobs inserted (put) in to used tubes and jobs pulled out (reserved) from watched tubes.
-You can fetch a tube reference:
+Beanstalkd has one or more tubes which can contain any number of jobs. 
+Each tube consists of a ready, delayed, and buried queue for jobs. To interact with a tube, first `find` the tube:
 
 ```ruby
 @tube = @beanstalk.tubes.find "some-tube-here"
@@ -44,6 +43,8 @@ You can fetch a tube reference:
 
 When a client connects, its watch list is initially just the tube named `default`.  
 Tube names are at most 200 bytes. It specifies the tube to use. If the tube does not exist, it will be automatically created.
+
+Tubes can have jobs inserted (put) into the used tube and jobs pulled out (reserved) from watched tubes. 
 You can also see lists of tubes in various states:
 
 ```ruby
@@ -60,22 +61,36 @@ You can also see lists of tubes in various states:
 To recap: each beanstalkd client manages two separate concerns: which tube newly created jobs are put into, 
 and which tube(s) jobs are reserved from. Accordingly, there are two separate sets of functions for these concerns:
 
-  * `use` and `using` affect where put places jobs;
-  * `watch` and `watching` control where reserve takes jobs from.
+  * `use` and `using` affect where 'put' places jobs
+  * `watch` and `watching` control where reserve takes jobs from
 
-Note that these concerns are fully orthogonal: for example, when you use a tube, it is not automatically watch-ed. 
-Neither does watch-ing a tube affect the tube you are using.
+Note that these concerns are fully orthogonal: for example, when you 'use' a tube, it is not automatically 'watched'. 
+Neither does 'watching' a tube affect the tube you are 'using'.
 
 ### Jobs
 
-A job in beanstalk gets created by a client and includes a 'body' which contains all relevant job metadata.
-With beanstalk, a job is enqueued into a tube and then later reserved and processed. 
-Here is a picture of the typical job lifecycle:
+A job in beanstalk gets inserted by a client and includes the 'body' and job metadata.
+Each job is enqueued into a tube and later reserved and processed. Here is a picture of the typical job lifecycle:
 
 ```
    put            reserve               delete
   -----> [READY] ---------> [RESERVED] --------> *poof*
 ```
+
+A job at any given time is in one of three states: **ready**, **delayed**, or **buried**:
+
+ * A **ready** job is waiting to be 'reserved' and processed after being 'put' onto a tube.
+ * A **delayed** job is waiting to become ready after the specified delay.
+ * A **buried** job has been reserved and buried, will not be reprocessed and is isolated for later use.
+
+Similarly, there are several action that can be performed on a given job:
+ 
+ * You can **reserve** which locks a job from the ready queue for processing.
+ * You can **touch** which extends the time before a job is autoreleased back to ready.
+ * You can **release** which places a reserved job back onto the ready queue.
+ * You can **delete** which removes the job from the tube entirely. 
+ * You can **bury** which places the job into the buried state.
+ * You can **kick** which places a job from the buried queue back to ready.
 
 You can put a job onto the beanstalk queue using the `put` command on a tube:
 
@@ -125,7 +140,7 @@ job = @beanstalk.tubes.reserve(5) # wait 5 secs
 # => <Beaneater::Job id=5 body="foo">
 ```
 
-You can 'release' jobs back onto a queue to retry them later:
+You can 'release' jobs back onto the ready queue to retry them later:
 
 ```ruby
 job = @beanstalk.tubes.reserve
@@ -134,7 +149,7 @@ job.release :delay => 5
 print job.stats.state # => 'delayed'
 ```
 
-You can also 'delete' jobs that are completed:
+You can also 'delete' jobs that are finished:
 
 ```ruby
 job = @beanstalk.tubes.reserve
