@@ -21,7 +21,7 @@ describe Beaneater::Tubes do
     it "should switch to used tube for valid name" do
       tube = Beaneater::Tube.new(@pool, 'some_name')
       @pool.tubes.use('some_name')
-      assert_equal 'some_name', @pool.tubes.used
+      assert_equal 'some_name', @pool.tubes.used.name
     end
 
     it "should raise for invalid tube name" do
@@ -37,7 +37,7 @@ describe Beaneater::Tubes do
     it 'should watch specified tubes' do
       @pool.tubes.watch('foo')
       @pool.tubes.watch('bar')
-      assert_equal ['default', 'foo', 'bar'].sort, @pool.tubes.watched.sort
+      assert_equal ['default', 'foo', 'bar'].sort, @pool.tubes.watched.map(&:name).sort
     end
 
     it 'should raise invalid name for bad tube' do
@@ -54,7 +54,7 @@ describe Beaneater::Tubes do
 
     it 'should retrieve all tubes' do
       ['default', 'foo', 'bar'].each do |t|
-        assert @pool.tubes.all.include?(t)
+        assert @pool.tubes.all.map(&:name).include?(t)
       end
     end
   end # all
@@ -67,7 +67,7 @@ describe Beaneater::Tubes do
     end
 
     it 'should retrieve used tube' do
-      assert_equal'bar', @pool.tubes.used
+      assert_equal'bar', @pool.tubes.used.name
     end
   end # used
 
@@ -79,7 +79,7 @@ describe Beaneater::Tubes do
     it 'should watch specified tubes' do
       @pool.tubes.watch!(:foo)
       @pool.tubes.watch!('bar')
-      assert_equal ['bar'].sort, @pool.tubes.watched.sort
+      assert_equal ['bar'].sort, @pool.tubes.watched.map(&:name).sort
     end
   end # watch!
 
@@ -92,7 +92,7 @@ describe Beaneater::Tubes do
       @pool.tubes.watch('foo')
       @pool.tubes.watch('bar')
       @pool.tubes.ignore!('foo')
-      assert_equal ['default', 'bar'].sort, @pool.tubes.watched.sort
+      assert_equal ['default', 'bar'].sort, @pool.tubes.watched.map(&:name).sort
     end
   end # ignore!
 

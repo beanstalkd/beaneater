@@ -22,18 +22,17 @@ module Beaneater
 
     # @beaneater_connection.tubes.all
     def all
-      transmit_to_rand('list-tubes')[:body]
+      transmit_to_rand('list-tubes')[:body].map { |tube_name| Tube.new(self.pool, tube_name) }
     end
 
     # @beaneater_connection.tubes.used
     def used
-      transmit_to_rand('list-tube-used')[:id]
+      Tube.new(self.pool, transmit_to_rand('list-tube-used')[:id])
     end
 
     # @beaneater_connection.tubes.watched
-    # TODO should return tube objects?
     def watched
-      transmit_to_rand('list-tubes-watched')[:body]
+      transmit_to_rand('list-tubes-watched')[:body].map { |tube_name| Tube.new(self.pool, tube_name) }
     end
 
     # @beaneater_connection.tubes.watch('foo', 'bar')
@@ -47,7 +46,7 @@ module Beaneater
 
     # @beaneater_connection.tubes.watch!('foo', 'bar')
     def watch!(*tube_names)
-      old_tubes = watched.map(&:to_s) - tube_names.map(&:to_s)
+      old_tubes = watched.map(&:name) - tube_names.map(&:to_s)
       watch(*tube_names)
       ignore!(*old_tubes)
     end

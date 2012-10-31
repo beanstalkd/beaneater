@@ -41,9 +41,9 @@ describe Beaneater::Pool do
     describe "for clearing watch list" do
       it "should clear connections of tube watches" do
         @bp.tubes.watch!('foo', 'bar')
-        assert_equal ['foo', 'bar'].sort, @bp.tubes.watched.sort
+        assert_equal ['foo', 'bar'].sort, @bp.tubes.watched.map(&:name).sort
         @bp2 = Beaneater::Pool.new(@hosts)
-        assert_equal ['default'], @bp2.tubes.watched
+        assert_equal ['default'], @bp2.tubes.watched.map(&:name)
       end
     end
   end # new
