@@ -38,8 +38,8 @@ module Beaneater
     end
 
     # @beaneater_connection.jobs.find(123).kick
-    # TODO add when beanstalk 1.8 is released
     def kick
+      connection.transmit("kick-job #{id}")
     end
 
     # Returns true if the job is reserved

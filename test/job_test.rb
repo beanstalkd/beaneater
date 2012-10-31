@@ -89,6 +89,24 @@ describe Beaneater::Job do
     end
   end # touch
 
+  if `beanstalkd -v` =~ /1.8/
+    describe "for #kick" do
+      before do
+        @tube.put 'foo touch', :ttr => 1
+      end
+
+      it("should be toucheable") do
+        job = @tube.reserve
+        assert_equal 'foo touch', job.body
+        job.bury
+        assert_equal 1, @tube.stats.current_jobs_buried
+        job.kick
+        assert_equal 0, @tube.stats.current_jobs_buried
+        assert_equal 1, @tube.stats.current_jobs_ready
+      end
+    end # touch
+  end
+
   describe "for #stats" do
     before do
       @tube.put 'foo'
