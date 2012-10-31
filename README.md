@@ -32,6 +32,12 @@ To interact with a beanstalk queue, first establish a connection by providing a 
 @beanstalk = Beaneater::Pool.new(['10.0.1.5:11300'])
 ```
 
+You can conversely close and dispose of a pool at any time with:
+
+```ruby
+@beanstalk.close
+```
+
 ### Tubes
 
 Beanstalkd has one or more tubes which can contain any number of jobs. 
@@ -48,6 +54,17 @@ To interact with a tube, first `find` the tube:
 # => <Tube name='some-tube-here'>
 ```
 
+To reserve jobs from beanstalk, you will need to 'watch' certain tubes:
+
+```ruby
+# Watch only the tubes listed below (!)
+@beanstalk.tubes.watch!('some-tube')
+# Append tubes to existing set of watched tubes
+@beanstalk.tubes.watch('another-tube')
+# You can also ignore tubes that have been watched previously
+@beanstalk.ignore('some-tube')
+```
+
 You can easily get a list of all, used or watched tubes:
 
 ```ruby
@@ -62,6 +79,20 @@ You can easily get a list of all, used or watched tubes:
 # Returns a list tubes currently being watched by the client (for consumption)
 @beanstalk.tubes.watched
 # => [<Tube name='foo'>]
+```
+
+You can also temporarily 'pause' the execution of a tube by specifying the time:
+
+```ruby
+tube = @beanstalk.tubes.find("some-tube-here")
+tube.pause(3) # pauses tube for 3 seconds
+```
+
+or even clear the tube of all jobs:
+
+```ruby
+tube = @beanstalk.tubes.find("some-tube-here")
+tube.clear # tube will now be empty
 ```
 
 In summary, each beanstalk client manages two separate concerns: which tube newly created jobs are put into, 
@@ -123,10 +154,10 @@ this will default to watching just the `default` tube.
 
 ```ruby
 @beanstalk = Beaneater::Connection.new(['10.0.1.5:11300'])
-@beanstalk.tubes.watch!('some-tube-name', 'some-other-tube')
+@beanstalk.tubes.watch!('tube-name', 'other-tube')
 ```
 
-Then you can use the `reserve` command which will return the first available job within the watched tubes:
+Next you can use the `reserve` command which will return the first available job within the watched tubes:
 
 ```ruby
 job = @beanstalk.tubes.reserve
@@ -157,6 +188,7 @@ You can also 'delete' jobs that are finished:
 
 ```ruby
 job = @beanstalk.tubes.reserve
+job.touch # extends ttr for job
 # ...process job...
 job.delete
 ```
@@ -174,8 +206,7 @@ Burying a job means that the job is pulled out of the queue into a special 'hold
 To reanimate this job later, you can 'kick' buried jobs back into being ready:
 
 ```ruby
-@beanstalk.tubes.watch!('some-tube')
-@beanstalk.tubes.kick(3)
+@beanstalk.tubes.find('some-tube').kick(3)
 ```
 
 This kicks 3 buried jobs for 'some-tube' back into the 'ready' state. Jobs can also be
@@ -198,39 +229,50 @@ or you can peek at jobs within a tube:
 # => <Beaneater::Job id=789 body="delayed">
 ```
 
+When dealing with jobs there are a few other useful commands available:
+
+```ruby
+job = @beanstalk.tubes.reserve
+job.tube      # => "some-tube-name"
+job.reserved? # => true
+job.exists?   # => false
+job.delete
+job.exists?   # => false
+```
+
 ### Processing Jobs (Automatically)
 
 Instead of using `watch` and `reserve`, you can also use the higher level `register` and `process` methods to
 process jobs. First you can 'register' how to handle jobs from various tubes:
 
 ```ruby
-@beanstalk.jobs.register('some-tube-name', :retry_on => [Timeout::Error]) do |job|
+@beanstalk.jobs.register('some-tube-name', :retry_on => [SomeCustomException]) do |job|
   do_something(job)
 end
 
-@beanstalk.jobs.register('some-other-name', :retry_on => [SomeCustomException]) do |job|
+@beanstalk.jobs.register('some-other-name') do |job|
   do_something_else(job)
 end
 ```
 
-Once you have registered the handlers for known tubes, calling `process!` will begin an 'infinite' 
-loop processing jobs as defined by the register blocks:
+Once you have registered the handlers for known tubes, calling `process!` will begin a
+loop processing jobs as defined by the registered processor blocks:
 
 ```ruby
 @beanstalk.jobs.process!
 ```
 
-Process runs the following pseudo-code steps:
+Processing runs the following steps:
  
- 1. watch all registered tubes
- 1. reserve the next job
- 1. once job is reserved, invoke the registered handler based on the tube name
- 1. if no exceptions occur, delete the job (success!)
- 1. if 'retry_on' exceptions occur, call 'release' (retry!)
- 1. if other exception occurs, call 'bury' (error!)
- 1. repeat steps 2-5
+ 1. Watch all registered tubes
+ 1. Reserve the next job
+ 1. Once job is reserved, invoke the registered handler based on the tube name
+ 1. If no exceptions occur, delete the job (success)
+ 1. If 'retry_on' exceptions occur, call 'release' (retry)
+ 1. If other exception occurs, call 'bury' (error)
+ 1. Repeat steps 2-5
 
-This is well-suited for a 'worker' job processing daemon.
+The `process` command is ideally suited for a beanstalk job processing daemon.
 
 ### Handling Errors
 
