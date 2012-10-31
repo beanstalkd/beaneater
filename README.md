@@ -7,6 +7,23 @@ Read the [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/p
 
 ## Installation
 
+Install beanstalkd:
+
+Mac OS
+
+```
+brew update
+brew install beanstalkd
+beanstalkd -p 11300
+```
+
+Ubuntu
+
+```
+apt-get install beanstalkd
+beanstalkd -p 11300
+```
+
 Install beaneater as a gem:
 
 ```
