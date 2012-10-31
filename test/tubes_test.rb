@@ -120,11 +120,21 @@ describe Beaneater::Tubes do
 
     it("should reserve job with block and timeout") do
       @pool.tubes.watch 'tube'
+      job = nil
+      res = @pool.tubes.reserve(0)  { |j| job = j; job.delete }
+      assert_equal "foo reserve #{@time}", job.body
+    end
+
+    it "should raise TimedOutError with timeout" do
+      @pool.tubes.watch 'tube'
+      @pool.tubes.reserve(0)  { |j| job = j; job.delete }
+      assert_raises(Beaneater::TimedOutError) { @pool.tubes.reserve(0) }
+    end
+
+    it "should raise DeadlineSoonError without timeout" do
+      @pool.tubes.watch 'tube'
       @pool.tubes.reserve
-      res = @pool.tubes.reserve(0)
-      assert_nil res
-      res2 = @pool.tubes.reserve(0)
-      assert_nil res2
+      assert_raises(Beaneater::DeadlineSoonError) { @pool.tubes.reserve(0) }
     end
 
     after do

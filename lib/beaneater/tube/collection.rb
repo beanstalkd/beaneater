@@ -11,9 +11,6 @@ module Beaneater
       job = Job.new(res)
       block.call(job) if block_given?
       job
-    rescue TimedOutError, DeadlineSoonError => ex
-      # TODO really return nil??
-      nil # returns no job
     end
 
     # Uses specified tube
