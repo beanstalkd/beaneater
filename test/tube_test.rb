@@ -23,20 +23,21 @@ describe Beaneater::Tube do
       assert_equal "delayed put #{@time}", @tube.peek(:delayed).body
     end
 
-    it "should try to put 2 times before to raise before to put successfuly" do
+    it "should try to put 2 times before put successfully" do
       Beaneater::Tubes.any_instance.expects(:use).once
-      Beaneater::Pool.any_instance.expects(:transmit_to_rand).times(2).
-        raises(Beaneater::DrainingError).then.returns('foo')
+      Beaneater::Connection.any_instance.expects(:transmit).times(2).
+        raises(Beaneater::DrainingError.new(nil, nil)).then.returns('foo')
       assert_equal 'foo', @tube.put("bar put #{@time}")
     end
 
     it "should try to put 3 times before to raise" do
-      Beaneater::Pool.any_instance.expects(:transmit_to_rand).times(3).raises(Beaneater::DrainingError)
+      Beaneater::Tubes.any_instance.expects(:use).once
+      Beaneater::Connection.any_instance.expects(:transmit).times(3).raises(Beaneater::DrainingError.new(nil, nil))
       assert_raises(Beaneater::DrainingError) { @tube.put "bar put #{@time}" }
     end
 
     after do
-      Beaneater::Pool.any_instance.unstub(:transmit_to_rand)
+      Beaneater::Connection.any_instance.unstub(:transmit)
     end
   end # put
 

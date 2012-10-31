@@ -4,7 +4,6 @@ module Beaneater
     DEFAULT_DELAY = 0
     DEFAULT_PRIORITY = 2**31 # 0 is the highest pri
     DEFAULT_TTR = 1
-    PUT_MAX_RETRIES = 3
 
     attr_reader :name
 
@@ -19,17 +18,7 @@ module Beaneater
       tubes.use(self.name)
       options = { :pri => DEFAULT_PRIORITY, :delay => DEFAULT_DELAY, :ttr => DEFAULT_TTR }.merge(options)
       cmd_options = "#{options[:pri]} #{options[:delay]} #{options[:ttr]} #{data.bytesize}"
-      command = "put #{cmd_options}\n#{data}"
-      begin
-        transmit_to_rand(command)
-      rescue DrainingError => e # TODO actually raise this draining error, and handle
-        if retries < PUT_MAX_RETRIES
-          retries += 1
-          retry
-        else # finished retrying, fail out
-          raise e
-        end
-      end
+      transmit_to_rand("put #{cmd_options}\n#{data}")
     end
 
     # Accepts :ready, :delayed, :buried
