@@ -113,7 +113,7 @@ To reserve jobs from beanstalk, you will need to 'watch' certain tubes:
 # Append tubes to existing set of watched tubes
 @beanstalk.tubes.watch('another-tube')
 # You can also ignore tubes that have been watched previously
-@beanstalk.ignore('some-tube')
+@beanstalk.tubes.ignore('some-tube')
 ```
 
 You can easily get a list of all, used or watched tubes:
