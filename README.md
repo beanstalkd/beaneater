@@ -1,9 +1,10 @@
 # Beaneater
 
-[Beaneater](http://kr.github.com/beanstalkd/) is a simple, fast work queue. Its interface is generic, but was
-originally designed for reducing the latency of page views in high-volume web
-applications by running time-consuming tasks asynchronously. 
-Read the [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for more detail.
+[Beanstalkd](http://kr.github.com/beanstalkd/) is a simple, fast work queue. Its interface is generic, but was
+originally designed for reducing the latency of page views in high-volume web applications by 
+running time-consuming tasks asynchronously. Read the 
+[beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for more details. 
+Beaneater is the best way to interact with beanstalkd from within Ruby.
 
 ## Why Beanstalk?
 
