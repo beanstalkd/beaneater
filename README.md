@@ -35,7 +35,7 @@ Beanstalkd supports the following features out of the box:
 | **Priorities**      | Specify priority so important jobs can be processed quickly. |
 | **Persistence**     | Jobs are stored in memory for speed, but logged to disk for safe keeping. |
 | **Federation**      | Horizontal scalability provided through federation by the client. |
-| **Buried jobs**     | Bury any job which causes an error for later debugging and inspection.|
+| **Error Handling**  | Bury any job which causes an error for later debugging and inspection.|
 
 Keep in mind that these features are supported out of the box with beanstalk and require no special code within this gem to support.
 In the end, **beanstalk is the ideal job queue** while also being ridiculously easy to install and setup.
