@@ -39,7 +39,7 @@ Beanstalkd supports the following features out of the box:
 
 Keep in mind that these features are supported out of the box with beanstalk and require no special code within this gem to support.
 In the end, **beanstalk is the ideal job queue** while also being ridiculously easy to install and setup.
-S
+
 ## Installation
 
 Install beanstalkd:
