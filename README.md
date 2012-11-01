@@ -24,14 +24,14 @@ because it is an in-memory, event-driven system. Powered by libevent under the h
 it requires zero setup (launch and forget, à la memcached), optional log based persistence, an easily parsed ASCII protocol,
 and a rich set of tools for job management that go well beyond a simple FIFO work queue.
 
-Beanstalk supports the following features natively, out of the box, without any questions asked:
+Beanstalkd supports the following features out of the box:
 
 | Feature | Description                     |
 | ------- | ------------------------------- |
 | **Parallel Queues** | Supports multiple work queues created on demand. |
 | **Reliable**        | Beanstalk’s reserve, work, delete cycle ensures reliable processing. |
 | **Scheduling**      | Delay enqueuing jobs by a specified interval to schedule processing later |
-| **Fast**            | Processes thousands of jobs per second; **significantly** [faster than alternatives](http://adam.heroku.com/past/2010/4/24/beanstalk_a_simple_and_fast_queueing_backend). |
+| **Fast**            | Processes thousands of jobs per second; **significantly** faster than alternatives. |
 | **Priorities**      | Specify priority so important jobs can be processed quickly. |
 | **Persistence**     | Jobs are stored in memory for speed, but logged to disk for safe keeping. |
 | **Federation**      | Horizontal scalability provided through federation by the client. |
