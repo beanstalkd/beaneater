@@ -39,7 +39,7 @@ Beanstalk supports the following features natively, out of the box, without any 
 
 Keep in mind that these features are supported out of the box with beanstalk and require no special code within this gem to support.
 In the end, **beanstalk is the ideal job queue** while also being ridiculously easy to install and setup.
-
+S
 ## Installation
 
 Install beanstalkd:
@@ -300,11 +300,11 @@ Instead of using `watch` and `reserve`, you can also use the higher level `regis
 process jobs. First you can 'register' how to handle jobs from various tubes:
 
 ```ruby
-@beanstalk.jobs.register('some-tube-name', :retry_on => [SomeCustomException]) do |job|
+@beanstalk.jobs.register('some-tube', :retry_on => [SomeError]) do |job|
   do_something(job)
 end
 
-@beanstalk.jobs.register('some-other-name') do |job|
+@beanstalk.jobs.register('other-tube') do |job|
   do_something_else(job)
 end
 ```
@@ -355,7 +355,7 @@ beanstalk overall:
 ```ruby
 # Get overall stats about the job processing that has occurred
 print @beanstalk.stats
-# => { 'current_connections': 1, 'current_jobs_buried': 0, 'current_jobs_delayed': 0, ... }
+# => { 'current_connections': 1, 'current_jobs_buried': 0, ...
 print @beanstalk.stats.current_connections
 # => 1
 ```
@@ -365,7 +365,7 @@ For stats on a particular tube:
 ```ruby
 # Get statistical information about the specified tube if it exists
 print @beanstalk.tubes['some_tube_name'].stats
-# => { 'current_jobs_ready': 0, 'current_jobs_reserved': 0, 'current_jobs_buried': 0, ...  }
+# => { 'current_jobs_ready': 0, 'current_jobs_reserved': 0, ...
 ```
 
 For stats on an individual job:
