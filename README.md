@@ -355,7 +355,7 @@ beanstalk overall:
 ```ruby
 # Get overall stats about the job processing that has occurred
 print @beanstalk.stats
-# => { 'current_connections': 1, 'current_jobs_buried': 0, ...
+# => { 'current_connections': 1, 'current_jobs_buried': 0, ... }
 print @beanstalk.stats.current_connections
 # => 1
 ```
@@ -365,7 +365,7 @@ For stats on a particular tube:
 ```ruby
 # Get statistical information about the specified tube if it exists
 print @beanstalk.tubes['some_tube_name'].stats
-# => { 'current_jobs_ready': 0, 'current_jobs_reserved': 0, ...
+# => { 'current_jobs_ready': 0, 'current_jobs_reserved': 0, ... }
 ```
 
 For stats on an individual job:
