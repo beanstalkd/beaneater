@@ -22,6 +22,7 @@ module Beaneater
     #   @pool.tubes['tube2']
     #     # => <Beaneater::Tube name="tube2">
     #
+    # @api public
     def find(tube_name)
       Tube.new(self.pool, tube_name)
     end
@@ -37,25 +38,12 @@ module Beaneater
     #   @conn.tubes.reserve { |job| process(job) }
     #     # => <Beaneater::Job id=5 body="foo">
     #
+    # @api public
     def reserve(timeout=nil, &block)
       res = transmit_to_rand(timeout ? "reserve-with-timeout #{timeout}" : 'reserve')
       job = Job.new(res)
       block.call(job) if block_given?
       job
-    end
-
-    # Set specified tube as used.
-    #
-    # @param [String] tube Tube to be used.
-    # @example
-    #  @conn.tubes.use("some-tube")
-    #
-    def use(tube)
-      return tube if @last_used == tube
-      res = transmit_to_all("use #{tube}")
-      @last_used = tube
-    rescue BadFormatError
-      raise InvalidTubeName, "Tube cannot be named '#{tube}'"
     end
 
     # List of all known beanstalk tubes.
@@ -65,6 +53,7 @@ module Beaneater
     #   @pool.tubes.all
     #     # => [<Beaneater::Tube name="tube2">, <Beaneater::Tube name="tube3">]
     #
+    # @api public
     def all
       transmit_to_rand('list-tubes')[:body].map { |tube_name| Tube.new(self.pool, tube_name) }
     end
@@ -76,6 +65,7 @@ module Beaneater
     #   @pool.tubes.watched
     #     # => [<Beaneater::Tube name="tube2">, <Beaneater::Tube name="tube3">]
     #
+    # @api public
     def watched
       transmit_to_rand('list-tubes-watched')[:body].map { |tube_name| Tube.new(self.pool, tube_name) }
     end
@@ -87,6 +77,7 @@ module Beaneater
     #   @pool.tubes.used
     #     # => <Beaneater::Tube name="tube2">
     #
+    # @api public
     def used
       Tube.new(self.pool, transmit_to_rand('list-tube-used')[:id])
     end
@@ -98,6 +89,7 @@ module Beaneater
     # @example
     #   @pool.tubes.watch('foo', 'bar')
     #
+    # @api public
     def watch(*names)
       names.each do |t|
         transmit_to_all "watch #{t}"
@@ -113,6 +105,7 @@ module Beaneater
     # @example
     #   @pool.tubes.watch!('foo', 'bar')
     #
+    # @api public
     def watch!(*names)
       old_tubes = watched.map(&:name) - names.map(&:to_s)
       watch(*names)
@@ -125,10 +118,25 @@ module Beaneater
     # @example
     #   @pool.tubes.ignore('foo', 'bar')
     #
+    # @api public
     def ignore(*names)
       names.each do |w|
         transmit_to_all "ignore #{w}"
       end
+    end
+
+    # Set specified tube as used.
+    #
+    # @param [String] tube Tube to be used.
+    # @example
+    #  @conn.tubes.use("some-tube")
+    #
+    def use(tube)
+      return tube if @last_used == tube
+      res = transmit_to_all("use #{tube}")
+      @last_used = tube
+    rescue BadFormatError
+      raise InvalidTubeName, "Tube cannot be named '#{tube}'"
     end
   end # Tubes
 end # Beaneater

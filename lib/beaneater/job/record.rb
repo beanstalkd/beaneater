@@ -130,7 +130,6 @@ module Beaneater
     #   @beaneater_connection.jobs.find(123).tube
     #     # => "some-tube"
     #
-    # @api public
     def tube
       self.stats && self.stats.tube
     end
@@ -142,7 +141,6 @@ module Beaneater
     #   @beaneater_connection.jobs.find(123).to_s
     #   @beaneater_connection.jobs.find(123).inspect
     #
-    # @api public
     def to_s
       "#<Beaneater::Job id=#{id} body=#{body.inspect}>"
     end

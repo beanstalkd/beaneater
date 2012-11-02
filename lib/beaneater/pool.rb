@@ -1,4 +1,4 @@
-# Simple ruby client for beanstalkd.
+# Simple ruby client for interacting with beanstalkd.
 module Beaneater
   # Represents collection of beanstalkd connections.
   class Pool
@@ -19,6 +19,7 @@ module Beaneater
     #   @bp = Beaneater::Pool.new
     #   @bp.connections.first.host # => 'localhost'
     #   @bp.connections.last.host # => '127.0.0.1'
+    #
     def initialize(addresses=nil)
       addresses = addresses || host_from_env
       @connections = Array(addresses).map { |a| Connection.new(a) }

@@ -4,8 +4,6 @@ module Beaneater
   # Represents a connection to a beanstalkd instance.
   class Connection
 
-    # @!attribute telnet_connection
-    #   @return [Net::Telnet] returns Telnet connection object
     # @!attribute address
     #   @return [String] returns Beanstalkd server address
     #   @example
@@ -13,33 +11,37 @@ module Beaneater
     # @!attribute host
     #   @return [String] returns Beanstalkd server host
     #   @example
-    #     @conn.host => "localhost"
+    #     @conn.host # => "localhost"
     # @!attribute port
     #  @return [Integer] returns Beanstalkd server port
     #  @example
-    #    @conn.port => "11300"
-    attr_reader :telnet_connection, :address, :host, :port
+    #    @conn.port # => "11300"
+    # @!attribute telnet_connection
+    #   @return [Net::Telnet] returns Telnet connection object
+    attr_reader :address, :host, :port, :telnet_connection
 
     # Default port value for beanstalk connection
     DEFAULT_PORT = 11300
 
     # Initializes new connection.
     #
-    # @param [String] address beanstalkd instance address
+    # @param [String] address beanstalkd instance address.
     # @example
     #   Beaneater::Connection.new('localhost')
     #   Beaneater::Connection.new('localhost:11300')
+    #
     def initialize(address)
       @address = address
       @telnet_connection = establish_connection
       @mutex = Mutex.new
     end
 
-    # Send commands to beanstalkd server via telnet_connection
+    # Send commands to beanstalkd server via telnet_connection.
     #
     # @param [String] command Beanstalkd command
     # @param [Hash{Symbol => String,Boolean}] options Settings for telnet
     # @option options [Boolean] FailEOF raises EOF Exeception
+    # @return [Array<Hash{String => String, Number}>] Beanstalkd command response
     # @example
     #   @conn.transmit('bury 123')
     #
@@ -55,7 +57,7 @@ module Beaneater
       @mutex.unlock
     end
 
-    # Close connection with beanstalkd server
+    # Close connection with beanstalkd server.
     #
     # @example
     #  @conn.close
@@ -65,7 +67,7 @@ module Beaneater
       @telnet_connection = nil
     end
 
-    # Returns string representation of job
+    # Returns string representation of job.
     #
     # @example
     #  @conn.inspect

@@ -18,7 +18,7 @@ module Beaneater
     # Access value for stat with specified key.
     #
     # @param [String] key Key to fetch from stats.
-    # @return [String,Integer] Value for specified stat key.
+    # @return [String, Integer] Value for specified stat key.
     # @example
     #  @stats['foo'] # => "bar"
     #

@@ -71,6 +71,7 @@ module Beaneater
     # @example
     #  @tube.reserve # => <Beaneater::Job id=5 body=foo>
     #
+    # @api public
     def reserve(timeout=nil, &block)
       pool.tubes.watch!(self.name)
       pool.tubes.reserve(timeout, &block)
@@ -83,6 +84,7 @@ module Beaneater
     # @example
     #   @tube.kick(5)
     #
+    # @api public
     def kick(bounds=1)
       safe_use { transmit_to_rand("kick #{bounds}") }
     end
@@ -93,6 +95,7 @@ module Beaneater
     # @example
     #  @tube.stats.delayed # => 24
     #
+    # @api public
     def stats
       res = transmit_to_all("stats-tube #{name}", :merge => true)
       StatStruct.from_hash(res[:body])
@@ -105,6 +108,7 @@ module Beaneater
     # @example
     #   @tube.pause(10)
     #
+    # @api public
     def pause(delay)
       transmit_to_all("pause-tube #{name} #{delay}")
     end

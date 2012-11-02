@@ -10,6 +10,7 @@ module Beaneater
     # @example
     #  @bp.stats.keys # => ["version", "total_connections"]
     #
+    # @api public
     def keys
       data.keys
     end

@@ -4,7 +4,6 @@ require 'net/telnet'
   require "beaneater/#{f}"
 end
 
-# Simple ruby client for beanstalkd.
 module Beaneater
-
+  # Simple ruby client for beanstalkd.
 end
