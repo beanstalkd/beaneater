@@ -46,6 +46,20 @@ describe Beaneater::Pool do
         assert_equal ['default'], @bp2.tubes.watched.map(&:name)
       end
     end
+
+    describe "with ENV variable set" do
+      before do
+        ENV['BEANSTALKD_URL'] = '0.0.0.0:11300'
+      end
+
+      it "should create 1 connection" do
+        bp = Beaneater::Pool.new
+        bc = bp.connections.first
+        assert_equal 1, bp.connections.size
+        assert_equal '0.0.0.0', bc.host
+        assert_equal 11300, bc.port
+      end
+    end
   end # new
 
   describe 'for #transmit_to_all' do

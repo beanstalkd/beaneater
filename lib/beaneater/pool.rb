@@ -4,7 +4,9 @@ module Beaneater
 
     attr_reader :connections
 
-    def initialize(hosts)
+    def initialize(hosts=nil)
+      host_from_env = ENV['BEANSTALKD_URL'].respond_to?(:length) && ENV['BEANSTALKD_URL'].length > 0 && ENV['BEANSTALKD_URL']
+      hosts = host_from_env if !hosts && host_from_env
       @connections = Array(hosts).map { |h| Connection.new(h) }
     end
 
