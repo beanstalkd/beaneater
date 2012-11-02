@@ -390,6 +390,7 @@ more details about the stats commands.
 There are other resources helpful when learning about beanstalk:
  
  * [Beaneater Yardocs](http://rdoc.info/github/beanstalkd/beaneater)
+ * [Beaneater on Rubygems](https://rubygems.org/gems/beaneater)
  * [Beanstalkd homepage](http://kr.github.com/beanstalkd/)
  * [beanstalk on github](https://github.com/kr/beanstalkd)
  * [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md)
@@ -399,4 +400,4 @@ There are other resources helpful when learning about beanstalk:
 
  - [Nico Taing](https://github.com/Nico-Taing) - Creator and co-maintainer
  - [Nathan Esquenazi](https://github.com/nesquena) - Contributor and co-maintainer
- - [Keith Rarick](https://github.com/kr) - Much code inspirred and adapted from beanstalk-client
+ - [Keith Rarick](https://github.com/kr) - Much code inspired and adapted from beanstalk-client
