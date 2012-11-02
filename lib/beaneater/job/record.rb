@@ -1,7 +1,20 @@
 module Beaneater
   class Job
+
+    # @!attribute id
+    #   @return [Integer] returns Job id
+    # @!attribute body
+    #   @return [String] returns Job body
+    # @!attribute connection
+    #   @return [Beaneater::Connection] returns Connection which has retrieved job
+    # @!attribute reserved
+    #   @return [Boolean] returns If job is being reserved
     attr_reader :id, :body, :connection, :reserved
 
+
+    # Initialize new connection
+    #
+    # @param [Hash] res result from beanstalkd response
     def initialize(res)
       @id         = res[:id]
       @body       = res[:body]
@@ -9,7 +22,15 @@ module Beaneater
       @reserved   = res[:status] == 'RESERVED'
     end
 
-    # beaneater_connection.jobs.find(123).bury(:pri => 10)
+    # Send command to bury job
+    #
+    # @param [Hash] options Settings to bury job
+    # @option options [Integer] pri Assign new priority to job
+    #
+    # @example
+    #   @beaneater_connection.bury({:pri => 100})
+    #
+    # @api public
     def bury(options={})
       options = { :pri => stats.pri }.merge(options)
       with_reserved("bury #{id} #{options[:pri]}") do
@@ -17,7 +38,16 @@ module Beaneater
       end
     end
 
-    # beaneater_connection.jobs.find(123).release(:pri => 10, :delay => 5)
+    # Send command to release job
+    #
+    # @param [Hash] options Settings to release job
+    # @option options [Integer] pri Assign new priority to job
+    # @option options [Integer] pri Assign new delay to job
+    #
+    # @example
+    #   @beaneater_connection.jobs.find(123).release(:pri => 10, :delay => 5)
+    #
+    # @api public
     def release(options={})
       options = { :pri => stats.pri, :delay => stats.delay }.merge(options)
       with_reserved("release #{id} #{options[:pri]} #{options[:delay]}") do
@@ -25,33 +55,63 @@ module Beaneater
       end
     end
 
-    # @beaneater_connection.jobs.find(123).touch
+    # Send command to touch job
+    #
+    # @example
+    #   @beaneater_connection.jobs.find(123).touch
+    #
+    # @api public
     def touch
       with_reserved("touch #{id}")
     end
 
-    # @beaneater_connection.jobs.find(123).delete
+    # Send command to delete job
+    #
+    # @example
+    #   @beaneater_connection.jobs.find(123).delete
+    #
+    # @api public
     def delete
       transmit("delete #{id}") { @reserved = false }
     end
 
-    # @beaneater_connection.jobs.find(123).kick
+    # Send command to kick job
+    #
+    # @example
+    #   @beaneater_connection.jobs.find(123).kick
+    #
+    # @api public
     def kick
       transmit("kick-job #{id}")
     end
 
-    # @beaneater_connection.jobs.find(123).ttr # id, state, pro, age, ...
+    # Send command to get stats about job
+    #
+    # @example
+    #   @beaneater_connection.jobs.find(123).stats
+    #
+    # @api public
     def stats
       res = transmit("stats-job #{id}")
       StatStruct.from_hash(res[:body])
     end
 
-    # Returns true if the job is reserved
+    # Check if job is being reserved
+    #
+    # @example
+    #   @beaneater_connection.jobs.find(123).reserved?
+    #
+    # @api public
     def reserved?
       @reserved || self.stats.state == "reserved"
     end
 
-    # Returns if job exists
+    # Check if job exists
+    #
+    # @example
+    #   @beaneater_connection.jobs.find(123).exists?
+    #
+    # @api public
     def exists?
       !!self.stats
     rescue Beaneater::NotFoundError
@@ -59,11 +119,22 @@ module Beaneater
     end
 
     # Returns the name of the tube this job is in
+    #
+    # @example
+    #   @beaneater_connection.jobs.find(123).tube
+    #
+    # @api public
     def tube
       self.stats && self.stats.tube
     end
 
     # Returns string representation of job
+    #
+    # @example
+    #   @beaneater_connection.jobs.find(123).to_s
+    #   @beaneater_connection.jobs.find(123).inspect
+    #
+    # @api public
     def to_s
       "#<Beaneater::Job id=#{id} body=#{body.inspect}>"
     end

@@ -8,15 +8,31 @@ module Beaneater
       BAD_FORMAT UNKNOWN_COMMAND JOB_TOO_BIG DRAINING
       TIMED_OUT DEADLINE_SOON NOT_FOUND NOT_IGNORED EXPECTED_CRLF)
 
+    # @!attribute status
+    #   @return [String] returns beanstalkd response status
+    # @!attribute cmd
+    #   @return [String] returns beanstalkd request command
     attr_reader :status, :cmd
 
+    # Initialize unexpected response error
+    #
+    # @param [UnexpectedResponse] status Unexpected response object
+    # @param [String] cmd Beanstalkd request command
+    #
+    # @example
+    #   Beaneater::UnexpectedResponse.new(NotFoundError, 'bury 123')
     def initialize(status, cmd)
       @status, @cmd = status, cmd
       super("Response failed with: #{status}")
     end
 
-    # UnexpectedResponse.from_response('NOT_FOUND') => NotFoundError
-    # UnexpectedResponse.from_response('OUT_OF_MEMORY') => OutOfMemoryError
+    # Translate beanstalkd error status to ruby Exeception
+    #
+    # @param [String] status Beanstalkd error status
+    # @param [String] cmd Beanstalkd request command
+    #
+    # @example
+    #   Beaneater::UnexpectedResponse.new('NOT_FOUND', 'bury 123')
     def self.from_status(status, cmd)
       error_klazz_name = status.split('_').map { |w| w.capitalize }.join
       error_klazz_name << "Error" unless error_klazz_name =~ /Error$/

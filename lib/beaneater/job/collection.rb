@@ -1,13 +1,29 @@
 module Beaneater
   class AbortProcessingError < RuntimeError; end
   class Jobs < PoolCommand
+
+    # @!attribute processors
+    #   @return [Array<Proc>] returns Collection of proc to handle beanstalkd jobs
     attr_reader :processors
 
+    # Number of retries to process a job
     MAX_RETRIES = 3
+
+    # Delay in seconds before to make job ready again
     RELEASE_DELAY = 1
 
-    # @beaneater_connection.jobs.find(123)
-    # @beaneater_connection.jobs[123]
+    # Peek (or find) a job across all beanstalkd servers from pool
+    #
+    # @param [Integer] id Job id
+    #
+    # @raise [Beaneater::NotFoundError] Job not found
+    #
+    # @example
+    #   @beaneater_pool.jobs.find(123) # => <Beaneater::Job>
+    #   @beaneater_pool.jobs.peek(123) # => <Beaneater::Job>
+    #   @beaneater_pool.jobs.find[123] # => <Beaneater::Job>
+    #
+    # @api public
     def find(id)
       res = transmit_until_res("peek #{id}", :status => "FOUND")
       Job.new(res)
@@ -17,9 +33,24 @@ module Beaneater
     alias_method :peek, :find
     alias_method :[], :find
 
-    # @beaneater_connection.jobs.register('tube2', :retry_on => [Timeout::Error]) do |job|
-    #  process_one(job)
-    # end
+    # Add processor to handle beanstalkd job
+    #
+    # @param [String] tube_name Tube name
+    # @param [Hash] options settings for processor
+    # @option options [Integer] max_retries Number of retries to process a job
+    # @option options [Array<RuntimeError>] retry_on Collection of errors to rescue and re-run processor
+    # @param [Proc] block Process beanstalkd job
+    #
+    # @example
+    #   @beanstalk.jobs.register('some-tube', :retry_on => [SomeError]) do |job|
+    #     do_something(job)
+    #   end
+    #
+    #   @beanstalk.jobs.register('other-tube') do |job|
+    #     do_something_else(job)
+    #   end
+    #
+    # @api public
     def register(tube_name, options={}, &block)
       @processors ||= {}
       max_retries = options[:max_retries] || MAX_RETRIES
@@ -27,8 +58,12 @@ module Beaneater
       @processors[tube_name.to_s] = { :block => block, :retry_on => retry_on, :max_retries => max_retries }
     end
 
-    # @beaneater_connection.jobs.process # all described tubes
-    # release_delay
+    # Watch, reserve, process and delete or bury or release jobs
+    #
+    # @param [Hash] options Settings for processing
+    # @option options [Integer] Delay in seconds before to make job ready again
+    #
+    # @api public
     def process!(options={})
       release_delay = options.delete(:release_delay) || RELEASE_DELAY
       tubes.watch!(*processors.keys)

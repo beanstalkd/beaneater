@@ -2,14 +2,26 @@ require 'set'
 
 module Beaneater
   class PoolCommand
+    # @!attribute pool
+    #   @return [Beaneater::Pool] returns Pool object
     attr_reader :pool
 
+    # Initialize new connection
+    #
+    # @param [Beaneater::Pool] pool Pool object
     def initialize(pool)
       @pool = pool
     end
 
-    # transmit_to_all('use foo')
-    # transmit_to_all('stats', :merge => true)
+    # Delegate to Pool#transmit_to_all and if needed will merge responses from beanstalkd
+    #
+    # @param [String] body Beanstalkd command
+    # @param [Hash] options telnet connections options
+    # @option options [Boolean] merge Ask for merging responses or not
+    # @param [Proc] block Block passed in telnet connection object
+    #
+    # @example
+    #   @pool.transmit_to_all("stats")
     def transmit_to_all(body, options={}, &block)
       merge = options.delete(:merge)
       res = pool.transmit_to_all(body, options, &block)
@@ -20,6 +32,7 @@ module Beaneater
     end
 
     # Delegate missing methods to pool
+    # @api public
     def method_missing(name, *args, &block)
       if pool.respond_to?(name)
         pool.send(name, *args, &block)

@@ -2,18 +2,39 @@ require 'yaml'
 
 module Beaneater
   class Connection
+
+    # @!attribute telnet_connection
+    #   @return [Net::Telnet] returns Telnet connection object
+    # @!attribute address
+    #   @return [String] returns Beanstalkd server address
+    # @!attribute host
+    #   @return [String] returns Beanstalkd server host
+    # @!attribute port
+    #  @return [Integer] returns Beanstalkd server port
     attr_reader :telnet_connection, :address, :host, :port
 
     DEFAULT_PORT = 11300
 
-    # @beaneater_connection = Beaneater::Connection.new(['localhost:11300'])
+    # Initialize new connection
+    #
+    # @param [String] address beanstalkd address
+    # @example
+    #   Beaneater::Connection.new('localhost')
+    #   Beaneater::Connection.new('localhost:11300')
     def initialize(address)
       @address = address
       @telnet_connection = establish_connection
       @mutex = Mutex.new
     end
 
-    # transmit("stats", :match => /\n/) { |r| puts r }
+    # Send commands to beanstalkd server via telnet_connection
+    #
+    # @param [String] command Beanstalkd command
+    # @param [Hash] options Settings for telnet
+    # @option options [Boolean] FailEOF raises EOF Exeception
+    #
+    # @example
+    #   @beaneater_connection.transmit('bury 123')
     def transmit(command, options={}, &block)
       @mutex.lock
       if telnet_connection
@@ -26,12 +47,19 @@ module Beaneater
       @mutex.unlock
     end
 
-    # Closes the beanstalk connection
+    # Close connection with beanstalkd server
+    #
+    # @example
+    #  @beaneater_connection.close
     def close
       @telnet_connection.close
       @telnet_connection = nil
     end
 
+    # Returns string representation of job
+    #
+    # @example
+    #  @beaneater_connection.inspect
     def to_s
       "#<Beaneater::Connection host=#{host.inspect} port=#{port.inspect}>"
     end
