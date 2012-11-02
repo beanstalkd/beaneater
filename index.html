@@ -129,6 +129,27 @@ beanstalkd -p 11300
 
 <p>and run <code>bundle install</code> to install the dependency.</p>
 
+<h2>Quick Overview:</h2>
+
+<p>The concise summary of how to use beaneater:</p>
+
+<div class="highlight"><pre><span class="c1"># Connect to pool</span>
+<span class="vi">@beanstalk</span> <span class="o">=</span> <span class="no">Beaneater</span><span class="o">::</span><span class="no">Pool</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="o">[</span><span class="s1">'localhost:11300'</span><span class="o">]</span><span class="p">)</span>
+<span class="c1"># Enqueue jobs to tube</span>
+<span class="vi">@tube</span> <span class="o">=</span> <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">[</span><span class="s2">"my-tube"</span><span class="o">]</span>
+<span class="vi">@tube</span><span class="o">.</span><span class="n">put</span> <span class="s1">'{ "key" : "foo" }'</span><span class="p">,</span> <span class="ss">:pri</span> <span class="o">=&gt;</span> <span class="mi">5</span>
+<span class="vi">@tube</span><span class="o">.</span><span class="n">put</span> <span class="s1">'{ "key" : "bar" }'</span><span class="p">,</span> <span class="ss">:delay</span> <span class="o">=&gt;</span> <span class="mi">3</span>
+<span class="c1"># Process jobs</span>
+<span class="mi">2</span><span class="o">.</span><span class="n">times</span> <span class="k">do</span>
+  <span class="n">job</span> <span class="o">=</span> <span class="vi">@tube</span><span class="o">.</span><span class="n">reserve</span>
+  <span class="nb">puts</span> <span class="s2">"job value is </span><span class="si">#{</span><span class="n">job</span><span class="o">.</span><span class="n">body</span><span class="o">[</span><span class="s2">"key"</span><span class="o">]</span><span class="si">}</span><span class="s2">!"</span>  
+<span class="k">end</span>
+<span class="c1"># Disconnect pool</span>
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">close</span>
+</pre></div>
+
+<p>For a much more details rundown, check out the <strong>usage</strong> section below.</p>
+
 <h2>Usage</h2>
 
 <h3>Connection</h3>
