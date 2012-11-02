@@ -2,6 +2,3 @@
 - Remove connection from pool if it's not responding and be able to add more connections and reattempt later
 - Make sure docs and functionality match up with
   - http://beanstalkc.readthedocs.org/en/latest/tutorial.html#advanced-operation
-- Permissions
-  - Note that you can’t release, or bury a job that was not reserved by you (ignore).
-  - You can, though, delete a job that was not reserved by you

@@ -33,6 +33,18 @@ describe Beaneater::Job do
       assert_equal 10, job.stats.pri
       assert_equal "foo bury #{@time}", @tube.peek(:buried).body
     end
+
+    it "should not bury if not reserved" do
+      job = @tube.peek(:ready)
+      assert_raises(Beaneater::JobNotReserved) { job.bury }
+    end
+
+    it "should not bury if reserved and deleted" do
+      job = @tube.reserve
+      job.delete
+      assert_equal false, job.reserved
+      assert_raises(Beaneater::NotFoundError) { job.bury }
+    end
   end # bury
 
   describe "for #release" do
@@ -60,6 +72,17 @@ describe Beaneater::Job do
       assert_equal 10, job.stats.pri
       assert_equal 2, job.stats.delay
     end
+
+    it "should not released if not reserved" do
+      job = @tube.peek(:ready)
+      assert_raises(Beaneater::JobNotReserved) { job.release }
+    end
+
+    it "should not release if not reserved and buried" do
+      job = @tube.reserve
+      job.bury
+      assert_raises(Beaneater::JobNotReserved) { job.release }
+    end
   end # release
 
   describe "for #delete" do
@@ -86,6 +109,23 @@ describe Beaneater::Job do
       job.touch
       assert_equal 1, job.stats.reserves
       job.delete
+    end
+
+    it "should not touch if not reserved" do
+      job = @tube.peek(:ready)
+      assert_raises(Beaneater::JobNotReserved) { job.touch }
+    end
+
+    it "should not touch if not reserved and released" do
+      job = @tube.reserve
+      job.release
+      assert_raises(Beaneater::JobNotReserved) { job.touch }
+    end
+
+    it "should not touch if reserved and deleted" do
+      job = @tube.reserve
+      job.delete
+      assert_raises(Beaneater::NotFoundError) { job.touch }
     end
   end # touch
 

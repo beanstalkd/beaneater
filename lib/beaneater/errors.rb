@@ -1,6 +1,7 @@
 module Beaneater
   class NotConnected < RuntimeError; end
   class InvalidTubeName < RuntimeError; end
+  class JobNotReserved < RuntimeError; end
 
   class UnexpectedResponse < RuntimeError
     ERROR_STATES = %w(OUT_OF_MEMORY INTERNAL_ERROR
