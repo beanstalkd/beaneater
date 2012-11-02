@@ -371,6 +371,7 @@ are listed below:
 | Beaneater::InvalidTubeName  | Specified tube name for use or watch is not valid.    |
 | Beaneater::NotFoundError    | Specified job or tube could not be found.             |
 | Beaneater::TimedOutError    | Job could not be reserved within time specified.      |
+| Beaneater::JobNotReserved   | Job has not been reserved and action cannot be taken. |
 
 There are other exceptions that are less common such as `OutOfMemoryError`, `DrainingError`,
 `DeadlineSoonError`, `InternalError`, `BadFormatError`, `UnknownCommandError`,
