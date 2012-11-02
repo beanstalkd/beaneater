@@ -1,4 +1,2 @@
 - Add YARD docs for all classes (see REF file)
 - Remove connection from pool if it's not responding and be able to add more connections and reattempt later
-- Make sure docs and functionality match up with
-  - http://beanstalkc.readthedocs.org/en/latest/tutorial.html#advanced-operation

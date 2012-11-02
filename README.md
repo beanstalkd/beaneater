@@ -1,10 +1,10 @@
 # Beaneater
 
-Beaneater is the best way to interact with beanstalkd from within Ruby. 
+Beaneater is the best way to interact with beanstalkd from within Ruby.
 [Beanstalkd](http://kr.github.com/beanstalkd/) is a simple, fast work queue. Its interface is generic, but was
-originally designed for reducing the latency of page views in high-volume web applications by 
-running time-consuming tasks asynchronously. Read the 
-[beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for more details. 
+originally designed for reducing the latency of page views in high-volume web applications by
+running time-consuming tasks asynchronously. Read the
+[beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for more details.
 
 
 ## Why Beanstalk?
@@ -92,11 +92,11 @@ You can conversely close and dispose of a pool at any time with:
 
 ### Tubes
 
-Beanstalkd has one or more tubes which can contain any number of jobs. 
-Jobs can be inserted (put) into the used tube and pulled out (reserved) from watched tubes. 
-Each tube consists of a _ready_, _delayed_, and _buried_ queue for jobs. 
+Beanstalkd has one or more tubes which can contain any number of jobs.
+Jobs can be inserted (put) into the used tube and pulled out (reserved) from watched tubes.
+Each tube consists of a _ready_, _delayed_, and _buried_ queue for jobs.
 
-When a client connects, its watch list is initially just the tube named `default`.  
+When a client connects, its watch list is initially just the tube named `default`.
 Tube names are at most 200 bytes. It specifies the tube to use. If the tube does not exist, it will be automatically created.
 
 To interact with a tube, first `find` the tube:
@@ -147,13 +147,13 @@ tube = @beanstalk.tubes["some-tube-here"]
 tube.clear # tube will now be empty
 ```
 
-In summary, each beanstalk client manages two separate concerns: which tube newly created jobs are put into, 
+In summary, each beanstalk client manages two separate concerns: which tube newly created jobs are put into,
 and which tube(s) jobs are reserved from. Accordingly, there are two separate sets of functions for these concerns:
 
   * **use** and **using** affect where 'put' places jobs
   * **watch** and **watching** control where reserve takes jobs from
 
-Note that these concerns are fully orthogonal: for example, when you 'use' a tube, it is not automatically 'watched'. 
+Note that these concerns are fully orthogonal: for example, when you 'use' a tube, it is not automatically 'watched'.
 Neither does 'watching' a tube affect the tube you are 'using'.
 
 ### Jobs
@@ -175,11 +175,11 @@ A job at any given time is in one of three states: **ready**, **delayed**, or **
 | buried  | waiting to be kicked, usually after job fails to process |
 
 In addition, there are several actions that can be performed on a given job, you can:
- 
+
  * **reserve** which locks a job from the ready queue for processing.
  * **touch** which extends the time before a job is autoreleased back to ready.
  * **release** which places a reserved job back onto the ready queue.
- * **delete** which removes a job from beanstalk. 
+ * **delete** which removes a job from beanstalk.
  * **bury** which places a reserved job into the buried state.
  * **kick** which places a buried job from the buried queue back to ready.
 
@@ -189,7 +189,13 @@ You can insert a job onto a beanstalk tube using the `put` command:
 @tube.put "job-data-here"
 ```
 
-Each job has various metadata associated such as `priority`, `delay`, and `ttr` which can be 
+Beanstalkd can only stores strings as job bodies, but you can easily encode your data into a string:
+
+```ruby
+@tube.put({:foo => 'bar'}.to_json)
+```
+
+Each job has various metadata associated such as `priority`, `delay`, and `ttr` which can be
 specified as part of the `put` command:
 
 ```ruby
@@ -197,14 +203,14 @@ specified as part of the `put` command:
 @tube.put "job-data-here", :pri => 1000, :delay => 50, :ttr => 200
 ```
 
-The `priority` argument is an integer < 2**32. Jobs with a smaller priority take precedence over jobs with larger priorities. 
+The `priority` argument is an integer < 2**32. Jobs with a smaller priority take precedence over jobs with larger priorities.
 The `delay` argument is an integer number of seconds to wait before putting the job in the ready queue.
-The `ttr` argument is the time to run -- is an integer number of seconds to allow a worker to run this job. 
+The `ttr` argument is the time to run -- is an integer number of seconds to allow a worker to run this job.
 
 ### Processing Jobs (Manually)
 
-In order to process jobs, the client should first specify the intended tubes to be watched. If not specified, 
-this will default to watching just the `default` tube. 
+In order to process jobs, the client should first specify the intended tubes to be watched. If not specified,
+this will default to watching just the `default` tube.
 
 ```ruby
 @beanstalk = Beaneater::Connection.new(['10.0.1.5:11300'])
@@ -317,7 +323,7 @@ loop processing jobs as defined by the registered processor blocks:
 ```
 
 Processing runs the following steps:
- 
+
  1. Watch all registered tubes
  1. Reserve the next job
  1. Once job is reserved, invoke the registered handler based on the tube name
@@ -343,7 +349,7 @@ are listed below:
 
 There are other exceptions that are less common such as `OutOfMemoryError`, `DrainingError`,
 `DeadlineSoonError`, `InternalError`, `BadFormatError`, `UnknownCommandError`,
-`ExpectedCRLFError`, `JobTooBigError`, `NotIgnoredError`. Be sure to check the 
+`ExpectedCRLFError`, `JobTooBigError`, `NotIgnoredError`. Be sure to check the
 [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for more information.
 
 
