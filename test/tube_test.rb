@@ -37,6 +37,12 @@ describe Beaneater::Tube do
       assert_raises(Beaneater::DrainingError) { @tube.put "bar put #{@time}" }
     end
 
+    it "supports JSON" do
+      json = "{ 'foo' : 'bar' }"
+      @tube.put(json)
+      assert_equal 'bar', @tube.peek(:ready).body['foo']
+    end
+
     after do
       Beaneater::Connection.any_instance.unstub(:transmit)
     end
