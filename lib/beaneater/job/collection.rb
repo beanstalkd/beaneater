@@ -1,4 +1,5 @@
 module Beaneater
+  # Exception to stop processing jobs
   class AbortProcessingError < RuntimeError; end
 
   # Represents collection of jobs related commands.
