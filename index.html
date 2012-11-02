@@ -44,16 +44,19 @@ running time-consuming tasks asynchronously. Read the <a href="http://rdoc.info/
 <a href="http://www.igvita.com/2010/05/20/scalable-work-queues-with-beanstalk/">Scalable Work Queues with Beanstalk</a> and
 Adam Wiggins posted <a href="http://adam.heroku.com/past/2010/4/24/beanstalk_a_simple_and_fast_queueing_backend/">an excellent comparison</a>.</p>
 
-<p>You will quickly see that <strong>beanstalkd</strong> is an underrated but incredible project that is extremely well-suited as a job queue.
-Significantly better suited for this task than Redis or a database. Beanstalk is a simple,
-and a very fast work queue service rolled into a single binary - it is the memcached of work queues.
-Originally built to power the backend for the 'Causes' Facebook app, it is a mature and production ready open source project.
-<a href="http://www.postrank.com">PostRank</a> uses beanstalk to reliably process millions of jobs a day.</p>
+<p>You will find that <strong>beanstalkd</strong> is an underrated but incredibly 
+powerful project that is extremely well-suited as a job or messaging queue.
+Significantly better suited for this task than Redis or a traditional RDBMS. Beanstalk is a simple,
+and fast work queue service rolled into a single binary - it is the memcached of work queues.
+Originally built to power the backend for the 'Causes' Facebook app, 
+it is a mature and production ready open source project.
+<a href="http://www.postrank.com">PostRank</a> has used beanstalk to reliably process millions of jobs a day.</p>
 
 <p>A single instance of Beanstalk is perfectly capable of handling thousands of jobs a second (or more, depending on your job size)
 because it is an in-memory, event-driven system. Powered by libevent under the hood,
-it requires zero setup (launch and forget, à la memcached), optional log based persistence, an easily parsed ASCII protocol,
-and a rich set of tools for job management that go well beyond a simple FIFO work queue.</p>
+it requires zero setup (launch and forget, à la memcached), optional log based persistence, 
+an easily parsed ASCII protocol, and a rich set of tools for job management 
+that go well beyond a simple FIFO work queue.</p>
 
 <p>Beanstalkd supports the following features out of the box:</p>
 
@@ -63,7 +66,7 @@ and a rich set of tools for job management that go well beyond a simple FIFO wor
 <th>Description</th>
 </tr>
 <tr>
-<td><strong>Parallel Queues</strong></td>
+<td><strong>Parallelized</strong></td>
 <td>Supports multiple work queues created on demand.</td>
 </tr>
 <tr>
@@ -76,7 +79,7 @@ and a rich set of tools for job management that go well beyond a simple FIFO wor
 </tr>
 <tr>
 <td><strong>Fast</strong></td>
-<td>Processes thousands of jobs per second; <strong>significantly</strong> faster than alternatives.</td>
+<td>Processes thousands of jobs per second without breaking a sweat.</td>
 </tr>
 <tr>
 <td><strong>Priorities</strong></td>
@@ -94,8 +97,8 @@ and a rich set of tools for job management that go well beyond a simple FIFO wor
 <td><strong>Error Handling</strong></td>
 <td>Bury any job which causes an error for later debugging and inspection.</td>
 </tr>
-</table><p>Keep in mind that these features are supported out of the box with beanstalk and require no special code within this gem to support.
-In the end, <strong>beanstalk is the ideal job queue</strong> while also being ridiculously easy to install and setup.</p>
+</table><p>Keep in mind that these features are supported out of the box with beanstalk and requires no special ruby specific logic.
+In the end, <strong>beanstalk is the ideal job queue</strong> and has the added benefit of being easy to setup and configure.</p>
 
 <h2>Installation</h2>
 
@@ -103,8 +106,7 @@ In the end, <strong>beanstalk is the ideal job queue</strong> while also being r
 
 <p>Mac OS</p>
 
-<pre><code>brew update
-brew install beanstalkd
+<pre><code>brew install beanstalkd
 beanstalkd -p 11300
 </code></pre>
 
