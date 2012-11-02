@@ -76,6 +76,28 @@ gem 'beaneater'
 
 and run `bundle install` to install the dependency.
 
+## Quick Overview:
+
+The concise summary of how to use beaneater:
+
+```ruby
+# Connect to pool
+@beanstalk = Beaneater::Pool.new(['localhost:11300'])
+# Enqueue jobs to tube
+@tube = @beanstalk.tubes["my-tube"]
+@tube.put '{ "key" : "foo" }', :pri => 5
+@tube.put '{ "key" : "bar" }', :delay => 3
+# Process jobs
+2.times do
+  job = @tube.reserve
+  puts "job value is #{job.body["key"]}!"  
+end
+# Disconnect pool
+@beanstalk.close
+```
+
+For a much more details rundown, check out the __usage__ section below.
+
 ## Usage
 
 ### Connection
