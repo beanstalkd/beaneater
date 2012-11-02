@@ -39,8 +39,13 @@ module Beaneater
 
     protected
 
-    # Init telnet
-    # establish_connection('localhost:3005')
+    # Establish a telnet connection based on beanstalk address.
+    #
+    # @return [Net::Telnet] telnet connection for specified address.
+    # @raise [Beanstalk::NotConnected] Could not connect to specified beanstalkd instance.
+    # @example
+    #  establish_connection('localhost:3005')
+    #
     def establish_connection
       @match = address.split(':')
       @host, @port = @match[0], Integer(@match[1] || DEFAULT_PORT)
@@ -51,7 +56,16 @@ module Beaneater
       raise NotConnected, "#{ex.class}: #{ex}"
     end
 
-    # Return => ["OK 456", "Body"]
+    # Parses the telnet response and returns the useful beanstalk response.
+    #
+    # @param [String] cmd Beanstalk command transmitted
+    # @param [String] res Telnet command response
+    # @return [Hash] Beanstalk command response with `status`, `id`, `body`, and `connection`
+    # @raise [Beaneater::UnexpectedResponse] Response from beanstalk command was an error status
+    # @example
+    #  parse_response("delete 56", "DELETED 56\nFOO")
+    #   # => { :body => "FOO", :status => "DELETED", :id => 56, :connection => <Connection>  }
+    #
     def parse_response(cmd, res)
       res_lines = res.split(/\r?\n/)
       status = res_lines.first

@@ -17,6 +17,7 @@ module Beaneater
   #
   # 4. Refactored, crud clean, spec covered :)
   #
+  # @private
   class FasterOpenStruct
     # Undefine particularly nasty interfering methods on Ruby 1.8
     undef :type if method_defined?(:type)

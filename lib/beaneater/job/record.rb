@@ -71,18 +71,31 @@ module Beaneater
 
     protected
 
-    # transmit('stats')
-    # transmit('stats') { 'success' }
-    def transmit(body, &block)
-      res = connection.transmit(body)
+    # Transmit command to beanstalkd instances and fetch response.
+    #
+    # @param [String] cmd Beanstalkd command to send.
+    # @return [Hash] Beanstalkd response for the command.
+    # @example
+    #  transmit('stats')
+    #  transmit('stats') { 'success' }
+    #
+    def transmit(cmd, &block)
+      res = connection.transmit(cmd)
       yield if block_given?
       res
     end
 
-    # with_reserved("stats") { @reserved = false }
-    def with_reserved(body, &block)
+    # Transmits a command which requires the job to be reserved.
+    #
+    # @param [String] cmd Beanstalkd command to send.
+    # @return [Hash] Beanstalkd response for the command.
+    # @raise [Beaneater::JobNotReserved] Command cannot execute since job is not reserved.
+    # @example
+    #   with_reserved("bury 26") { @reserved = false }
+    #
+    def with_reserved(cmd, &block)
       raise JobNotReserved unless reserved?
-      transmit(body, &block)
+      transmit(cmd, &block)
     end
 
   end # Job

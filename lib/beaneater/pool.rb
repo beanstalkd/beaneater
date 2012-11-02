@@ -55,7 +55,15 @@ module Beaneater
 
     protected
 
-    # safe_transmit { conn.transmit('foo') }
+    # Transmit command to beanstalk connections safely handling failed connections
+    #
+    # @param [Proc] block The command to execute.
+    # @return [Object] Result of the block passed
+    # @raise [Beaneater::DrainingError,Beaneater::NotConnected] Could not connect to Beanstalk client
+    # @example
+    #  safe_transmit { conn.transmit('foo') }
+    #   # => "result of foo command from beanstalk"
+    #
     def safe_transmit(&block)
       retries = 1
       begin
@@ -72,6 +80,13 @@ module Beaneater
       end
     end # transmit_call
 
+    # The hosts provided by BEANSTALKD_URL environment variable, if available.
+    #
+    # @return [Array] Set of beanstalkd host addresses
+    # @example
+    #  ENV['BEANSTALKD_URL'] = "localhost:1212,localhost:2424"
+    #   # => ['localhost:1212', 'localhost:2424']
+    #
     def host_from_env
       ENV['BEANSTALKD_URL'].respond_to?(:length) && ENV['BEANSTALKD_URL'].length > 0 && ENV['BEANSTALKD_URL'].split(',').map(&:strip)
     end

@@ -3,4 +3,6 @@
 --title Beaneater
 --markup-provider=redcarpet
 --markup=markdown
+--protected
+--no-private
 lib/beaneater/**/*.rb

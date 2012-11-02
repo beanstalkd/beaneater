@@ -28,7 +28,13 @@ module Beaneater
 
     protected
 
-    # Returns struct based on merged stats data
+    # Returns struct based on stats data merged from all connections.
+    #
+    # @return [StatStruct] the combined stats for all beanstalk connections in the pool
+    # @example
+    #  self.data # => { 'version' : 1.7, 'total_connections' : 23 }
+    #  self.data.total_connections # => 23
+    #
     def data
       StatStruct.from_hash(transmit_to_all('stats', :merge => true)[:body])
     end

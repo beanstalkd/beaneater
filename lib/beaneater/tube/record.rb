@@ -74,7 +74,14 @@ module Beaneater
 
     protected
 
-    # safe_use { transmit_to_rand("kick 1") }
+    # Transmits a beanstalk command that requires this tube to be set as used.
+    #
+    # @param [Proc] block Beanstalk command to transmit.
+    # @return [Object] Result of block passed
+    # @example
+    #  safe_use { transmit_to_rand("kick 1") }
+    #    # => "Response to kick command"
+    #
     def safe_use(&block)
       @mutex.lock
       tubes.use(self.name)
