@@ -4,6 +4,8 @@ module Beaneater
   class JobNotReserved < RuntimeError; end
 
   class UnexpectedResponse < RuntimeError
+
+    # Different error states from beanstalkd server
     ERROR_STATES = %w(OUT_OF_MEMORY INTERNAL_ERROR
       BAD_FORMAT UNKNOWN_COMMAND JOB_TOO_BIG DRAINING
       TIMED_OUT DEADLINE_SOON NOT_FOUND NOT_IGNORED EXPECTED_CRLF)

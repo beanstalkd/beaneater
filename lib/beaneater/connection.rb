@@ -14,6 +14,7 @@ module Beaneater
     #  @return [Integer] returns Beanstalkd server port
     attr_reader :telnet_connection, :address, :host, :port
 
+    # Default port value
     DEFAULT_PORT = 11300
 
     # Initialize new connection
