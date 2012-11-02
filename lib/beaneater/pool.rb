@@ -27,6 +27,7 @@ module Beaneater
 
     # Returns Beaneater::Stats object for accessing beanstalk stats.
     #
+    # @return [Beaneater::Stats] stats object
     # @api public
     def stats
       @stats ||= Stats.new(self)
@@ -34,6 +35,7 @@ module Beaneater
 
     # Returns Beaneater::Jobs object for accessing job related functions.
     #
+    # @return [Beaneater::Jobs] jobs object
     # @api public
     def jobs
       @jobs ||= Jobs.new(self)
@@ -41,6 +43,7 @@ module Beaneater
 
     # Returns Beaneater::Tubes object for accessing tube related functions.
     #
+    # @return [Beaneater::Tubes] tubes object
     # @api public
     def tubes
       @tubes ||= Tubes.new(self)
