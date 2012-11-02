@@ -17,7 +17,7 @@ module Beaneater
     # Delegate to Pool#transmit_to_all and if needed will merge responses from beanstalkd
     #
     # @param [String] body Beanstalkd command
-    # @param [Hash] options telnet connections options
+    # @param [Hash{String => String, Boolean}] options telnet connections options
     # @option options [Boolean] merge Ask for merging responses or not
     # @param [Proc] block Block passed in telnet connection object
     #
@@ -46,7 +46,7 @@ module Beaneater
 
     # Selects hashes from collection and then merges the individual key values
     #
-    # @param [Array<Hash>] hs Collection of hash responses returned from beanstalkd
+    # @param [Array<Hash{String => Integer, Float}>] hs Collection of hash responses returned from beanstalkd
     # @return [Hash] Merged responses combining values from all the hash bodies
     # @example
     #  self.sum_hashes([{ :foo => 1, :bar => 5 }, { :foo => 2, :bar => 3 }])

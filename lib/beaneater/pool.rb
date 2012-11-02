@@ -1,6 +1,6 @@
 # Simple ruby client for beanstalkd.
 module Beaneater
-  # Represents collection of connections.
+  # Represents collection of beanstalkd connections.
   class Pool
     # Default number of retries to send a command to a connection
     MAX_RETRIES = 3
@@ -11,8 +11,7 @@ module Beaneater
 
     # Initialize new connection
     #
-    # @param [Array] hosts Array of beanstalkd server host
-    #
+    # @param [Array<String>] addresses Array of beanstalkd server addresses
     # @example
     #   Beaneater::Pool.new(['localhost:11300', '127.0.0.1:11300'])
     #
@@ -20,54 +19,56 @@ module Beaneater
     #   @bp = Beaneater::Pool.new
     #   @bp.connections.first.host # => 'localhost'
     #   @bp.connections.last.host # => '127.0.0.1'
-    def initialize(hosts=nil)
-      hosts = hosts || host_from_env
-      @connections = Array(hosts).map { |h| Connection.new(h) }
+    def initialize(addresses=nil)
+      addresses = addresses || host_from_env
+      @connections = Array(addresses).map { |a| Connection.new(a) }
     end
 
-    # Returns Beaneater::Stats object
+    # Returns Beaneater::Stats object for accessing beanstalk stats.
     #
     # @api public
     def stats
       @stats ||= Stats.new(self)
     end
 
-    # Returns Beaneater::Jobs object
+    # Returns Beaneater::Jobs object for accessing job related functions.
     #
     # @api public
     def jobs
       @jobs ||= Jobs.new(self)
     end
 
-    # Returns Beaneater::Tubes object
+    # Returns Beaneater::Tubes object for accessing tube related functions.
     #
     # @api public
     def tubes
       @tubes ||= Tubes.new(self)
     end
 
-    # Send command to every beanstalkd servers set in pool
+    # Sends command to every beanstalkd server set in the pool.
     #
     # @param [String] command Beanstalkd command
-    # @param [Hash] options telnet connections options
-    # @param [Proc] block Block passed in telnet connection object
-    #
+    # @param [Hash{String => String, Boolean}] options telnet connections options
+    # @param [Proc] block Block passed to telnet connection during transmit
+    # @return [Array<Hash{String => String, Number}>] Beanstalkd command response from each instance
     # @example
     #   @pool.transmit_to_all("stats")
+    #
     def transmit_to_all(command, options={}, &block)
       connections.map do |conn|
         safe_transmit { conn.transmit(command, options, &block) }
       end
     end
 
-    # Send command to a random beanstalkd servers set in pool
+    # Sends command to a random beanstalkd server in the pool.
     #
     # @param [String] command Beanstalkd command
-    # @param [Hash] options telnet connections options
+    # @param [Hash{String => String,Boolean}] options telnet connections options
     # @param [Proc] block Block passed in telnet connection object
-    #
+    # @return [Array<Hash{String => String, Number}>] Beanstalkd command response from the instance
     # @example
     #   @pool.transmit_to_rand("stats", :match => /\n/)
+    #
     def transmit_to_rand(command, options={}, &block)
       safe_transmit do
         conn = connections.respond_to?(:sample) ? connections.sample : connections.choice
@@ -78,11 +79,12 @@ module Beaneater
     # Send command to each beanstalkd servers until getting response expected
     #
     # @param [String] command Beanstalkd command
-    # @param [Hash] options telnet connections options
+    # @param [Hash{String => String, Boolean}] options telnet connections options
     # @param [Proc] block Block passed in telnet connection object
-    #
+    # @return [Array<Hash{String => String, Number}>] Beanstalkd command response from the instance
     # @example
     #   @pool.transmit_until_res('peek-ready', :status => "FOUND", &block)
+    #
     def transmit_until_res(command, options={}, &block)
       status_expected  = options.delete(:status)
       connections.each do |conn|
@@ -91,7 +93,11 @@ module Beaneater
       end && nil
     end
 
-    # Closes all connections within pool
+    # Closes all connections within the pool.
+    #
+    # @example
+    #  @pool.close
+    #
     def close
       while @connections.any?
         conn = @connections.pop

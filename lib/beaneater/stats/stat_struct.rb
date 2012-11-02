@@ -3,7 +3,7 @@ module Beaneater
   class StatStruct < FasterOpenStruct
     # Convert a stats hash into a struct.
     #
-    # @param [Hash(String => String)] hash Hash Stats hash to convert to struct
+    # @param [Hash{String => String}] hash Hash Stats hash to convert to struct
     # @return [Beaneater::StatStruct, nil] Stats struct from hash
     # @example
     #   s = StatStruct.from_hash(:foo => "bar")

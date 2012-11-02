@@ -28,11 +28,11 @@ module Beaneater
     # Inserts job with specified body onto tube.
     #
     # @param [String] body The data to store with this job.
-    # @param [Hash] options The settings associated with this job.
+    # @param [Hash{String => Integer}] options The settings associated with this job.
     # @option options [Integer] pri priority for this job
     # @option options [Integer] ttr time to respond for this job
     # @option options [Integer] delay delay for this job
-    # @return [Hash] beanstalkd command response
+    # @return [Hash{String => String, Number}] beanstalkd command response
     # @example
     #   @tube.put "data", :pri => 1000, :ttr => 10, :delay => 5
     #
@@ -79,7 +79,7 @@ module Beaneater
     # Kick specified number of jobs from buried to ready state.
     #
     # @param [Integer] bounds The number of jobs to kick.
-    # @return [Hash] Beanstalkd command response
+    # @return [Hash{String => String, Number}] Beanstalkd command response
     # @example
     #   @tube.kick(5)
     #
@@ -101,7 +101,7 @@ module Beaneater
     # Pause the execution of this tube for specified `delay`.
     #
     # @param [Integer] delay Number of seconds to delay tube execution
-    # @return [Hash] Beanstalkd command response
+    # @return [Array<Hash{String => String, Number}>] Beanstalkd command response
     # @example
     #   @tube.pause(10)
     #

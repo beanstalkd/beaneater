@@ -1,25 +1,28 @@
 require 'yaml'
 
 module Beaneater
-  # Represents a connection to beanstalkd server
+  # Represents a connection to a beanstalkd instance.
   class Connection
 
     # @!attribute telnet_connection
     #   @return [Net::Telnet] returns Telnet connection object
     # @!attribute address
     #   @return [String] returns Beanstalkd server address
+    #   @example @conn.address # => "localhost:11300"
     # @!attribute host
     #   @return [String] returns Beanstalkd server host
+    #   @example @conn.host => "localhost"
     # @!attribute port
     #  @return [Integer] returns Beanstalkd server port
+    #   @example @conn.port => "11300"
     attr_reader :telnet_connection, :address, :host, :port
 
-    # Default port value
+    # Default port value for beanstalk connection
     DEFAULT_PORT = 11300
 
-    # Initialize new connection
+    # Initializes new connection.
     #
-    # @param [String] address beanstalkd address
+    # @param [String] address beanstalkd instance address
     # @example
     #   Beaneater::Connection.new('localhost')
     #   Beaneater::Connection.new('localhost:11300')
@@ -32,11 +35,11 @@ module Beaneater
     # Send commands to beanstalkd server via telnet_connection
     #
     # @param [String] command Beanstalkd command
-    # @param [Hash] options Settings for telnet
+    # @param [Hash{String => String,Boolean}] options Settings for telnet
     # @option options [Boolean] FailEOF raises EOF Exeception
-    #
     # @example
     #   @beaneater_connection.transmit('bury 123')
+    #
     def transmit(command, options={}, &block)
       @mutex.lock
       if telnet_connection
@@ -53,6 +56,7 @@ module Beaneater
     #
     # @example
     #  @beaneater_connection.close
+    #
     def close
       @telnet_connection.close
       @telnet_connection = nil
@@ -62,6 +66,7 @@ module Beaneater
     #
     # @example
     #  @beaneater_connection.inspect
+    #
     def to_s
       "#<Beaneater::Connection host=#{host.inspect} port=#{port.inspect}>"
     end
@@ -90,7 +95,7 @@ module Beaneater
     #
     # @param [String] cmd Beanstalk command transmitted
     # @param [String] res Telnet command response
-    # @return [Hash] Beanstalk command response with `status`, `id`, `body`, and `connection`
+    # @return [Array<Hash{String => String, Number}>] Beanstalk response with `status`, `id`, `body`, and `connection`
     # @raise [Beaneater::UnexpectedResponse] Response from beanstalk command was an error status
     # @example
     #  parse_response("delete 56", "DELETED 56\nFOO")

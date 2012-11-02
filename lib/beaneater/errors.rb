@@ -1,5 +1,5 @@
 module Beaneater
-  # Raises when the beanstalkd instance cannot be accessed
+  # Raises when a beanstalkd instance is no longer accessible.
   class NotConnected < RuntimeError; end
   # Raises when the tube name specified is invalid.
   class InvalidTubeName < RuntimeError; end
@@ -15,13 +15,15 @@ module Beaneater
 
     # @!attribute status
     #   @return [String] returns beanstalkd response status
+    #   @example @ex.status # => "NOT_FOUND"
     # @!attribute cmd
     #   @return [String] returns beanstalkd request command
+    #   @example @ex.cmd # => "stats-job 23"
     attr_reader :status, :cmd
 
     # Initialize unexpected response error
     #
-    # @param [UnexpectedResponse] status Unexpected response object
+    # @param [Beaneater::UnexpectedResponse] status Unexpected response object
     # @param [String] cmd Beanstalkd request command
     #
     # @example
@@ -37,6 +39,7 @@ module Beaneater
     # @param [String] status Beanstalkd error status
     # @param [String] cmd Beanstalkd request command
     #
+    # @return [Beaneater::UnexpectedResponse] Exception for the status provided
     # @example
     #   Beaneater::UnexpectedResponse.new('NOT_FOUND', 'bury 123')
     #
