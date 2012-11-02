@@ -2,6 +2,7 @@ require 'beaneater/stats/fast_struct'
 require 'beaneater/stats/stat_struct'
 
 module Beaneater
+  # Represents stats related to the beanstalkd pool.
   class Stats < PoolCommand
     # Returns keys for stats data
     #

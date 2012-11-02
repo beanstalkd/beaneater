@@ -1,3 +1,4 @@
+# Simple ruby client for beanstalkd.
 module Beaneater
   # Represents collection of connections.
   class Pool
