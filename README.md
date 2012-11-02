@@ -107,6 +107,10 @@ To interact with a beanstalk queue, first establish a connection by providing a 
 
 ```ruby
 @beanstalk = Beaneater::Pool.new(['10.0.1.5:11300'])
+# Or if ENV['BEANSTALKD_URL] == 'localhost:11300,127.0.0.1:11300'
+@beanstalk = Beaneater::Pool.new
+@beanstalk.connections.first # => localhost:11300
+@beanstalk.connections.last # => 127.0.0.1:11300
 ```
 
 You can conversely close and dispose of a pool at any time with:
