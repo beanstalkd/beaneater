@@ -8,13 +8,16 @@ module Beaneater
     #   @return [Net::Telnet] returns Telnet connection object
     # @!attribute address
     #   @return [String] returns Beanstalkd server address
-    #   @example @conn.address # => "localhost:11300"
+    #   @example
+    #     @conn.address # => "localhost:11300"
     # @!attribute host
     #   @return [String] returns Beanstalkd server host
-    #   @example @conn.host => "localhost"
+    #   @example
+    #     @conn.host => "localhost"
     # @!attribute port
     #  @return [Integer] returns Beanstalkd server port
-    #   @example @conn.port => "11300"
+    #  @example
+    #    @conn.port => "11300"
     attr_reader :telnet_connection, :address, :host, :port
 
     # Default port value for beanstalk connection
@@ -35,10 +38,10 @@ module Beaneater
     # Send commands to beanstalkd server via telnet_connection
     #
     # @param [String] command Beanstalkd command
-    # @param [Hash{String => String,Boolean}] options Settings for telnet
+    # @param [Hash{Symbol => String,Boolean}] options Settings for telnet
     # @option options [Boolean] FailEOF raises EOF Exeception
     # @example
-    #   @beaneater_connection.transmit('bury 123')
+    #   @conn.transmit('bury 123')
     #
     def transmit(command, options={}, &block)
       @mutex.lock
@@ -55,7 +58,7 @@ module Beaneater
     # Close connection with beanstalkd server
     #
     # @example
-    #  @beaneater_connection.close
+    #  @conn.close
     #
     def close
       @telnet_connection.close
@@ -65,7 +68,7 @@ module Beaneater
     # Returns string representation of job
     #
     # @example
-    #  @beaneater_connection.inspect
+    #  @conn.inspect
     #
     def to_s
       "#<Beaneater::Connection host=#{host.inspect} port=#{port.inspect}>"
