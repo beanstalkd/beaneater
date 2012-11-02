@@ -1,4 +1,5 @@
 module Beaneater
+  # Represents job related commands.
   class Job
 
     # @!attribute id

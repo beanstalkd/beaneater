@@ -1,4 +1,5 @@
 module Beaneater
+  # Represents collection of connections.
   class Pool
     # Default number of retries to send a command to a connection
     MAX_RETRIES = 3

@@ -1,6 +1,7 @@
 require 'yaml'
 
 module Beaneater
+  # Represents a connection to beanstalkd server
   class Connection
 
     # @!attribute telnet_connection

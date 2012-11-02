@@ -1,5 +1,7 @@
 module Beaneater
   class AbortProcessingError < RuntimeError; end
+
+  # Represents collection of jobs related commands.
   class Jobs < PoolCommand
 
     # @!attribute processors

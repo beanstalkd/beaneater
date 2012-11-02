@@ -1,6 +1,7 @@
 require 'set'
 
 module Beaneater
+  # Represents collection of pool related commands.
   class PoolCommand
     # @!attribute pool
     #   @return [Beaneater::Pool] returns Pool object
