@@ -21,4 +21,3 @@
 # @example
 #  something.foo # => "test"
 #
-# @api private
