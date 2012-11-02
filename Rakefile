@@ -1,5 +1,7 @@
 require "bundler/gem_tasks"
 require 'rake/testtask'
+require 'yard'
+require 'redcarpet'
 
 Rake::TestTask.new do |t|
   t.libs.push "lib"
@@ -13,4 +15,9 @@ Rake::TestTask.new("test:full") do |t|
   t.libs.push "lib"
   t.test_files = FileList[File.expand_path('../test/**/*_test.rb', __FILE__)]
   t.verbose = true
+end
+
+YARD::Rake::YardocTask.new do |t|
+  t.files   = ['lib/beaneater/**/*.rb']
+  t.options = []
 end

@@ -1,0 +1,6 @@
+--output-dir doc/
+--readme README.md
+--title Beaneater
+--markup-provider=redcarpet
+--markup=markdown
+lib/beaneater/**/*.rb
