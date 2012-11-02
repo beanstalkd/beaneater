@@ -392,6 +392,7 @@ There are other resources helpful when learning about beanstalk:
  * [Beanstalkd homepage](http://kr.github.com/beanstalkd/)
  * [beanstalk on github](https://github.com/kr/beanstalkd)
  * [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md)
+ * [Backburner](https://github.com/nesquena/backburner) - Ruby job queue for Rails/Sinatra
 
 ## Contributors
 
