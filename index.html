@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Beaneater by Nico-Taing</title>
+    <title>Beaneater by beanstalkd</title>
 
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
@@ -20,23 +20,23 @@
         <p class="header">Best way to consume beanstalkd</p>
 
         <ul>
-          <li class="download"><a class="buttons" href="https://github.com/Nico-Taing/beaneater/zipball/master">Download ZIP</a></li>
-          <li class="download"><a class="buttons" href="https://github.com/Nico-Taing/beaneater/tarball/master">Download TAR</a></li>
-          <li><a class="buttons github" href="https://github.com/Nico-Taing/beaneater">View On GitHub</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/beanstalkd/beaneater/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/beanstalkd/beaneater/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/beanstalkd/beaneater">View On GitHub</a></li>
         </ul>
 
-        <p class="header">This project is maintained by <a class="header name" href="https://github.com/Nico-Taing">Nico-Taing</a></p>
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/beanstalkd">beanstalkd</a></p>
 
 
       </header>
       <section>
         <h1>Beaneater</h1>
 
-<p>Beaneater is the best way to interact with beanstalkd from within Ruby. 
+<p>Beaneater is the best way to interact with beanstalkd from within Ruby.
 <a href="http://kr.github.com/beanstalkd/">Beanstalkd</a> is a simple, fast work queue. Its interface is generic, but was
-originally designed for reducing the latency of page views in high-volume web applications by 
-running time-consuming tasks asynchronously. Read the 
-<a href="https://github.com/kr/beanstalkd/blob/master/doc/protocol.md">beanstalk protocol</a> for more details. </p>
+originally designed for reducing the latency of page views in high-volume web applications by
+running time-consuming tasks asynchronously. Read the
+<a href="https://github.com/kr/beanstalkd/blob/master/doc/protocol.md">beanstalk protocol</a> for more details.</p>
 
 <h2>Why Beanstalk?</h2>
 
@@ -143,11 +143,11 @@ beanstalkd -p 11300
 
 <h3>Tubes</h3>
 
-<p>Beanstalkd has one or more tubes which can contain any number of jobs. 
-Jobs can be inserted (put) into the used tube and pulled out (reserved) from watched tubes. 
-Each tube consists of a <em>ready</em>, <em>delayed</em>, and <em>buried</em> queue for jobs. </p>
+<p>Beanstalkd has one or more tubes which can contain any number of jobs.
+Jobs can be inserted (put) into the used tube and pulled out (reserved) from watched tubes.
+Each tube consists of a <em>ready</em>, <em>delayed</em>, and <em>buried</em> queue for jobs.</p>
 
-<p>When a client connects, its watch list is initially just the tube named <code>default</code>.<br>
+<p>When a client connects, its watch list is initially just the tube named <code>default</code>.
 Tube names are at most 200 bytes. It specifies the tube to use. If the tube does not exist, it will be automatically created.</p>
 
 <p>To interact with a tube, first <code>find</code> the tube:</p>
@@ -193,7 +193,7 @@ Tube names are at most 200 bytes. It specifies the tube to use. If the tube does
 <span class="n">tube</span><span class="o">.</span><span class="n">clear</span> <span class="c1"># tube will now be empty</span>
 </pre></div>
 
-<p>In summary, each beanstalk client manages two separate concerns: which tube newly created jobs are put into, 
+<p>In summary, each beanstalk client manages two separate concerns: which tube newly created jobs are put into,
 and which tube(s) jobs are reserved from. Accordingly, there are two separate sets of functions for these concerns:</p>
 
 <ul>
@@ -201,7 +201,7 @@ and which tube(s) jobs are reserved from. Accordingly, there are two separate se
 <strong>use</strong> and <strong>using</strong> affect where 'put' places jobs</li>
 <li>
 <strong>watch</strong> and <strong>watching</strong> control where reserve takes jobs from</li>
-</ul><p>Note that these concerns are fully orthogonal: for example, when you 'use' a tube, it is not automatically 'watched'. 
+</ul><p>Note that these concerns are fully orthogonal: for example, when you 'use' a tube, it is not automatically 'watched'.
 Neither does 'watching' a tube affect the tube you are 'using'.</p>
 
 <h3>Jobs</h3>
@@ -242,7 +242,7 @@ Each job is enqueued into a tube and later reserved and processed. Here is a pic
 <li>
 <strong>release</strong> which places a reserved job back onto the ready queue.</li>
 <li>
-<strong>delete</strong> which removes a job from beanstalk. </li>
+<strong>delete</strong> which removes a job from beanstalk.</li>
 <li>
 <strong>bury</strong> which places a reserved job into the buried state.</li>
 <li>
@@ -252,21 +252,26 @@ Each job is enqueued into a tube and later reserved and processed. Here is a pic
 <div class="highlight"><pre><span class="vi">@tube</span><span class="o">.</span><span class="n">put</span> <span class="s2">"job-data-here"</span>
 </pre></div>
 
-<p>Each job has various metadata associated such as <code>priority</code>, <code>delay</code>, and <code>ttr</code> which can be 
+<p>Beanstalkd can only stores strings as job bodies, but you can easily encode your data into a string:</p>
+
+<div class="highlight"><pre><span class="vi">@tube</span><span class="o">.</span><span class="n">put</span><span class="p">({</span><span class="ss">:foo</span> <span class="o">=&gt;</span> <span class="s1">'bar'</span><span class="p">}</span><span class="o">.</span><span class="n">to_json</span><span class="p">)</span>
+</pre></div>
+
+<p>Each job has various metadata associated such as <code>priority</code>, <code>delay</code>, and <code>ttr</code> which can be
 specified as part of the <code>put</code> command:</p>
 
 <div class="highlight"><pre><span class="c1"># defaults are priority 0, delay of 0 and ttr of 120 seconds</span>
 <span class="vi">@tube</span><span class="o">.</span><span class="n">put</span> <span class="s2">"job-data-here"</span><span class="p">,</span> <span class="ss">:pri</span> <span class="o">=&gt;</span> <span class="mi">1000</span><span class="p">,</span> <span class="ss">:delay</span> <span class="o">=&gt;</span> <span class="mi">50</span><span class="p">,</span> <span class="ss">:ttr</span> <span class="o">=&gt;</span> <span class="mi">200</span>
 </pre></div>
 
-<p>The <code>priority</code> argument is an integer &lt; 2**32. Jobs with a smaller priority take precedence over jobs with larger priorities. 
+<p>The <code>priority</code> argument is an integer &lt; 2**32. Jobs with a smaller priority take precedence over jobs with larger priorities.
 The <code>delay</code> argument is an integer number of seconds to wait before putting the job in the ready queue.
-The <code>ttr</code> argument is the time to run -- is an integer number of seconds to allow a worker to run this job. </p>
+The <code>ttr</code> argument is the time to run -- is an integer number of seconds to allow a worker to run this job.</p>
 
 <h3>Processing Jobs (Manually)</h3>
 
-<p>In order to process jobs, the client should first specify the intended tubes to be watched. If not specified, 
-this will default to watching just the <code>default</code> tube. </p>
+<p>In order to process jobs, the client should first specify the intended tubes to be watched. If not specified,
+this will default to watching just the <code>default</code> tube.</p>
 
 <div class="highlight"><pre><span class="vi">@beanstalk</span> <span class="o">=</span> <span class="no">Beaneater</span><span class="o">::</span><span class="no">Connection</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="o">[</span><span class="s1">'10.0.1.5:11300'</span><span class="o">]</span><span class="p">)</span>
 <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">watch!</span><span class="p">(</span><span class="s1">'tube-name'</span><span class="p">,</span> <span class="s1">'other-tube'</span><span class="p">)</span>
@@ -407,7 +412,7 @@ are listed below:</p>
 </tr>
 </table><p>There are other exceptions that are less common such as <code>OutOfMemoryError</code>, <code>DrainingError</code>,
 <code>DeadlineSoonError</code>, <code>InternalError</code>, <code>BadFormatError</code>, <code>UnknownCommandError</code>,
-<code>ExpectedCRLFError</code>, <code>JobTooBigError</code>, <code>NotIgnoredError</code>. Be sure to check the 
+<code>ExpectedCRLFError</code>, <code>JobTooBigError</code>, <code>NotIgnoredError</code>. Be sure to check the
 <a href="https://github.com/kr/beanstalkd/blob/master/doc/protocol.md">beanstalk protocol</a> for more information.</p>
 
 <h3>Stats</h3>
