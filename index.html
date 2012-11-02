@@ -140,9 +140,10 @@ beanstalkd -p 11300
 <span class="vi">@tube</span><span class="o">.</span><span class="n">put</span> <span class="s1">'{ "key" : "foo" }'</span><span class="p">,</span> <span class="ss">:pri</span> <span class="o">=&gt;</span> <span class="mi">5</span>
 <span class="vi">@tube</span><span class="o">.</span><span class="n">put</span> <span class="s1">'{ "key" : "bar" }'</span><span class="p">,</span> <span class="ss">:delay</span> <span class="o">=&gt;</span> <span class="mi">3</span>
 <span class="c1"># Process jobs from tube</span>
-<span class="mi">2</span><span class="o">.</span><span class="n">times</span> <span class="k">do</span>
+<span class="k">while</span> <span class="vi">@tube</span><span class="o">.</span><span class="n">peek</span><span class="p">(</span><span class="ss">:ready</span><span class="p">)</span>
   <span class="n">job</span> <span class="o">=</span> <span class="vi">@tube</span><span class="o">.</span><span class="n">reserve</span>
   <span class="nb">puts</span> <span class="s2">"job value is </span><span class="si">#{</span><span class="n">job</span><span class="o">.</span><span class="n">body</span><span class="o">[</span><span class="s2">"key"</span><span class="o">]</span><span class="si">}</span><span class="s2">!"</span>  
+  <span class="n">job</span><span class="o">.</span><span class="n">delete</span>
 <span class="k">end</span>
 <span class="c1"># Disconnect the pool</span>
 <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">close</span>
