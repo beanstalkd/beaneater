@@ -88,9 +88,10 @@ The concise summary of how to use beaneater:
 @tube.put '{ "key" : "foo" }', :pri => 5
 @tube.put '{ "key" : "bar" }', :delay => 3
 # Process jobs from tube
-2.times do
+while @tube.peek(:ready)
   job = @tube.reserve
   puts "job value is #{job.body["key"]}!"  
+  job.delete
 end
 # Disconnect the pool
 @beanstalk.close
