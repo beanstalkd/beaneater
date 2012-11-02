@@ -32,10 +32,11 @@
       <section>
         <h1>Beaneater</h1>
 
-<p><a href="http://kr.github.com/beanstalkd/">Beaneater</a> is a simple, fast work queue. Its interface is generic, but was
-originally designed for reducing the latency of page views in high-volume web
-applications by running time-consuming tasks asynchronously. 
-Read the <a href="https://github.com/kr/beanstalkd/blob/master/doc/protocol.md">beanstalk protocol</a> for more detail.</p>
+<p>Beaneater is the best way to interact with beanstalkd from within Ruby. 
+<a href="http://kr.github.com/beanstalkd/">Beanstalkd</a> is a simple, fast work queue. Its interface is generic, but was
+originally designed for reducing the latency of page views in high-volume web applications by 
+running time-consuming tasks asynchronously. Read the 
+<a href="https://github.com/kr/beanstalkd/blob/master/doc/protocol.md">beanstalk protocol</a> for more details. </p>
 
 <h2>Why Beanstalk?</h2>
 
@@ -54,7 +55,7 @@ because it is an in-memory, event-driven system. Powered by libevent under the h
 it requires zero setup (launch and forget, à la memcached), optional log based persistence, an easily parsed ASCII protocol,
 and a rich set of tools for job management that go well beyond a simple FIFO work queue.</p>
 
-<p>Beanstalk supports the following features natively, out of the box, without any questions asked:</p>
+<p>Beanstalkd supports the following features out of the box:</p>
 
 <table>
 <tr>
@@ -75,7 +76,7 @@ and a rich set of tools for job management that go well beyond a simple FIFO wor
 </tr>
 <tr>
 <td><strong>Fast</strong></td>
-<td>Processes thousands of jobs per second; <strong>significantly</strong> <a href="http://adam.heroku.com/past/2010/4/24/beanstalk_a_simple_and_fast_queueing_backend">faster than alternatives</a>.</td>
+<td>Processes thousands of jobs per second; <strong>significantly</strong> faster than alternatives.</td>
 </tr>
 <tr>
 <td><strong>Priorities</strong></td>
@@ -90,7 +91,7 @@ and a rich set of tools for job management that go well beyond a simple FIFO wor
 <td>Horizontal scalability provided through federation by the client.</td>
 </tr>
 <tr>
-<td><strong>Buried jobs</strong></td>
+<td><strong>Error Handling</strong></td>
 <td>Bury any job which causes an error for later debugging and inspection.</td>
 </tr>
 </table><p>Keep in mind that these features are supported out of the box with beanstalk and require no special code within this gem to support.
@@ -162,7 +163,7 @@ Tube names are at most 200 bytes. It specifies the tube to use. If the tube does
 <span class="c1"># Append tubes to existing set of watched tubes</span>
 <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">watch</span><span class="p">(</span><span class="s1">'another-tube'</span><span class="p">)</span>
 <span class="c1"># You can also ignore tubes that have been watched previously</span>
-<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">ignore</span><span class="p">(</span><span class="s1">'some-tube'</span><span class="p">)</span>
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">ignore</span><span class="p">(</span><span class="s1">'some-tube'</span><span class="p">)</span>
 </pre></div>
 
 <p>You can easily get a list of all, used or watched tubes:</p>
@@ -350,11 +351,11 @@ inspected using the 'peek' commands. To find and peek at a particular job based 
 <p>Instead of using <code>watch</code> and <code>reserve</code>, you can also use the higher level <code>register</code> and <code>process</code> methods to
 process jobs. First you can 'register' how to handle jobs from various tubes:</p>
 
-<div class="highlight"><pre><span class="vi">@beanstalk</span><span class="o">.</span><span class="n">jobs</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">'some-tube-name'</span><span class="p">,</span> <span class="ss">:retry_on</span> <span class="o">=&gt;</span> <span class="o">[</span><span class="no">SomeCustomException</span><span class="o">]</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">job</span><span class="o">|</span>
+<div class="highlight"><pre><span class="vi">@beanstalk</span><span class="o">.</span><span class="n">jobs</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">'some-tube'</span><span class="p">,</span> <span class="ss">:retry_on</span> <span class="o">=&gt;</span> <span class="o">[</span><span class="no">SomeError</span><span class="o">]</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">job</span><span class="o">|</span>
   <span class="n">do_something</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
 <span class="k">end</span>
 
-<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">jobs</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">'some-other-name'</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">job</span><span class="o">|</span>
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">jobs</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">'other-tube'</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">job</span><span class="o">|</span>
   <span class="n">do_something_else</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
 <span class="k">end</span>
 </pre></div>
@@ -416,7 +417,7 @@ beanstalk overall:</p>
 
 <div class="highlight"><pre><span class="c1"># Get overall stats about the job processing that has occurred</span>
 <span class="nb">print</span> <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">stats</span>
-<span class="c1"># =&gt; { 'current_connections': 1, 'current_jobs_buried': 0, 'current_jobs_delayed': 0, ... }</span>
+<span class="c1"># =&gt; { 'current_connections': 1, 'current_jobs_buried': 0, ... }</span>
 <span class="nb">print</span> <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">current_connections</span>
 <span class="c1"># =&gt; 1</span>
 </pre></div>
@@ -425,7 +426,7 @@ beanstalk overall:</p>
 
 <div class="highlight"><pre><span class="c1"># Get statistical information about the specified tube if it exists</span>
 <span class="nb">print</span> <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">[</span><span class="s1">'some_tube_name'</span><span class="o">].</span><span class="n">stats</span>
-<span class="c1"># =&gt; { 'current_jobs_ready': 0, 'current_jobs_reserved': 0, 'current_jobs_buried': 0, ...  }</span>
+<span class="c1"># =&gt; { 'current_jobs_ready': 0, 'current_jobs_reserved': 0, ... }</span>
 </pre></div>
 
 <p>For stats on an individual job:</p>
