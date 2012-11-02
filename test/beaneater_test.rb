@@ -76,38 +76,37 @@ describe "beanstalk-client" do
     end
   end
 
-    describe "test delete job in reserved state" do
-      before do
-        @tube_three = @beanstalk.tubes.find('three')
-        @tube_three.put('one')
-        @job = @tube_three.reserve
-      end
-
-      it "should be deleted properly" do
-        assert_equal 'one', @job.body
-        assert_equal 'one', @beanstalk.jobs.find(@job.id).body
-        @job.delete
-        assert_nil @beanstalk.jobs.find(@job.id)
-      end
+  describe "test delete job in reserved state" do
+    before do
+      @tube_three = @beanstalk.tubes.find('three')
+      @tube_three.put('one')
+      @job = @tube_three.reserve
     end
 
-    describe "test delete job in buried state" do
-      before do
-        @tube_three = @beanstalk.tubes.find('three')
-        @tube_three.put('two')
-        @job = @tube_three.reserve
-      end
+    it "should be deleted properly" do
+      assert_equal 'one', @job.body
+      assert_equal 'one', @beanstalk.jobs.find(@job.id).body
+      @job.delete
+      assert_nil @beanstalk.jobs.find(@job.id)
+    end
+  end
 
-      it "should delete job as expected in buried state" do
-        assert_equal 'two', @job.body
-        @job.bury
-        assert_equal 'two', @tube_three.peek(:buried).body
-
-        @job.delete
-        assert_nil @beanstalk.jobs.find(@job.id)
-      end
+  describe "test delete job in buried state" do
+    before do
+      @tube_three = @beanstalk.tubes.find('three')
+      @tube_three.put('two')
+      @job = @tube_three.reserve
     end
 
+    it "should delete job as expected in buried state" do
+      assert_equal 'two', @job.body
+      @job.bury
+      assert_equal 'two', @tube_three.peek(:buried).body
+
+      @job.delete
+      assert_nil @beanstalk.jobs.find(@job.id)
+    end
+  end
 
   after do
     cleanup_tubes!(@tubes, @beanstalk)
