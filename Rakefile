@@ -3,10 +3,18 @@ require 'rake/testtask'
 require 'yard'
 require 'redcarpet'
 
+# rake test
 Rake::TestTask.new do |t|
   t.libs.push "lib"
   t.test_files = FileList[File.expand_path('../test/**/*_test.rb', __FILE__)] -
     FileList[File.expand_path('../test/**/beaneater_test.rb', __FILE__)]
+  t.verbose = true
+end
+
+# rake test:integration
+Rake::TestTask.new("test:integration") do |t|
+  t.libs.push "lib"
+  t.test_files = FileList[File.expand_path('../test/**/beaneater_test.rb', __FILE__)]
   t.verbose = true
 end
 
