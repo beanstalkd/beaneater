@@ -18,23 +18,29 @@ describe Beaneater::PoolCommand do
   describe 'for #transmit_to_all' do
     describe 'for regular command' do
       before do
-        @pool = stub(:transmit_to_all => "OK")
+        @pool = stub(:transmit_to_all => [{ :body => "foo", :status => "OK" }])
         @command = Beaneater::PoolCommand.new(@pool)
       end
 
       it "can run regular command" do
-        assert_equal "OK", @command.transmit_to_all("foo")
+        res = @command.transmit_to_all("foo")
+        assert_equal "OK", res[0][:status]
+        assert_equal "foo", res[0][:body]
       end
     end # regular command
 
     describe 'for merged command' do
       before do
-        @pool = stub(:transmit_to_all => [{ :body => { 'x' => 1, 'version' => 1.1 }}, {:body => { 'x' => 3,'version' => 1.2 }}])
+        @pool = stub(:transmit_to_all => [
+          { :body => { 'x' => 1, 'version' => 1.1 }, :status => "OK"},
+          { :body => { 'x' => 3,'version' => 1.2 }, :status => "OK" }
+        ])
         @command = Beaneater::PoolCommand.new(@pool)
       end
 
       it "can run merge command" do
         cmd = @command.transmit_to_all("bar", :merge => true)
+        assert_equal "OK", cmd[:status]
         assert_equal 4, cmd[:body]['x']
         assert_equal Set[1.1, 1.2], cmd[:body]['version']
       end

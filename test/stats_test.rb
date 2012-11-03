@@ -4,7 +4,8 @@ require File.expand_path('../test_helper', __FILE__)
 
 describe Beaneater::Stats do
   before do
-    @pool =  stub(:transmit_to_all => [{ :body => { 'uptime' => 1, 'cmd-use' => 2 }}, {:body => { 'uptime' => 3,'cmd-use' => 4 }}])
+    @pool =  stub(:transmit_to_all => [{ :body => { 'uptime' => 1, 'cmd-use' => 2 }, :status => "OK"},
+      {:body => { 'uptime' => 3,'cmd-use' => 4 }, :status => "OK" }])
     @stats = Beaneater::Stats.new(@pool)
   end
 

@@ -59,9 +59,41 @@ module Beaneater
     #   @pool.transmit_to_all("stats")
     #
     def transmit_to_all(command, options={}, &block)
-      connections.map do |conn|
-        safe_transmit { conn.transmit(command, options, &block) }
+      res_exception = nil
+      res = connections.map { |conn|
+        begin
+          safe_transmit { conn.transmit(command, options, &block) }
+        rescue UnexpectedResponse => ex # not the correct status
+          res_exception = ex
+          nil
+        end
+      }.compact
+      raise res_exception if res.none? && res_exception
+      res
+    end
+
+    # Send command to each beanstalkd servers until getting response expected
+    #
+    # @param [String] command Beanstalkd command
+    # @param [Hash{String => String, Boolean}] options telnet connections options
+    # @param [Proc] block Block passed in telnet connection object
+    # @return [Array<Hash{String => String, Number}>] Beanstalkd command response from the instance
+    # @example
+    #   @pool.transmit_until_res('peek-ready', :status => "FOUND", &block)
+    #
+    def transmit_until_res(command, options={}, &block)
+      status_expected  = options.delete(:status)
+      res_exception = nil
+      connections.each do |conn|
+        begin
+          res = safe_transmit { conn.transmit(command, options, &block) }
+          return res if res[:status] == status_expected
+        rescue UnexpectedResponse => ex # not the correct status
+          res_exception = ex
+          next
+        end
       end
+      raise res_exception if res_exception
     end
 
     # Sends command to a random beanstalkd server in the pool.
@@ -78,23 +110,6 @@ module Beaneater
         conn = connections.respond_to?(:sample) ? connections.sample : connections.choice
         conn.transmit(command, options, &block)
       end
-    end
-
-    # Send command to each beanstalkd servers until getting response expected
-    #
-    # @param [String] command Beanstalkd command
-    # @param [Hash{String => String, Boolean}] options telnet connections options
-    # @param [Proc] block Block passed in telnet connection object
-    # @return [Array<Hash{String => String, Number}>] Beanstalkd command response from the instance
-    # @example
-    #   @pool.transmit_until_res('peek-ready', :status => "FOUND", &block)
-    #
-    def transmit_until_res(command, options={}, &block)
-      status_expected  = options.delete(:status)
-      connections.each do |conn|
-        res = safe_transmit { conn.transmit(command, options, &block) }
-        return res if res[:status] == status_expected
-      end && nil
     end
 
     # Closes all connections within the pool.

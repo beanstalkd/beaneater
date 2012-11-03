@@ -26,8 +26,9 @@ module Beaneater
     def transmit_to_all(body, options={}, &block)
       merge = options.delete(:merge)
       res = pool.transmit_to_all(body, options, &block)
-      if merge
-        res = { :status => res.first[:status], :body => sum_hashes(res.map { |r| r[:body] }) }
+      first = res.find { |r| r && r[:status] }
+      if first && merge
+        res = { :status => first[:status], :body => sum_hashes(res.map { |r| r[:body] }) }
       end
       res
     end
