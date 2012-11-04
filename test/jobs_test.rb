@@ -33,6 +33,30 @@ describe Beaneater::Jobs do
     end
   end # find
 
+  describe "for #find_all" do
+    before do
+      @time = Time.now.to_i
+      @tube.put("foo find #{@time}")
+      @job = @tube.peek(:ready)
+    end
+
+      it "should return job from id" do
+        assert_equal "foo find #{@time}", @jobs.find_all(@job.id).first.body
+      end
+
+      it "should return job using peek" do
+        assert_equal "foo find #{@time}", @jobs.find_all(@job.id).first.body
+      end
+
+      it "should return job using hash syntax" do
+        assert_equal "foo find #{@time}", @jobs.find_all(@job.id).first.body
+      end
+
+      it "should return nil for invalid id" do
+        assert_equal [], @jobs.find_all(-1)
+      end
+  end # find_all
+
   describe "for #register!" do
     before do
       $foo = 0

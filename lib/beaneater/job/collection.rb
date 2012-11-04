@@ -16,7 +16,7 @@ module Beaneater
     # Delay in seconds before to make job ready again.
     RELEASE_DELAY = 1
 
-    # Peek (or find) a job across all beanstalkd servers from pool.
+    # Peek (or find) first job from beanstalkd pool.
     #
     # @param [Integer] id Job id to find
     # @return [Beaneater::Job] Job matching given id
@@ -34,6 +34,21 @@ module Beaneater
     end
     alias_method :peek, :find
     alias_method :[], :find
+
+    # Find all jobs with specified id fromm all beanstalkd servers in pool.
+    #
+    # @param [Integer] id Job id to find
+    # @return [Array<Beaneater::Job>] Jobs matching given id
+    # @example
+    #   @beaneater_pool.jobs.find_all(123) # => [<Beaneater::Job>, <Beaneater::Job>]
+    #
+    # @api public
+    def find_all(id)
+      res = transmit_to_all("peek #{id}")
+      res.compact.map { |r| Job.new(r) }
+    rescue Beaneater::NotFoundError => ex
+      []
+    end
 
     # Register a processor to handle beanstalkd job on particular tube.
     #

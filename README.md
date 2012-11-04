@@ -13,18 +13,18 @@ Illya has an excellent blog post
 [Scalable Work Queues with Beanstalk](http://www.igvita.com/2010/05/20/scalable-work-queues-with-beanstalk/) and
 Adam Wiggins posted [an excellent comparison](http://adam.heroku.com/past/2010/4/24/beanstalk_a_simple_and_fast_queueing_backend/).
 
-You will find that **beanstalkd** is an underrated but incredibly 
+You will find that **beanstalkd** is an underrated but incredibly
 powerful project that is extremely well-suited as a job or messaging queue.
 Significantly better suited for this task than Redis or a traditional RDBMS. Beanstalk is a simple,
 and fast work queue service rolled into a single binary - it is the memcached of work queues.
-Originally built to power the backend for the 'Causes' Facebook app, 
+Originally built to power the backend for the 'Causes' Facebook app,
 it is a mature and production ready open source project.
 [PostRank](http://www.postrank.com) has used beanstalk to reliably process millions of jobs a day.
 
 A single instance of Beanstalk is perfectly capable of handling thousands of jobs a second (or more, depending on your job size)
 because it is an in-memory, event-driven system. Powered by libevent under the hood,
-it requires zero setup (launch and forget, à la memcached), optional log based persistence, 
-an easily parsed ASCII protocol, and a rich set of tools for job management 
+it requires zero setup (launch and forget, à la memcached), optional log based persistence,
+an easily parsed ASCII protocol, and a rich set of tools for job management
 that go well beyond a simple FIFO work queue.
 
 Beanstalkd supports the following features out of the box:
@@ -90,7 +90,7 @@ The concise summary of how to use beaneater:
 # Process jobs from tube
 while @tube.peek(:ready)
   job = @tube.reserve
-  puts "job value is #{job.body["key"]}!"  
+  puts "job value is #{job.body["key"]}!"
   job.delete
 end
 # Disconnect the pool
@@ -307,6 +307,13 @@ inspected using the 'peek' commands. To find and peek at a particular job based 
 # => <Beaneater::Job id=123 body="foo">
 ```
 
+You can also `find_all` jobs across all connections:
+
+```ruby
+@beanstalk.jobs.find_all(123)
+# => [<Beaneater::Job id=123 body="foo">, <Beaneater::Job id=123 body="bar">]
+```
+
 or you can peek at jobs within a tube:
 
 ```ruby
@@ -419,7 +426,7 @@ more details about the stats commands.
 ## Resources
 
 There are other resources helpful when learning about beanstalk:
- 
+
  * [Beaneater Yardocs](http://rdoc.info/github/beanstalkd/beaneater)
  * [Beaneater on Rubygems](https://rubygems.org/gems/beaneater)
  * [Beanstalkd homepage](http://kr.github.com/beanstalkd/)
