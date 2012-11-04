@@ -29,7 +29,7 @@ describe Beaneater::PoolCommand do
       end
     end # regular command
 
-    describe 'for merged command' do
+    describe 'for merge command with hashes' do
       before do
         @pool = stub(:transmit_to_all => [
           { :body => { 'x' => 1, 'version' => 1.1 }, :status => "OK"},
@@ -38,11 +38,27 @@ describe Beaneater::PoolCommand do
         @command = Beaneater::PoolCommand.new(@pool)
       end
 
-      it "can run merge command" do
+      it "can run merge command " do
         cmd = @command.transmit_to_all("bar", :merge => true)
         assert_equal "OK", cmd[:status]
         assert_equal 4, cmd[:body]['x']
         assert_equal Set[1.1, 1.2], cmd[:body]['version']
+      end
+    end # merged command
+
+    describe 'for merge command with arrays' do
+      before do
+        @pool = stub(:transmit_to_all => [
+          { :body => ['foo', 'bar'], :status => "OK"},
+          { :body => ['foo', 'bar', 'baz'], :status => "OK" }
+        ])
+        @command = Beaneater::PoolCommand.new(@pool)
+      end
+
+      it "can run merge command " do
+        cmd = @command.transmit_to_all("bar", :merge => true)
+        assert_equal "OK", cmd[:status]
+        assert_equal ['foo', 'bar', 'baz'].sort, cmd[:body].sort
       end
     end # merged command
   end # transmit_to_all

@@ -55,7 +55,7 @@ module Beaneater
     #
     # @api public
     def all
-      transmit_to_rand('list-tubes')[:body].map { |tube_name| Tube.new(self.pool, tube_name) }
+      transmit_to_all('list-tubes', :merge => true)[:body].map { |tube_name| Tube.new(self.pool, tube_name) }
     end
 
     # List of watched beanstalk tubes.
@@ -67,7 +67,7 @@ module Beaneater
     #
     # @api public
     def watched
-      transmit_to_rand('list-tubes-watched')[:body].map { |tube_name| Tube.new(self.pool, tube_name) }
+      transmit_to_all('list-tubes-watched', :merge => true)[:body].map { |tube_name| Tube.new(self.pool, tube_name) }
     end
 
     # Currently used beanstalk tube.

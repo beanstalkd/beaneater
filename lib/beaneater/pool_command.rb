@@ -28,7 +28,7 @@ module Beaneater
       res = pool.transmit_to_all(body, options, &block)
       first = res.find { |r| r && r[:status] }
       if first && merge
-        res = { :status => first[:status], :body => sum_hashes(res.map { |r| r[:body] }) }
+        res = { :status => first[:status], :body => sum_items(res.map { |r| r[:body] }) }
       end
       res
     end
@@ -45,17 +45,24 @@ module Beaneater
 
     protected
 
-    # Selects hashes from collection and then merges the individual key values
+    # Selects items from collection and then merges the individual values
+    # Supports array of hashes or array of arrays
     #
-    # @param [Array<Hash{String => Integer, Float}>] hs Collection of hash responses returned from beanstalkd
-    # @return [Hash] Merged responses combining values from all the hash bodies
+    # @param [Array<Hash, Array>] hs Collection of responses returned from beanstalkd
+    # @return [Hash{Symbol => String}] Merged responses combining values from all the hash bodies
     # @example
-    #  self.sum_hashes([{ :foo => 1, :bar => 5 }, { :foo => 2, :bar => 3 }])
+    #  self.sum_items([{ :foo => 1, :bar => 5 }, { :foo => 2, :bar => 3 }])
     #    => { :foo => 3, :bar => 8 }
+    #  self.sum_items([['foo', 'bar'], ['foo', 'bar', 'baz']])
+    #    => ['foo', 'bar', 'baz']
     #
-    def sum_hashes(hs)
-      hs.select { |h| h.is_a?(Hash) }.
-        inject({}) { |a,b| a.merge(b) { |k,o,n| combine_stats(k, o, n) } }
+    def sum_items(items)
+      if items.first.is_a?(Hash)
+        items.select { |h| h.is_a?(Hash) }.
+          inject({}) { |a,b| a.merge(b) { |k,o,n| combine_stats(k, o, n) } }
+      elsif items.first.is_a?(Array)
+        items.flatten.uniq
+      end
     end
 
     # Combine two values for given key
