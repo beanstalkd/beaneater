@@ -207,6 +207,44 @@ describe Beaneater::Job do
     end
   end # tube
 
+  describe "for #pri" do
+    before do
+      @tube.put 'bar', :pri => 1
+      @job = @tube.peek(:ready)
+    end
+
+    it("should return pri") do
+      job = @tube.reserve
+      assert_equal 1, job.pri
+      job.release
+    end
+  end # tube
+
+
+  describe "for #ttr" do
+    before do
+      @tube.put 'bar', :ttr => 5
+      @job = @tube.peek(:ready)
+    end
+
+    it("should return ttr") do
+      job = @tube.reserve
+      assert_equal 5, job.ttr
+      job.release
+    end
+  end # tube
+
+  describe "for #delay" do
+    before do
+      @tube.put 'bar', :delay => 5
+      @job = @tube.peek(:delayed)
+    end
+
+    it("should return delay") do
+      assert_equal 5, @job.delay
+    end
+  end # tube
+
   after do
     cleanup_tubes!(['tube'])
   end

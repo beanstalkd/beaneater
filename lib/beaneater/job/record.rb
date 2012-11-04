@@ -134,6 +134,39 @@ module Beaneater
       self.stats && self.stats.tube
     end
 
+    # Returns the ttr of this job
+    #
+    # @return [String] The ttr of this job
+    # @example
+    #   @beaneater_connection.jobs.find(123).ttr
+    #     # => 123
+    #
+    def ttr
+      self.stats && self.stats.ttr
+    end
+
+    # Returns the pri of this job
+    #
+    # @return [String] The pri of this job
+    # @example
+    #   @beaneater_connection.jobs.find(123).pri
+    #     # => 1
+    #
+    def pri
+      self.stats && self.stats.pri
+    end
+
+    # Returns the delay of this job
+    #
+    # @return [String] The delay of this job
+    # @example
+    #   @beaneater_connection.jobs.find(123).delay
+    #     # => 5
+    #
+    def delay
+      self.stats && self.stats.delay
+    end
+
     # Returns string representation of job
     #
     # @return [String] string representation
