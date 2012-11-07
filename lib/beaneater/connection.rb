@@ -41,6 +41,7 @@ module Beaneater
     # @param [String] command Beanstalkd command
     # @param [Hash{Symbol => String,Boolean}] options Settings for telnet
     # @option options [Boolean] FailEOF raises EOF Exeception
+    # @option options [Integer] Timeout number of seconds before timeout
     # @return [Array<Hash{String => String, Number}>] Beanstalkd command response
     # @example
     #   @conn.transmit('bury 123')
@@ -48,7 +49,7 @@ module Beaneater
     def transmit(command, options={}, &block)
       @mutex.lock
       if telnet_connection
-        options.merge!("String" => command, "FailEOF" => true)
+        options.merge!("String" => command, "FailEOF" => true, "Timeout" => false)
         parse_response(command, telnet_connection.cmd(options, &block))
       else # no telnet_connection
         raise NotConnected, "Connection to beanstalk '#{@host}:#{@port}' is closed!" unless telnet_connection
