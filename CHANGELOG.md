@@ -1,6 +1,10 @@
 # CHANGELOG for Beaneater
 
-## 0.1.2 (Unreleased)
+## 0.1.3 (Unreleased)
+
+## 0.1.2 (Nov 7 2012)
+
+* Add timeout: false to transmit to allow longer reserve
 
 ## 0.1.1 (Nov 4 2012)
 
