@@ -1,4 +1,5 @@
 require 'yaml'
+require 'json'
 
 module Beaneater
   # Represents a connection to a beanstalkd instance.
@@ -112,7 +113,17 @@ module Beaneater
       status = res_lines.first
       status, id = status.scan(/\w+/)
       raise UnexpectedResponse.from_status(status, cmd) if UnexpectedResponse::ERROR_STATES.include?(status)
-      response = { :status => status, :body => YAML.load(res_lines[1..-1].join("\n")) }
+
+      # try to parse as JSON first, and if unsuccessful, then parse as YAML
+      res_str = res_lines[1..-1].join("\n")
+      begin
+        res_hash = JSON.parse(res_str)
+      rescue JSON::ParserError
+        res_hash = YAML.load(res_str)
+      end
+
+      response = { :status => status, :body => res_hash }
+      
       response[:id] = id if id
       response[:connection] = self
       response
