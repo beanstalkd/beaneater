@@ -134,7 +134,7 @@ describe Beaneater::Tubes do
 
     it "should raise TimedOutError no delete, with timeout" do
       @pool.tubes.watch 'tube'
-      @pool.tubes.reserve(0)
+      @pool.tubes.reserve(0)  { |j| job = j; job.delete }
       assert_raises(Beaneater::TimedOutError) { @pool.tubes.reserve(0) }
     end
 
