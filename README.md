@@ -101,6 +101,20 @@ For a more detailed rundown, check out the __Usage__ section below.
 
 ## Usage
 
+### Configuration
+
+To setup advanced options for beaneater
+
+```ruby
+Beaneater.configure do |config|
+  # config.default_put_delay   = 0
+  # config.default_put_pri     = 65536
+  # config.default_put_ttr     = 120
+  # config.job_parser          = lambda { |body| body }
+  # config.beanstalkd_url      = ['localhost:11300']
+end
+```
+
 ### Connection
 
 To interact with a beanstalk queue, first establish a connection by providing a set of addresses:
