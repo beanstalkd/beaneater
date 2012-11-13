@@ -1,6 +1,10 @@
 # CHANGELOG for Beaneater
 
-## 0.1.3 (Unreleased)
+## 0.2.1 (Unreleased)
+
+## 0.2.0 (Nov 12 2012)
+* Fix 1.8.7 compatibility issues
+* Add configuration block to beaneater and better job parsing
 
 ## 0.1.2 (Nov 7 2012)
 
