@@ -1,12 +1,6 @@
 module Beaneater
   # Beanstalk tube which contains jobs which can be inserted, reserved, et al.
   class Tube < PoolCommand
-    # The default delay for inserted jobs.
-    DEFAULT_DELAY = 0
-    # Default priority for inserted jobs, 0 is the highest.
-    DEFAULT_PRIORITY = 65536
-    # Default time to respond for inserted jobs.
-    DEFAULT_TTR = 120
 
     # @!attribute name
     #   @return [String] name of the tube
@@ -39,7 +33,8 @@ module Beaneater
     # @api public
     def put(body, options={})
       safe_use do
-        options = { :pri => DEFAULT_PRIORITY, :delay => DEFAULT_DELAY, :ttr => DEFAULT_TTR }.merge(options)
+        options = { :pri => config.default_put_pri, :delay => config.default_put_delay,
+                    :ttr => config.default_put_ttr }.merge(options)
         cmd_options = "#{options[:pri]} #{options[:delay]} #{options[:ttr]} #{body.bytesize}"
         transmit_to_rand("put #{cmd_options}\n#{body}")
       end
@@ -159,5 +154,13 @@ module Beaneater
     ensure
       @mutex.unlock
     end
+
+    # Returns configuration options for beaneater
+    #
+    # @return [Beaneater::Configuration] configuration object
+    def config
+      Beaneater.configuration
+    end
+
   end # Tube
 end # Beaneater
