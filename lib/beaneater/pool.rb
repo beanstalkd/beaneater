@@ -21,7 +21,7 @@ module Beaneater
     #   @bp.connections.last.host # => '127.0.0.1'
     #
     def initialize(addresses=nil)
-      addresses = addresses || host_from_env
+      addresses = addresses || host_from_env || Beaneater.configuration.beanstalkd_url
       @connections = Array(addresses).map { |a| Connection.new(a) }
     end
 

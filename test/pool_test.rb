@@ -64,6 +64,33 @@ describe Beaneater::Pool do
         assert_equal '127.0.0.1', bc2.host
         assert_equal 11300, bc2.port
       end
+
+      after do
+        ENV['BEANSTALKD_URL'] = nil
+      end
+    end
+
+    describe "by configuring via Beaneater.configure" do
+      before do
+        Beaneater.configure.beanstalkd_url = ['0.0.0.0:11300', '127.0.0.1:11300']
+      end
+
+      it "should create 1 connection" do
+        bp = Beaneater::Pool.new
+        bc = bp.connections.first
+        bc2 = bp.connections.last
+
+        assert_equal 2, bp.connections.size
+        assert_equal '0.0.0.0', bc.host
+        assert_equal 11300, bc.port
+
+        assert_equal '127.0.0.1', bc2.host
+        assert_equal 11300, bc2.port
+      end
+
+      after do
+        Beaneater.configure.beanstalkd_url = ['0.0.0.0:11300']
+      end
     end
   end # new
 
