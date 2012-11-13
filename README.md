@@ -103,7 +103,7 @@ For a more detailed rundown, check out the __Usage__ section below.
 
 ### Configuration
 
-To setup advanced options for beaneater
+To setup advanced options for beaneater, you can pass configuration options using:
 
 ```ruby
 Beaneater.configure do |config|
@@ -114,6 +114,8 @@ Beaneater.configure do |config|
   # config.beanstalkd_url      = ['localhost:11300']
 end
 ```
+
+The above options are all defaults, so only include a configuration block if you need to make changes.
 
 ### Connection
 
