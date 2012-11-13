@@ -112,10 +112,19 @@ module Beaneater
       status = res_lines.first
       status, id = status.scan(/\w+/)
       raise UnexpectedResponse.from_status(status, cmd) if UnexpectedResponse::ERROR_STATES.include?(status)
-      response = { :status => status, :body => YAML.load(res_lines[1..-1].join("\n")) }
+      raw_body = res_lines[1..-1].join("\n")
+      body = ['FOUND', 'RESERVED'].include?(status) ? config.job_parser.call(raw_body) : YAML.load(raw_body)
+      response = { :status => status, :body => body }
       response[:id] = id if id
       response[:connection] = self
       response
+    end
+
+    # Returns configuration options for beaneater
+    #
+    # @return [Beaneater::Configuration] configuration object
+    def config
+      Beaneater.configuration
     end
   end # Connection
 end # Beaneater

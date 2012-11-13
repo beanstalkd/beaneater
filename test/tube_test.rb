@@ -37,12 +37,6 @@ describe Beaneater::Tube do
       assert_raises(Beaneater::DrainingError) { @tube.put "bar put #{@time}" }
     end
 
-    it "supports JSON" do
-      json = "{ 'foo' : 'bar' }"
-      @tube.put(json)
-      assert_equal 'bar', @tube.peek(:ready).body['foo']
-    end
-
     after do
       Beaneater::Connection.any_instance.unstub(:transmit)
     end
@@ -73,22 +67,59 @@ describe Beaneater::Tube do
     it "should return nil for empty peek" do
       assert_nil @tube.peek(:buried)
     end
+
+    it "supports valid JSON" do
+      json = '{ "foo" : "bar" }'
+      @tube.put(json)
+      assert_equal 'bar', JSON.parse(@tube.peek(:ready).body)['foo']
+    end
+
+    it "supports non valid JSON" do
+      json = '{"message":"hi"}'
+      @tube.put(json)
+      assert_equal 'hi', JSON.parse(@tube.peek(:ready).body)['message']
+    end
+
+    it "should support custom parser" do
+      Beaneater.configure.job_parser = lambda { |b| JSON.parse(b) }
+      json = '{"message":"hi"}'
+      @tube.put(json)
+      assert_equal 'hi', @tube.peek(:ready).body['message']
+    end
+
+    after do
+      Beaneater.configure.job_parser = lambda { |b| b }
+    end
   end # peek
 
   describe "for #reserve" do
     before do
       @time = Time.now.to_i
-      @tube.put "foo reserve #{@time}"
+      @json = %Q&{ "foo" : "#{@time} bar" }&
+      @tube.put @json
     end
 
     it "should reserve job" do
-      assert_equal "foo reserve #{@time}", @tube.reserve.body
+      @job = @tube.reserve
+      assert_equal "#{@time} bar", JSON.parse(@job.body)['foo']
+      @job.delete
     end
 
     it "should reserve job with block" do
       job = nil
       @tube.reserve { |j| job = j; job.delete }
-      assert_equal "foo reserve #{@time}", job.body
+      assert_equal "#{@time} bar", JSON.parse(job.body)['foo']
+    end
+
+    it "should support custom parser" do
+      Beaneater.configure.job_parser = lambda { |b| JSON.parse(b) }
+      @job = @tube.reserve
+      assert_equal "#{@time} bar", @job.body['foo']
+      @job.delete
+    end
+
+    after do
+      Beaneater.configure.job_parser = lambda { |b| b }
     end
   end # reserve
 
