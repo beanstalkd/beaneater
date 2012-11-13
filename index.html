@@ -44,18 +44,18 @@ running time-consuming tasks asynchronously. Read the <a href="http://rdoc.info/
 <a href="http://www.igvita.com/2010/05/20/scalable-work-queues-with-beanstalk/">Scalable Work Queues with Beanstalk</a> and
 Adam Wiggins posted <a href="http://adam.heroku.com/past/2010/4/24/beanstalk_a_simple_and_fast_queueing_backend/">an excellent comparison</a>.</p>
 
-<p>You will find that <strong>beanstalkd</strong> is an underrated but incredibly 
+<p>You will find that <strong>beanstalkd</strong> is an underrated but incredibly
 powerful project that is extremely well-suited as a job or messaging queue.
 Significantly better suited for this task than Redis or a traditional RDBMS. Beanstalk is a simple,
 and fast work queue service rolled into a single binary - it is the memcached of work queues.
-Originally built to power the backend for the 'Causes' Facebook app, 
+Originally built to power the backend for the 'Causes' Facebook app,
 it is a mature and production ready open source project.
 <a href="http://www.postrank.com">PostRank</a> has used beanstalk to reliably process millions of jobs a day.</p>
 
 <p>A single instance of Beanstalk is perfectly capable of handling thousands of jobs a second (or more, depending on your job size)
 because it is an in-memory, event-driven system. Powered by libevent under the hood,
-it requires zero setup (launch and forget, à la memcached), optional log based persistence, 
-an easily parsed ASCII protocol, and a rich set of tools for job management 
+it requires zero setup (launch and forget, à la memcached), optional log based persistence,
+an easily parsed ASCII protocol, and a rich set of tools for job management
 that go well beyond a simple FIFO work queue.</p>
 
 <p>Beanstalkd supports the following features out of the box:</p>
@@ -142,7 +142,7 @@ beanstalkd -p 11300
 <span class="c1"># Process jobs from tube</span>
 <span class="k">while</span> <span class="vi">@tube</span><span class="o">.</span><span class="n">peek</span><span class="p">(</span><span class="ss">:ready</span><span class="p">)</span>
   <span class="n">job</span> <span class="o">=</span> <span class="vi">@tube</span><span class="o">.</span><span class="n">reserve</span>
-  <span class="nb">puts</span> <span class="s2">"job value is </span><span class="si">#{</span><span class="n">job</span><span class="o">.</span><span class="n">body</span><span class="o">[</span><span class="s2">"key"</span><span class="o">]</span><span class="si">}</span><span class="s2">!"</span>  
+  <span class="nb">puts</span> <span class="s2">"job value is </span><span class="si">#{</span><span class="n">job</span><span class="o">.</span><span class="n">body</span><span class="o">[</span><span class="s2">"key"</span><span class="o">]</span><span class="si">}</span><span class="s2">!"</span>
   <span class="n">job</span><span class="o">.</span><span class="n">delete</span>
 <span class="k">end</span>
 <span class="c1"># Disconnect the pool</span>
@@ -153,11 +153,31 @@ beanstalkd -p 11300
 
 <h2>Usage</h2>
 
+<h3>Configuration</h3>
+
+<p>To setup advanced options for beaneater, you can pass configuration options using:</p>
+
+<div class="highlight"><pre><span class="no">Beaneater</span><span class="o">.</span><span class="n">configure</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+  <span class="c1"># config.default_put_delay   = 0</span>
+  <span class="c1"># config.default_put_pri     = 65536</span>
+  <span class="c1"># config.default_put_ttr     = 120</span>
+  <span class="c1"># config.job_parser          = lambda { |body| body }</span>
+  <span class="c1"># config.beanstalkd_url      = ['localhost:11300']</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>The above options are all defaults, so only include a configuration block if you need to make changes.</p>
+
 <h3>Connection</h3>
 
 <p>To interact with a beanstalk queue, first establish a connection by providing a set of addresses:</p>
 
 <div class="highlight"><pre><span class="vi">@beanstalk</span> <span class="o">=</span> <span class="no">Beaneater</span><span class="o">::</span><span class="no">Pool</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="o">[</span><span class="s1">'10.0.1.5:11300'</span><span class="o">]</span><span class="p">)</span>
+
+<span class="c1"># Or if ENV['BEANSTALKD_URL] == 'localhost:11300,127.0.0.1:11300'</span>
+<span class="vi">@beanstalk</span> <span class="o">=</span> <span class="no">Beaneater</span><span class="o">::</span><span class="no">Pool</span><span class="o">.</span><span class="n">new</span>
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">connections</span><span class="o">.</span><span class="n">first</span> <span class="c1"># =&gt; localhost:11300</span>
+<span class="vi">@beanstalk</span><span class="o">.</span><span class="n">connections</span><span class="o">.</span><span class="n">last</span> <span class="c1"># =&gt; 127.0.0.1:11300</span>
 </pre></div>
 
 <p>You can conversely close and dispose of a pool at any time with:</p>
@@ -354,6 +374,12 @@ inspected using the 'peek' commands. To find and peek at a particular job based 
 <span class="c1"># =&gt; &lt;Beaneater::Job id=123 body="foo"&gt;</span>
 </pre></div>
 
+<p>You can also <code>find_all</code> jobs across all connections:</p>
+
+<div class="highlight"><pre><span class="vi">@beanstalk</span><span class="o">.</span><span class="n">jobs</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
+<span class="c1"># =&gt; [&lt;Beaneater::Job id=123 body="foo"&gt;, &lt;Beaneater::Job id=123 body="bar"&gt;]</span>
+</pre></div>
+
 <p>or you can peek at jobs within a tube:</p>
 
 <div class="highlight"><pre><span class="vi">@tube</span> <span class="o">=</span> <span class="vi">@beanstalk</span><span class="o">.</span><span class="n">tubes</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">'foo'</span><span class="p">)</span>
@@ -433,6 +459,10 @@ are listed below:</p>
 <tr>
 <td>Beaneater::TimedOutError</td>
 <td>Job could not be reserved within time specified.</td>
+</tr>
+<tr>
+<td>Beaneater::JobNotReserved</td>
+<td>Job has not been reserved and action cannot be taken.</td>
 </tr>
 </table><p>There are other exceptions that are less common such as <code>OutOfMemoryError</code>, <code>DrainingError</code>,
 <code>DeadlineSoonError</code>, <code>InternalError</code>, <code>BadFormatError</code>, <code>UnknownCommandError</code>,
