@@ -35,7 +35,7 @@ describe Beaneater::StatStruct do
     end
 
     it "should return expected keys" do
-      assert_equal ['foo', 'bar', 'baz', 'under_score'], @struct.keys
+      assert_equal ['foo', 'bar', 'baz', 'under_score'].sort, @struct.keys.sort
     end
   end # keys
 end
