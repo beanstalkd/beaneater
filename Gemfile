@@ -7,4 +7,5 @@ group :development do
   gem 'redcarpet', '~> 1'
   gem 'github-markup'
   gem 'yard'
+  gem 'json'
 end
