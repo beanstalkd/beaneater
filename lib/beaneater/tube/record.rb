@@ -60,6 +60,7 @@ module Beaneater
       end
     rescue Beaneater::NotFoundError => ex
       # Return nil if not found
+      nil
     end
 
     # Reserves the next job from tube.
