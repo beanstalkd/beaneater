@@ -16,6 +16,9 @@ describe Beaneater::Tube do
     it "should insert a job" do
       @tube.put "bar put #{@time}"
       assert_equal "bar put #{@time}", @tube.peek(:ready).body
+      assert_equal 120, @tube.peek(:ready).ttr
+      assert_equal 65536, @tube.peek(:ready).pri
+      assert_equal 0, @tube.peek(:ready).delay
     end
 
     it "should insert a delayed job" do
