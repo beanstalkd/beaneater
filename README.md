@@ -43,7 +43,7 @@ Beanstalkd supports the following features out of the box:
 | **Error Handling**   | Bury any job which causes an error for later debugging and inspection. |
 | **Simple Debugging** | Talk directly to the beanstalkd server over telnet to get a handle on your app. |
 | **Efficiency**       | Each beanstalkd process can handle tens of thousands of open connections. |
-| **Memory**           | Use the built-in `ulimit` OS feature to cap beanstalkd's memory consumption. |
+| **Memory Usage**     | Use the built-in `ulimit` OS feature to cap beanstalkd's memory consumption. |
 
 Keep in mind that these features are supported out of the box with beanstalk and requires no special ruby specific logic.
 In the end, **beanstalk is the ideal job queue** and has the added benefit of being easy to setup and configure.
