@@ -31,14 +31,19 @@ Beanstalkd supports the following features out of the box:
 
 | Feature | Description                     |
 | ------- | ------------------------------- |
-| **Parallelized**    | Supports multiple work queues created on demand. |
-| **Reliable**        | Beanstalk’s reserve, work, delete cycle ensures reliable processing. |
-| **Scheduling**      | Delay enqueuing jobs by a specified interval to schedule processing later |
-| **Fast**            | Processes thousands of jobs per second without breaking a sweat. |
-| **Priorities**      | Specify priority so important jobs can be processed quickly. |
-| **Persistence**     | Jobs are stored in memory for speed, but logged to disk for safe keeping. |
-| **Federation**      | Horizontal scalability provided through federation by the client. |
-| **Error Handling**  | Bury any job which causes an error for later debugging and inspection.|
+| **Easy Setup**       | Quick to install, no files to edit, no settings to tweak. |
+| **Speed**            | Process thousands of jobs per second without breaking a sweat. |
+| **Client Support**   | Client libraries exist for over 21 languages including Python, Ruby, and Go. |
+| **Tubes**            | Supports multiple work queues created automatically on demand. |
+| **Reliable**         | Beanstalk’s reserve, work, delete cycle ensures reliable processing. |
+| **Scheduling**       | Delay enqueuing jobs by a specified interval to be processed later. |
+| **Priorities**       | Important jobs go to the head of the queue and get processed sooner. |
+| **Persistence**      | Jobs are stored in memory for speed, but logged to disk for safe keeping. |
+| **Scalability**      | Client-side federation provides effortless horizontal scalability. |
+| **Error Handling**   | Bury any job which causes an error for later debugging and inspection. |
+| **Simple Debugging** | Talk directly to the beanstalkd server over telnet to get a handle on your app. |
+| **Efficiency**       | Each beanstalkd process can handle tens of thousands of open connections. |
+| **Memory**           | Use the built-in `ulimit` OS feature to cap beanstalkd's memory consumption. |
 
 Keep in mind that these features are supported out of the box with beanstalk and requires no special ruby specific logic.
 In the end, **beanstalk is the ideal job queue** and has the added benefit of being easy to setup and configure.
