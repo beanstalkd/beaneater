@@ -66,8 +66,20 @@ that go well beyond a simple FIFO work queue.</p>
 <th>Description</th>
 </tr>
 <tr>
-<td><strong>Parallelized</strong></td>
-<td>Supports multiple work queues created on demand.</td>
+<td><strong>Easy Setup</strong></td>
+<td>Quick to install, no files to edit, no settings to tweak.</td>
+</tr>
+<tr>
+<td><strong>Speed</strong></td>
+<td>Process thousands of jobs per second without breaking a sweat.</td>
+</tr>
+<tr>
+<td><strong>Client Support</strong></td>
+<td>Client libraries exist for over 21 languages including Python, Ruby, and Go.</td>
+</tr>
+<tr>
+<td><strong>Tubes</strong></td>
+<td>Supports multiple work queues created automatically on demand.</td>
 </tr>
 <tr>
 <td><strong>Reliable</strong></td>
@@ -75,27 +87,35 @@ that go well beyond a simple FIFO work queue.</p>
 </tr>
 <tr>
 <td><strong>Scheduling</strong></td>
-<td>Delay enqueuing jobs by a specified interval to schedule processing later</td>
-</tr>
-<tr>
-<td><strong>Fast</strong></td>
-<td>Processes thousands of jobs per second without breaking a sweat.</td>
+<td>Delay enqueuing jobs by a specified interval to be processed later.</td>
 </tr>
 <tr>
 <td><strong>Priorities</strong></td>
-<td>Specify priority so important jobs can be processed quickly.</td>
+<td>Important jobs go to the head of the queue and get processed sooner.</td>
 </tr>
 <tr>
 <td><strong>Persistence</strong></td>
 <td>Jobs are stored in memory for speed, but logged to disk for safe keeping.</td>
 </tr>
 <tr>
-<td><strong>Federation</strong></td>
-<td>Horizontal scalability provided through federation by the client.</td>
+<td><strong>Scalability</strong></td>
+<td>Client-side federation provides effortless horizontal scalability.</td>
 </tr>
 <tr>
 <td><strong>Error Handling</strong></td>
 <td>Bury any job which causes an error for later debugging and inspection.</td>
+</tr>
+<tr>
+<td><strong>Simple Debugging</strong></td>
+<td>Talk directly to the beanstalkd server over telnet to get a handle on your app.</td>
+</tr>
+<tr>
+<td><strong>Efficiency</strong></td>
+<td>Each beanstalkd process can handle tens of thousands of open connections.</td>
+</tr>
+<tr>
+<td><strong>Memory Usage</strong></td>
+<td>Use the built-in <code>ulimit</code> OS feature to cap beanstalkd's memory consumption.</td>
 </tr>
 </table><p>Keep in mind that these features are supported out of the box with beanstalk and requires no special ruby specific logic.
 In the end, <strong>beanstalk is the ideal job queue</strong> and has the added benefit of being easy to setup and configure.</p>
