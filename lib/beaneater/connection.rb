@@ -49,6 +49,7 @@ module Beaneater
     def transmit(command, options={}, &block)
       @mutex.lock
       if telnet_connection
+        command = command.force_encoding('ASCII-8BIT') if command.respond_to?(:force_encoding)
         options.merge!("String" => command, "FailEOF" => true, "Timeout" => false)
         parse_response(command, telnet_connection.cmd(options, &block))
       else # no telnet_connection
