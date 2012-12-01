@@ -1,6 +1,10 @@
 # CHANGELOG for Beaneater
 
-## 0.2.1 (Unreleased)
+## 0.2.2 (Unreleased)
+
+## 0.2.1 (Dec 1 2012)
+
+* Convert command to ASCII_8Bit to avoid gsub issues
 
 ## 0.2.0 (Nov 12 2012)
 * Fix 1.8.7 compatibility issues
