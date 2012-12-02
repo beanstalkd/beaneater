@@ -111,7 +111,7 @@ module Beaneater
     def parse_response(cmd, res)
       res_lines = res.split(/\r?\n/)
       status = res_lines.first
-      status, id = status.scan(/\w+/)
+      status, id = status.split(/\s/)
       raise UnexpectedResponse.from_status(status, cmd) if UnexpectedResponse::ERROR_STATES.include?(status)
       raw_body = res_lines[1..-1].join("\n")
       body = ['FOUND', 'RESERVED'].include?(status) ? config.job_parser.call(raw_body) : YAML.load(raw_body)

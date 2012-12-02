@@ -68,7 +68,12 @@ describe Beaneater::Tubes do
     end
 
     it 'should retrieve used tube' do
-      assert_equal'bar', @pool.tubes.used.name
+      assert_equal 'bar', @pool.tubes.used.name
+    end
+
+    it 'should support dashed tubes' do
+      @pool.tubes.find('der-bam').put 'foo'
+      assert_equal 'der-bam', @pool.tubes.used.name
     end
   end # used
 

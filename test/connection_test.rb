@@ -46,6 +46,13 @@ describe Beaneater::Connection do
       assert_equal '254', res[:id]
       assert_equal 'INSERTED', res[:status]
     end
+
+    it "should support dashes in response" do
+      Net::Telnet.any_instance.expects(:cmd).with(has_entries('String' => 'bar')).returns('USING foo-bar')
+      res = @bc.transmit 'bar'
+      assert_equal 'USING', res[:status]
+      assert_equal 'foo-bar', res[:id]
+    end
   end # transmit
 
   describe 'for #close' do
