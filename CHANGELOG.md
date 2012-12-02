@@ -1,6 +1,10 @@
 # CHANGELOG for Beaneater
 
-## 0.2.2 (Unreleased)
+## 0.2.3 (Unreleased)
+
+## 0.2.2 (Dec 2 2012)
+
+* Fixes status and ID parsing in a response (Thanks @justincase)
 
 ## 0.2.1 (Dec 1 2012)
 
