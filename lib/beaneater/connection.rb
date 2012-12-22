@@ -69,6 +69,16 @@ module Beaneater
       @telnet_connection = nil
     end
 
+    # Closes existing connection with beanstalkd server and opens a new connection.
+    #
+    # @example
+    #  @conn.reconnect!
+    #
+    def reconnect!
+      @telnet_connection.close
+      @telnet_connection = establish_connection
+    end
+
     # Returns string representation of job.
     #
     # @example
