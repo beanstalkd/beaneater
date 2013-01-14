@@ -4,7 +4,7 @@ require 'minitest/autorun'
 $:.unshift File.expand_path("../../lib")
 require 'beaneater'
 require 'fakeweb'
-require 'mocha'
+require 'mocha/setup'
 require 'json'
 
 FakeWeb.allow_net_connect = false
