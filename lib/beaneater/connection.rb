@@ -91,7 +91,7 @@ module Beaneater
     def establish_connection
       @match = address.split(':')
       @host, @port = @match[0], Integer(@match[1] || DEFAULT_PORT)
-      Net::Telnet.new('Host' => @host, "Port" => @port, "Prompt" => /\n/)
+      Net::Telnet.new('Host' => @host, "Port" => @port, "Prompt" => /\n\z/)
     rescue Errno::ECONNREFUSED => e
       raise NotConnected, "Could not connect to '#{@host}:#{@port}'"
     rescue Exception => ex

@@ -19,10 +19,10 @@ describe Beaneater::Pool do
         @host_num = '1.1.1.1:11303'
         @hosts = [@host_string_port, @host_num_port, @host_string, @host_num]
 
-        Net::Telnet.expects(:new).with('Host' => 'localhost', "Port" => 11301, "Prompt" => /\n/).once
-        Net::Telnet.expects(:new).with('Host' => '127.0.0.1', "Port" => 11302, "Prompt" => /\n/).once
-        Net::Telnet.expects(:new).with('Host' => 'host.local', "Port" => 11300, "Prompt" => /\n/).once
-        Net::Telnet.expects(:new).with('Host' => '1.1.1.1', "Port" => 11303, "Prompt" => /\n/).once
+        Net::Telnet.expects(:new).with('Host' => 'localhost', "Port" => 11301, "Prompt" => /\n\z/).once
+        Net::Telnet.expects(:new).with('Host' => '127.0.0.1', "Port" => 11302, "Prompt" => /\n\z/).once
+        Net::Telnet.expects(:new).with('Host' => 'host.local', "Port" => 11300, "Prompt" => /\n\z/).once
+        Net::Telnet.expects(:new).with('Host' => '1.1.1.1', "Port" => 11303, "Prompt" => /\n\z/).once
 
         @bp = Beaneater::Pool.new(@hosts)
       end
