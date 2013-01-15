@@ -2,6 +2,8 @@
 
 ## 0.2.3 (Unreleased)
 
+* Fixes prompt parsing for beanstalkd through telnet (Thanks @tank-bohr)
+
 ## 0.2.2 (Dec 2 2012)
 
 * Fixes status and ID parsing in a response (Thanks @justincase)
