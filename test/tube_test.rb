@@ -83,6 +83,17 @@ describe Beaneater::Tube do
       assert_equal 'hi', JSON.parse(@tube.peek(:ready).body)['message']
     end
 
+    it "supports passing crlf through" do
+      @tube.put("\r\n")
+      assert_equal "\r\n", @tube.peek(:ready).body
+    end
+
+    it "supports passing any byte value through" do
+      bytes = (0..255).to_a.pack("c*")
+      @tube.put(bytes)
+      assert_equal bytes, @tube.peek(:ready).body
+    end
+
     it "should support custom parser" do
       Beaneater.configure.job_parser = lambda { |b| JSON.parse(b) }
       json = '{"message":"hi"}'
