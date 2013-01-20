@@ -1,4 +1,5 @@
 require 'yaml'
+require 'socket'
 
 module Beaneater
   # Represents a connection to a beanstalkd instance.
@@ -16,9 +17,9 @@ module Beaneater
     #  @return [Integer] returns Beanstalkd server port
     #  @example
     #    @conn.port # => "11300"
-    # @!attribute telnet_connection
-    #   @return [Net::Telnet] returns Telnet connection object
-    attr_reader :address, :host, :port, :telnet_connection
+    # @!attribute connection
+    #   @return [Net::TCPSocket] returns connection object
+    attr_reader :address, :host, :port, :connection
 
     # Default port value for beanstalk connection
     DEFAULT_PORT = 11300
@@ -32,28 +33,26 @@ module Beaneater
     #
     def initialize(address)
       @address = address
-      @telnet_connection = establish_connection
+      @connection = establish_connection
       @mutex = Mutex.new
     end
 
-    # Send commands to beanstalkd server via telnet_connection.
+    # Send commands to beanstalkd server via connection.
     #
+    # @param [Hash{String => String, Number}>] options Retained for compatibility
     # @param [String] command Beanstalkd command
-    # @param [Hash{Symbol => String,Boolean}] options Settings for telnet
-    # @option options [Boolean] FailEOF raises EOF Exeception
-    # @option options [Integer] Timeout number of seconds before timeout
     # @return [Array<Hash{String => String, Number}>] Beanstalkd command response
     # @example
     #   @conn.transmit('bury 123')
     #
-    def transmit(command, options={}, &block)
+    def transmit(command, options={})
       @mutex.lock
-      if telnet_connection
+      if connection
         command = command.force_encoding('ASCII-8BIT') if command.respond_to?(:force_encoding)
-        options.merge!("String" => command, "FailEOF" => true, "Timeout" => false)
-        parse_response(command, telnet_connection.cmd(options, &block))
-      else # no telnet_connection
-        raise NotConnected, "Connection to beanstalk '#{@host}:#{@port}' is closed!" unless telnet_connection
+        connection.write(command+"\r\n")
+        parse_response(command,connection.gets)
+      else # no connection
+        raise NotConnected, "Connection to beanstalk '#{@host}:#{@port}' is closed!" unless connection
       end
     ensure
       @mutex.unlock
@@ -65,8 +64,8 @@ module Beaneater
     #  @conn.close
     #
     def close
-      @telnet_connection.close
-      @telnet_connection = nil
+      @connection.close
+      @connection = nil
     end
 
     # Returns string representation of job.
@@ -81,9 +80,9 @@ module Beaneater
 
     protected
 
-    # Establish a telnet connection based on beanstalk address.
+    # Establish a connection based on beanstalk address.
     #
-    # @return [Net::Telnet] telnet connection for specified address.
+    # @return [Net::TCPSocket] connection for specified address.
     # @raise [Beanstalk::NotConnected] Could not connect to specified beanstalkd instance.
     # @example
     #  establish_connection('localhost:3005')
@@ -91,14 +90,15 @@ module Beaneater
     def establish_connection
       @match = address.split(':')
       @host, @port = @match[0], Integer(@match[1] || DEFAULT_PORT)
-      Net::Telnet.new('Host' => @host, "Port" => @port, "Prompt" => /\n\z/)
+      TCPSocket.new @host, @port
     rescue Errno::ECONNREFUSED => e
       raise NotConnected, "Could not connect to '#{@host}:#{@port}'"
     rescue Exception => ex
       raise NotConnected, "#{ex.class}: #{ex}"
     end
 
-    # Parses the telnet response and returns the useful beanstalk response.
+    # Parses the response and returns the useful beanstalk response.
+    # Will read the body if one is indicated by the status.
     #
     # @param [String] cmd Beanstalk command transmitted
     # @param [String] res Telnet command response
@@ -109,12 +109,18 @@ module Beaneater
     #   # => { :body => "FOO", :status => "DELETED", :id => 56, :connection => <Connection>  }
     #
     def parse_response(cmd, res)
-      res_lines = res.split(/\r?\n/)
-      status = res_lines.first
-      status, id = status.split(/\s/)
+      status = res.chomp
+      s = status.split(/\s/)
+      status = s[0]
       raise UnexpectedResponse.from_status(status, cmd) if UnexpectedResponse::ERROR_STATES.include?(status)
-      raw_body = res_lines[1..-1].join("\n")
-      body = ['FOUND', 'RESERVED'].include?(status) ? config.job_parser.call(raw_body) : YAML.load(raw_body)
+      body = nil
+      if ['OK','FOUND', 'RESERVED'].include?(status)
+        raw_body = connection.read(s[-1].to_i)
+        body = status == 'OK' ? YAML.load(raw_body) : config.job_parser.call(raw_body)
+        crlf = connection.read(2) # \r\n 
+        raise ExpectedCRLFError if crlf != "\r\n"
+      end
+      id = s[1]
       response = { :status => status, :body => body }
       response[:id] = id if id
       response[:connection] = self
@@ -127,5 +133,6 @@ module Beaneater
     def config
       Beaneater.configuration
     end
+
   end # Connection
 end # Beaneater

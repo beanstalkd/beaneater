@@ -8,24 +8,25 @@ describe "Prompt regexp for telnet client" do
     @fake_port = 11301
     @tube_name = 'tube.to.test'
 
-    @fake_server = fork do 
+    @fake_server = Thread.start do
       server = TCPServer.new(@fake_port)
       loop do
-        client = server.accept
+        IO.select([server])
+        client = server.accept_nonblock
         while line = client.gets
           case line
           when /list-tubes-watched/i
-            client.puts "OK 11\n---\n- #{@tube_name}\n"
+            client.print "OK #{7+@tube_name.size}\r\n---\n- #{@tube_name}\n\r\n"
           when /watch #{@tube_name}/i
-            client.puts 'WATCHING 1'
+            client.print "WATCHING 1\r\n"
           when /reserve/i
-            client.puts 'RESERVED 17 17'
-            client.print '[first part]'
+            client.print "RESERVED 17 25\r\n"
+            client.print "[first part]"
             # Emulate network delay
             sleep 0.5
-            client.puts '[second part]'
+            client.print "[second part]\r\n"
           else
-            client.puts 'ERROR'
+            client.print "ERROR\r\n"
           end
         end
       end
@@ -39,6 +40,6 @@ describe "Prompt regexp for telnet client" do
   end
 
   after do
-    Process.kill("KILL", @fake_server)
+    @fake_server.kill
   end
 end

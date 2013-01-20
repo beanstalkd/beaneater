@@ -36,7 +36,7 @@ module Beaneater
         options = { :pri => config.default_put_pri, :delay => config.default_put_delay,
                     :ttr => config.default_put_ttr }.merge(options)
         cmd_options = "#{options[:pri]} #{options[:delay]} #{options[:ttr]} #{body.bytesize}"
-        transmit_to_rand("put #{cmd_options}\n#{body}")
+        transmit_to_rand("put #{cmd_options}\r\n#{body}")
       end
     end
 
