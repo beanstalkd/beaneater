@@ -19,10 +19,10 @@ describe Beaneater::Pool do
         @host_num = '1.1.1.1:11303'
         @hosts = [@host_string_port, @host_num_port, @host_string, @host_num]
 
-        Net::Telnet.expects(:new).with('Host' => 'localhost', "Port" => 11301, "Prompt" => /\n\z/).once
-        Net::Telnet.expects(:new).with('Host' => '127.0.0.1', "Port" => 11302, "Prompt" => /\n\z/).once
-        Net::Telnet.expects(:new).with('Host' => 'host.local', "Port" => 11300, "Prompt" => /\n\z/).once
-        Net::Telnet.expects(:new).with('Host' => '1.1.1.1', "Port" => 11303, "Prompt" => /\n\z/).once
+        TCPSocket.expects(:new).with('localhost',11301).once
+        TCPSocket.expects(:new).with('127.0.0.1',11302).once
+        TCPSocket.expects(:new).with('host.local',11300).once
+        TCPSocket.expects(:new).with('1.1.1.1',11303).once
 
         @bp = Beaneater::Pool.new(@hosts)
       end
@@ -110,7 +110,7 @@ describe Beaneater::Pool do
     end
 
     it "should return id" do
-      Net::Telnet.any_instance.expects(:cmd).with(has_entries('String' => 'foo')).returns('INSERTED 254')
+      Beaneater::Connection.any_instance.expects(:transmit).with("foo",{}).returns({:id => "254", :status => "INSERTED"})
       res = @bp.transmit_to_rand 'foo'
       assert_equal '254', res[:id]
       assert_equal 'INSERTED', res[:status]
@@ -139,31 +139,31 @@ describe Beaneater::Pool do
 
   describe "for #safe_transmit" do
     it "should retry 3 times for temporary failed connection" do
-      Net::Telnet.any_instance.expects(:cmd).raises(EOFError).then.
-        raises(Errno::ECONNRESET).then.returns('INSERTED 254').times(3)
-      res = @bp.transmit_to_rand 'foo'
+#      TCPSocket.any_instance.expects(:write).raises(EOFError).then.
+#        raises(Errno::ECONNRESET).then.returns('INSERTED 254').times(3)
+      res = @bp.transmit_to_rand "put 0 0 10 2\r\nxy"
       assert_equal '254', res[:id]
       assert_equal 'INSERTED', res[:status]
     end
 
     it "should retry on fail 3 times for dead connection" do
-      Net::Telnet.any_instance.expects(:cmd).raises(EOFError).times(3)
+#      TCPSocket.any_instance.expects(:write).raises(EOFError).times(3)
       assert_raises(Beaneater::NotConnected) { @bp.transmit_to_rand 'foo' }
     end
 
     it 'should raise proper exception for invalid status NOT_FOUND' do
-      Net::Telnet.any_instance.expects(:cmd).returns('NOT_FOUND')
+#      TCPSocket.any_instance.expects(:write).returns('NOT_FOUND')
       assert_raises(Beaneater::NotFoundError) { @bp.transmit_to_rand 'foo' }
     end
 
     it 'should raise proper exception for invalid status BAD_FORMAT' do
-      Net::Telnet.any_instance.expects(:cmd).returns('BAD_FORMAT')
+#      TCPSocket.any_instance.expects(:write).returns('BAD_FORMAT')
       assert_raises(Beaneater::BadFormatError) { @bp.transmit_to_rand 'foo' }
     end
 
     it 'should raise proper exception for invalid status DEADLINE_SOON' do
-      Net::Telnet.any_instance.expects(:cmd).returns('DEADLINE_SOON')
-      assert_raises(Beaneater::DeadlineSoonError) { @bp.transmit_to_rand 'foo' }
+#      TCPSocket.any_instance.expects(:write).returns('DEADLINE_SOON').times(1)
+      assert_raises(Beaneater::DeadlineSoonError) { @bp.transmit_to_rand 'expecting deadline' }
     end
   end
 
@@ -172,10 +172,10 @@ describe Beaneater::Pool do
       connection = @bp.connections.first
       assert_equal 2, @bp.connections.size
       assert_kind_of Beaneater::Connection, connection
-      assert_kind_of Net::Telnet, connection.telnet_connection
+      assert_kind_of TCPSocket, connection.connection
       @bp.close
       assert_equal 0, @bp.connections.size
-      assert_nil connection.telnet_connection
+      assert_nil connection.connection
     end
   end # close
 end # Beaneater::Pool
