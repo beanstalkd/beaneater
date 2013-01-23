@@ -117,7 +117,7 @@ module Beaneater
       if ['OK','FOUND', 'RESERVED'].include?(status)
         raw_body = connection.read(s[-1].to_i)
         body = status == 'OK' ? YAML.load(raw_body) : config.job_parser.call(raw_body)
-        crlf = connection.read(2) # \r\n 
+        crlf = connection.read(2) # \r\n
         raise ExpectedCRLFError if crlf != "\r\n"
       end
       id = s[1]
