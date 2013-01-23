@@ -3,7 +3,7 @@
 require File.expand_path('../test_helper', __FILE__)
 require 'socket'
 
-describe "Prompt regexp for telnet client" do
+describe "Reading from socket client" do
   before do
     @fake_port = 11301
     @tube_name = 'tube.to.test'
