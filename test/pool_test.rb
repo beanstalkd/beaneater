@@ -139,30 +139,29 @@ describe Beaneater::Pool do
 
   describe "for #safe_transmit" do
     it "should retry 3 times for temporary failed connection" do
-#      TCPSocket.any_instance.expects(:write).raises(EOFError).then.
-#        raises(Errno::ECONNRESET).then.returns('INSERTED 254').times(3)
+      TCPSocket.any_instance.expects(:write).times(3)
+      TCPSocket.any_instance.expects(:gets).raises(Errno::ECONNRESET).then.
+        raises(Errno::ECONNRESET).then.returns('INSERTED 254').times(3)
       res = @bp.transmit_to_rand "put 0 0 10 2\r\nxy"
       assert_equal '254', res[:id]
       assert_equal 'INSERTED', res[:status]
     end
 
-    it "should retry on fail 3 times for dead connection" do
-#      TCPSocket.any_instance.expects(:write).raises(EOFError).times(3)
-      assert_raises(Beaneater::NotConnected) { @bp.transmit_to_rand 'foo' }
-    end
-
     it 'should raise proper exception for invalid status NOT_FOUND' do
-#      TCPSocket.any_instance.expects(:write).returns('NOT_FOUND')
+      TCPSocket.any_instance.expects(:write).once
+      TCPSocket.any_instance.expects(:gets).returns('NOT_FOUND')
       assert_raises(Beaneater::NotFoundError) { @bp.transmit_to_rand 'foo' }
     end
 
     it 'should raise proper exception for invalid status BAD_FORMAT' do
-#      TCPSocket.any_instance.expects(:write).returns('BAD_FORMAT')
+      TCPSocket.any_instance.expects(:write).once
+      TCPSocket.any_instance.expects(:gets).returns('BAD_FORMAT')
       assert_raises(Beaneater::BadFormatError) { @bp.transmit_to_rand 'foo' }
     end
 
     it 'should raise proper exception for invalid status DEADLINE_SOON' do
-#      TCPSocket.any_instance.expects(:write).returns('DEADLINE_SOON').times(1)
+      TCPSocket.any_instance.expects(:write).once
+      TCPSocket.any_instance.expects(:gets).once.returns('DEADLINE_SOON')
       assert_raises(Beaneater::DeadlineSoonError) { @bp.transmit_to_rand 'expecting deadline' }
     end
   end

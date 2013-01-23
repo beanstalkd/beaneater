@@ -40,14 +40,12 @@ describe Beaneater::Connection do
     end
 
     it "should return id" do
-#      TCPSocket.any_instance.expects(:write).with("foo\r\n").returns('INSERTED 254')
       res = @bc.transmit "put 0 0 100 1\r\nX"
       assert res[:id]
       assert_equal 'INSERTED', res[:status]
     end
 
     it "should support dashes in response" do
-#      TCPSocket.any_instance.expects(:write).with("bar\r\n").returns('USING foo-bar')
       res = @bc.transmit "use foo-bar\r\n"
       assert_equal 'USING', res[:status]
       assert_equal 'foo-bar', res[:id]
