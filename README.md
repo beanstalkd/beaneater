@@ -462,3 +462,4 @@ There are other resources helpful when learning about beanstalk:
  - [Nico Taing](https://github.com/Nico-Taing) - Creator and co-maintainer
  - [Nathan Esquenazi](https://github.com/nesquena) - Contributor and co-maintainer
  - [Keith Rarick](https://github.com/kr) - Much code inspired and adapted from beanstalk-client
+ - [Vidar Hokstad](https://github.com/vidarh) - Replaced telnet with correct TCP socket handling
