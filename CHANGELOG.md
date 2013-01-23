@@ -1,8 +1,10 @@
 # CHANGELOG for Beaneater
 
-## 0.2.3 (Unreleased)
+## 0.3.1 (Unreleased)
 
-* Fixes prompt parsing for beanstalkd through telnet (Thanks @tank-bohr)
+## 0.3.0 (Jan 23 2013)
+
+* Replace Telnet with tcpsocket thanks @vidarh
 
 ## 0.2.2 (Dec 2 2012)
 
