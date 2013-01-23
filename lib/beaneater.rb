@@ -1,4 +1,3 @@
-require 'net/telnet'
 require 'thread' unless defined?(Mutex)
 
 %w(version configuration errors pool_command pool connection stats tube job).each do |f|

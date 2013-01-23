@@ -52,8 +52,8 @@ module Beaneater
     # Sends command to every beanstalkd server set in the pool.
     #
     # @param [String] command Beanstalkd command
-    # @param [Hash{String => String, Boolean}] options telnet connections options
-    # @param [Proc] block Block passed to telnet connection during transmit
+    # @param [Hash{String => String, Boolean}] options socket connections options
+    # @param [Proc] block Block passed to socket connection during transmit
     # @return [Array<Hash{String => String, Number}>] Beanstalkd command response from each instance
     # @example
     #   @pool.transmit_to_all("stats")
@@ -75,8 +75,8 @@ module Beaneater
     # Send command to each beanstalkd servers until getting response expected
     #
     # @param [String] command Beanstalkd command
-    # @param [Hash{String => String, Boolean}] options telnet connections options
-    # @param [Proc] block Block passed in telnet connection object
+    # @param [Hash{String => String, Boolean}] options socket connections options
+    # @param [Proc] block Block passed in socket connection object
     # @return [Array<Hash{String => String, Number}>] Beanstalkd command response from the instance
     # @example
     #   @pool.transmit_until_res('peek-ready', :status => "FOUND", &block)
@@ -99,8 +99,8 @@ module Beaneater
     # Sends command to a random beanstalkd server in the pool.
     #
     # @param [String] command Beanstalkd command
-    # @param [Hash{String => String,Boolean}] options telnet connections options
-    # @param [Proc] block Block passed in telnet connection object
+    # @param [Hash{String => String,Boolean}] options socket connections options
+    # @param [Proc] block Block passed in socket connection object
     # @return [Array<Hash{String => String, Number}>] Beanstalkd command response from the instance
     # @example
     #   @pool.transmit_to_rand("stats", :match => /\n/)

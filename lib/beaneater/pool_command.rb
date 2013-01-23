@@ -17,9 +17,9 @@ module Beaneater
     # Delegate to Pool#transmit_to_all and if needed will merge responses from beanstalkd.
     #
     # @param [String] body Beanstalkd command
-    # @param [Hash{String => String, Boolean}] options telnet connections options
+    # @param [Hash{String => String, Boolean}] options socket connections options
     # @option options [Boolean] merge Ask for merging responses or not
-    # @param [Proc] block Block passed in telnet connection object
+    # @param [Proc] block Block passed in socket connection object
     # @example
     #   @pool.transmit_to_all("stats")
     #
