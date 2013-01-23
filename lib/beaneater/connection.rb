@@ -50,7 +50,7 @@ module Beaneater
       if connection
         command = command.force_encoding('ASCII-8BIT') if command.respond_to?(:force_encoding)
         connection.write(command+"\r\n")
-        parse_response(command,connection.gets)
+        parse_response(command, connection.gets)
       else # no connection
         raise NotConnected, "Connection to beanstalk '#{@host}:#{@port}' is closed!" unless connection
       end
@@ -110,17 +110,18 @@ module Beaneater
     #
     def parse_response(cmd, res)
       status = res.chomp
-      s = status.split(/\s/)
-      status = s[0]
+      body_values = status.split(/\s/)
+      status = body_values[0]
       raise UnexpectedResponse.from_status(status, cmd) if UnexpectedResponse::ERROR_STATES.include?(status)
       body = nil
       if ['OK','FOUND', 'RESERVED'].include?(status)
-        raw_body = connection.read(s[-1].to_i)
+        bytes_size = body_values[-1].to_i
+        raw_body = connection.read(bytes_size)
         body = status == 'OK' ? YAML.load(raw_body) : config.job_parser.call(raw_body)
         crlf = connection.read(2) # \r\n
         raise ExpectedCRLFError if crlf != "\r\n"
       end
-      id = s[1]
+      id = body_values[1]
       response = { :status => status, :body => body }
       response[:id] = id if id
       response[:connection] = self
