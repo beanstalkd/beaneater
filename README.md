@@ -390,7 +390,9 @@ Processing runs the following steps:
  1. If other exception occurs, call 'bury' (error)
  1. Repeat steps 2-5
 
-The `process` command is ideally suited for a beanstalk job processing daemon.
+The `process!` command is ideally suited for a beanstalk job processing daemon. 
+Even though `process!` is intended to be a long-running process, you can stop the loop at any time
+by raising `AbortProcessingError` while processing is running.
 
 ### Handling Errors
 
