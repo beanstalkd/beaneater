@@ -264,7 +264,7 @@ In order to process jobs, the client should first specify the intended tubes to 
 this will default to watching just the `default` tube.
 
 ```ruby
-@beanstalk = Beaneater::Connection.new(['10.0.1.5:11300'])
+@beanstalk = Beaneater::Pool.new(['10.0.1.5:11300'])
 @beanstalk.tubes.watch!('tube-name', 'other-tube')
 ```
 
