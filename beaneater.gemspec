@@ -19,7 +19,6 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'minitest', "~> 4.1.0"
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'mocha'
-  gem.add_development_dependency 'fakeweb'
   gem.add_development_dependency 'term-ansicolor'
   gem.add_development_dependency 'json'
 end
