@@ -23,4 +23,11 @@ describe "Beaneater::Errors" do
     assert_equal 'reserve 0', @klazz.cmd
     assert_equal 'DEADLINE_SOON', @klazz.status
   end
+
+  it 'should raise proper exception for invalid status EXPECTED_CRLF' do
+    @klazz = Beaneater::UnexpectedResponse.from_status("EXPECTED_CRLF", "reserve 0")
+    assert_kind_of(Beaneater::ExpectedCrlfError, @klazz)
+    assert_equal 'reserve 0', @klazz.cmd
+    assert_equal 'EXPECTED_CRLF', @klazz.status
+  end
 end

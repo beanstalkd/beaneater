@@ -66,7 +66,7 @@ module Beaneater
   # Raises when a command was sent that is unknown.
   class UnknownCommandError < UnexpectedResponse; end
   # Raises when command does not have proper CRLF suffix.
-  class ExpectedCRLFError < UnexpectedResponse; end
+  class ExpectedCrlfError < UnexpectedResponse; end
   # Raises when the body of a job was too large.
   class JobTooBigError < UnexpectedResponse; end
   # Raises when a job was attempted to be reserved but the timeout occured.
