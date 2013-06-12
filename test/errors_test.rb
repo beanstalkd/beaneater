@@ -30,4 +30,25 @@ describe "Beaneater::Errors" do
     assert_equal 'reserve 0', @klazz.cmd
     assert_equal 'EXPECTED_CRLF', @klazz.status
   end
+
+
+  describe "UnexpectedException" do
+    let(:cause) { Exception.new("Dummy Exception") }
+    let(:subject) { Beaneater::UnexpectedException.new(cause) }
+
+    it "saves the exception that caused UnexpectedException" do
+      assert_same subject.cause, cause
+    end
+
+    it "builds a relevant message using the cause Exception" do
+      assert_equal "Unexpected exception: Dummy Exception", subject.message
+    end
+
+    it "changes the backtrace to include the cause's backtrace" do
+      cause.set_backtrace(["1", "2", "3"])
+      subject.set_backtrace(["4", "5", "6"])
+
+      assert_equal ["1", "2", "3", "4", "5", "6"], subject.backtrace
+    end
+  end
 end

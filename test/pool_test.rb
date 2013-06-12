@@ -164,6 +164,11 @@ describe Beaneater::Pool do
       TCPSocket.any_instance.expects(:gets).once.returns('DEADLINE_SOON')
       assert_raises(Beaneater::DeadlineSoonError) { @bp.transmit_to_rand 'expecting deadline' }
     end
+
+    it "raises UnexpectedException when any Exception occurs inside the block" do
+      invalid_command = nil
+      assert_raises(Beaneater::UnexpectedException) { @bp.transmit_to_rand(invalid_command) }
+    end
   end
 
   describe "for #close" do

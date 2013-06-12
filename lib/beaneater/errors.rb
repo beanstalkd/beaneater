@@ -6,6 +6,21 @@ module Beaneater
   # Raises when a job has not been reserved properly.
   class JobNotReserved < RuntimeError; end
 
+  # Exception raised when something unexpected occured inside beaneater
+  class UnexpectedException < RuntimeError
+    attr_reader :cause
+
+    def initialize(cause)
+      @cause = cause
+
+      super("Unexpected exception: #{cause}")
+    end
+
+    def backtrace
+      (cause.backtrace || []).concat(super || [])
+    end
+  end
+
   # Abstract class for errors that occur when a command does not complete successfully.
   class UnexpectedResponse < RuntimeError
     # Set of status states that are considered errors
