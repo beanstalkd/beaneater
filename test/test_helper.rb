@@ -4,7 +4,7 @@ require 'minitest/autorun'
 $:.unshift File.expand_path("../../lib")
 require 'beaneater'
 require 'timeout'
-require 'mocha'
+require 'mocha/setup'
 require 'json'
 
 class MiniTest::Unit::TestCase

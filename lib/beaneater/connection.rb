@@ -46,16 +46,15 @@ module Beaneater
     #   @conn.transmit('bury 123')
     #
     def transmit(command, options={})
-      @mutex.lock
-      if connection
-        command = command.force_encoding('ASCII-8BIT') if command.respond_to?(:force_encoding)
-        connection.write(command+"\r\n")
-        parse_response(command, connection.gets)
-      else # no connection
-        raise NotConnected, "Connection to beanstalk '#{@host}:#{@port}' is closed!" unless connection
+      @mutex.synchronize do
+        if connection
+          command = command.force_encoding('ASCII-8BIT') if command.respond_to?(:force_encoding)
+          connection.write(command+"\r\n")
+          parse_response(command, connection.gets)
+        else # no connection
+          raise NotConnected, "Connection to beanstalk '#{@host}:#{@port}' is closed!" unless connection
+        end
       end
-    ensure
-      @mutex.unlock
     end
 
     # Close connection with beanstalkd server.
