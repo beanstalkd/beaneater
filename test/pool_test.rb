@@ -38,6 +38,11 @@ describe Beaneater::Pool do
       end
     end
 
+    it "raises UnexpectedException when any Exception occurs inside the block" do
+      invalid_command = nil
+      assert_raises(Beaneater::UnknownCommandError) { @bp.transmit_to_rand(invalid_command) }
+    end
+
     describe "for clearing watch list" do
       it "should clear connections of tube watches" do
         @bp.tubes.watch!('foo', 'bar')
