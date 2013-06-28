@@ -1,6 +1,12 @@
 # CHANGELOG for Beaneater
 
-## 0.3.1 (Unreleased)
+## 0.3.2 (Unreleased)
+
+## 0.3.1 (Jun 28 2013)
+
+* Fixes issue with "chomp" nil exception when losing connection (Thanks @simao)
+* Better handling of unknown or invalid commands during transmit
+* Raise proper CRLF exception (Thanks @carlosmoutinho)
 
 ## 0.3.0 (Jan 23 2013)
 
