@@ -84,7 +84,7 @@ module Beaneater
     # Establish a connection based on beanstalk address.
     #
     # @return [Net::TCPSocket] connection for specified address.
-    # @raise [Beanstalk::NotConnected] Could not connect to specified beanstalkd instance.
+    # @raise [Beaneater::NotConnected] Could not connect to specified beanstalkd instance.
     # @example
     #  establish_connection('localhost:3005')
     #
