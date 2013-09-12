@@ -84,7 +84,7 @@ module Beaneater
     # Establish a connection based on beanstalk address.
     #
     # @return [Net::TCPSocket] connection for specified address.
-    # @raise [Beanstalk::NotConnected] Could not connect to specified beanstalkd instance.
+    # @raise [Beaneater::NotConnected] Could not connect to specified beanstalkd instance.
     # @example
     #  establish_connection('localhost:3005')
     #
@@ -120,7 +120,7 @@ module Beaneater
         raw_body = connection.read(bytes_size)
         body = status == 'OK' ? YAML.load(raw_body) : config.job_parser.call(raw_body)
         crlf = connection.read(2) # \r\n
-        raise ExpectedCRLFError if crlf != "\r\n"
+        raise ExpectedCrlfError.new('EXPECTED_CRLF', cmd) if crlf != "\r\n"
       end
       id = body_values[1]
       response = { :status => status, :body => body }
