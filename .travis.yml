@@ -7,6 +7,7 @@ before_install:
   - cd /tmp/beanstalkd-1.9/
   - make
   - ./beanstalkd &
+  - cd $TRAVIS_BUILD_DIR
 script:
   - bundle install
   - bundle exec rake test
