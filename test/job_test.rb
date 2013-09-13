@@ -139,7 +139,7 @@ describe Beaneater::Job do
       assert_equal 'foo touch', job.body
       job.bury
       assert_equal 1, @tube.stats.current_jobs_buried
-      if @pool.stats.version > 1.7
+      if @pool.stats.version.to_f > 1.7
         job.kick
         assert_equal 0, @tube.stats.current_jobs_buried
         assert_equal 1, @tube.stats.current_jobs_ready
