@@ -1,6 +1,10 @@
 # CHANGELOG for Beaneater
 
-## 0.3.2 (Unreleased)
+## 0.3.3 (Unreleased)
+
+## 0.3.2 (Sept 15 2013)
+
+* Fix #29 ExpectedCrlfError name and invocation (@tdg5)
 
 ## 0.3.1 (Jun 28 2013)
 
