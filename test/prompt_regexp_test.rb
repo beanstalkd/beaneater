@@ -31,11 +31,22 @@ describe "Reading from socket client" do
         end
       end
     end
+
+    slept = 0
+    while @pool.nil?
+      begin
+        @pool = Beaneater::Pool.new("localhost:#{@fake_port}")
+      rescue Beaneater::NotConnected
+        raise 'Could not connect to fake beanstalkd server' if slept > 1
+        sleep 0.1
+        slept += 0.1
+      end
+    end
+
   end
 
   it 'should reserve job with full body' do
-    pool = Beaneater::Pool.new("localhost:#{@fake_port}")
-    job = pool.tubes[@tube_name].reserve
+    job = @pool.tubes[@tube_name].reserve
     assert_equal '[first part][second part]', job.body
   end
 
