@@ -1,4 +1,5 @@
 # Beaneater
+[![Build Status](https://secure.travis-ci.org/beanstalkd/beaneater.png)](http://travis-ci.org/beanstalkd/beaneater)
 
 Beaneater is the best way to interact with beanstalkd from within Ruby.
 [Beanstalkd](http://kr.github.com/beanstalkd/) is a simple, fast work queue. Its interface is generic, but was
