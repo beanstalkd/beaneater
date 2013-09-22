@@ -8,3 +8,7 @@ group :development do
   gem 'github-markup'
   gem 'yard'
 end
+
+group :development, :test do
+  gem 'coveralls', :require => false
+end

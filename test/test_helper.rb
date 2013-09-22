@@ -1,5 +1,7 @@
 ENV["TEST"] = 'true'
 require 'rubygems'
+require 'coveralls'
+Coveralls.wear!
 require 'minitest/autorun'
 $:.unshift File.expand_path("../../lib")
 require 'beaneater'
