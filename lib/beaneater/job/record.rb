@@ -131,7 +131,7 @@ module Beaneater
     #     # => "some-tube"
     #
     def tube
-      self.stats && self.stats.tube
+      self.stats.tube
     end
 
     # Returns the ttr of this job
@@ -142,7 +142,7 @@ module Beaneater
     #     # => 123
     #
     def ttr
-      self.stats && self.stats.ttr
+      self.stats.ttr
     end
 
     # Returns the pri of this job
@@ -153,7 +153,7 @@ module Beaneater
     #     # => 1
     #
     def pri
-      self.stats && self.stats.pri
+      self.stats.pri
     end
 
     # Returns the delay of this job
@@ -164,7 +164,7 @@ module Beaneater
     #     # => 5
     #
     def delay
-      self.stats && self.stats.delay
+      self.stats.delay
     end
 
     # Returns string representation of job
