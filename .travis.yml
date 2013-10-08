@@ -10,4 +10,4 @@ before_install:
   - cd $TRAVIS_BUILD_DIR
 script:
   - bundle install
-  - bundle exec rake test
+  - bundle exec rake test:full
