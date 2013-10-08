@@ -29,3 +29,5 @@ YARD::Rake::YardocTask.new do |t|
   t.files   = ['lib/beaneater/**/*.rb']
   t.options = []
 end
+
+task :default => 'test:full'
