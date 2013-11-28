@@ -28,9 +28,11 @@ module Beaneater
     #
     # @param [Hash{Symbol => Integer}] options Settings to bury job
     # @option options [Integer] pri Assign new priority to job
+    # @return [Hash{Symbol => String,Number}] Beanstalkd response for the command.
     #
     # @example
     #   @beaneater_connection.bury({:pri => 100})
+    #     # => {:status=>"BURIED", :body=>nil, :connection=>#<Beaneater::Connection host="localhost" port=11300>}
     #
     # @api public
     def bury(options={})
@@ -45,8 +47,10 @@ module Beaneater
     # @param [Hash{String => Integer}] options Settings to release job
     # @option options [Integer] pri Assign new priority to job
     # @option options [Integer] delay Assign new delay to job
+    # @return [Hash{Symbol => String,Number}] Beanstalkd response for the command.
     # @example
     #   @beaneater_connection.jobs.find(123).release(:pri => 10, :delay => 5)
+    #     # => {:status=>"RELEASED", :body=>nil, :connection=>#<Beaneater::Connection host="localhost" port=11300>}
     #
     # @api public
     def release(options={})
@@ -58,8 +62,10 @@ module Beaneater
 
     # Sends command to touch job which extends the ttr.
     #
+    # @return [Hash{Symbol => String,Number}] Beanstalkd response for the command.
     # @example
     #   @beaneater_connection.jobs.find(123).touch
+    #     # => {:status=>"TOUCHED", :body=>nil, :connection=>#<Beaneater::Connection host="localhost" port=11300>}
     #
     # @api public
     def touch
@@ -68,8 +74,10 @@ module Beaneater
 
     # Sends command to delete a job.
     #
+    # @return [Hash{Symbol => String,Number}] Beanstalkd response for the command.
     # @example
     #   @beaneater_connection.jobs.find(123).delete
+    #     # => {:status=>"DELETED", :body=>nil, :connection=>#<Beaneater::Connection host="localhost" port=11300>}
     #
     # @api public
     def delete
@@ -78,8 +86,10 @@ module Beaneater
 
     # Sends command to kick a buried job.
     #
+    # @return [Hash{Symbol => String,Number}] Beanstalkd response for the command.
     # @example
     #   @beaneater_connection.jobs.find(123).kick
+    #     # => {:status=>"KICKED", :body=>nil, :connection=>#<Beaneater::Connection host="localhost" port=11300>}
     #
     # @api public
     def kick
@@ -130,24 +140,26 @@ module Beaneater
     #   @beaneater_connection.jobs.find(123).tube
     #     # => "some-tube"
     #
+    # @api public
     def tube
       @tube ||= self.stats.tube
     end
 
     # Returns the ttr of this job
     #
-    # @return [String] The ttr of this job
+    # @return [Integer] The ttr of this job
     # @example
     #   @beaneater_connection.jobs.find(123).ttr
     #     # => 123
     #
+    # @api public
     def ttr
       @ttr ||= self.stats.ttr
     end
 
     # Returns the pri of this job
     #
-    # @return [String] The pri of this job
+    # @return [Integer] The pri of this job
     # @example
     #   @beaneater_connection.jobs.find(123).pri
     #     # => 1
@@ -158,7 +170,7 @@ module Beaneater
 
     # Returns the delay of this job
     #
-    # @return [String] The delay of this job
+    # @return [Integer] The delay of this job
     # @example
     #   @beaneater_connection.jobs.find(123).delay
     #     # => 5
