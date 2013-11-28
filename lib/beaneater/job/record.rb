@@ -131,7 +131,7 @@ module Beaneater
     #     # => "some-tube"
     #
     def tube
-      self.stats.tube
+      @tube ||= self.stats.tube
     end
 
     # Returns the ttr of this job
@@ -142,7 +142,7 @@ module Beaneater
     #     # => 123
     #
     def ttr
-      self.stats.ttr
+      @ttr ||= self.stats.ttr
     end
 
     # Returns the pri of this job
