@@ -1,4 +1,4 @@
-# test/connection_test.rb
+# test/stat_struct_test.rb
 
 require File.expand_path('../test_helper', __FILE__)
 
@@ -38,4 +38,4 @@ describe Beaneater::StatStruct do
       assert_equal ['foo', 'bar', 'baz', 'under_score'].sort, @struct.keys.sort
     end
   end # keys
-end
+end # Beaneater::StatStruct

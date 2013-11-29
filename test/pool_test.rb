@@ -1,4 +1,4 @@
-# test/connection_test.rb
+# test/pool_test.rb
 
 require File.expand_path('../test_helper', __FILE__)
 
@@ -169,7 +169,7 @@ describe Beaneater::Pool do
       TCPSocket.any_instance.expects(:gets).once.returns('DEADLINE_SOON')
       assert_raises(Beaneater::DeadlineSoonError) { @bp.transmit_to_rand 'expecting deadline' }
     end
-  end
+  end # safe_transmit
 
   describe "for #close" do
     it "should support closing the pool" do

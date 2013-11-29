@@ -1,4 +1,4 @@
-# test/connection_test.rb
+# test/pool_command_test.rb
 
 require File.expand_path('../test_helper', __FILE__)
 
@@ -44,7 +44,7 @@ describe Beaneater::PoolCommand do
         assert_equal 4, cmd[:body]['x']
         assert_equal Set[1.1, 1.2], cmd[:body]['version']
       end
-    end # merged command
+    end # merge command
 
     describe 'for merge command with arrays' do
       before do
@@ -60,7 +60,7 @@ describe Beaneater::PoolCommand do
         assert_equal "OK", cmd[:status]
         assert_equal ['foo', 'bar', 'baz'].sort, cmd[:body].sort
       end
-    end # merged command
+    end # merge command
   end # transmit_to_all
 
   describe 'for #method_missing' do
@@ -85,6 +85,6 @@ describe Beaneater::PoolCommand do
       it 'raises no method error' do
         assert_raises(NoMethodError) { @command.foo('foo') }
       end
-    end # transmit_to_rand
-  end
+    end # invalid method
+  end # method_missing
 end # Beaneater::PoolCommand

@@ -1,4 +1,4 @@
-# test/connection_test.rb
+# test/tubes_test.rb
 
 require File.expand_path('../test_helper', __FILE__)
 

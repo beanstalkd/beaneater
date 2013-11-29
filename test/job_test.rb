@@ -1,4 +1,4 @@
-# test/connection_test.rb
+# test/job_test.rb
 
 require File.expand_path('../test_helper', __FILE__)
 
@@ -218,7 +218,7 @@ describe Beaneater::Job do
       assert_equal 1, job.pri
       job.release
     end
-  end # tube
+  end # pri
 
 
   describe "for #ttr" do
@@ -232,7 +232,7 @@ describe Beaneater::Job do
       assert_equal 5, job.ttr
       job.release
     end
-  end # tube
+  end # ttr
 
   describe "for #delay" do
     before do
@@ -243,9 +243,9 @@ describe Beaneater::Job do
     it("should return delay") do
       assert_equal 5, @job.delay
     end
-  end # tube
+  end # delay
 
   after do
     cleanup_tubes!(['tube'])
   end
-end # Beaneater::Tubes
+end # Beaneater::Job

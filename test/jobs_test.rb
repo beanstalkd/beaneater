@@ -1,4 +1,4 @@
-# test/connection_test.rb
+# test/jobs_test.rb
 
 require File.expand_path('../test_helper', __FILE__)
 
@@ -123,9 +123,9 @@ describe Beaneater::Jobs do
     it "should bury unexpected exception" do
       assert_equal 1, @pool.tubes.find('tube_buried').stats.current_jobs_buried
     end
-  end
+  end # for_process!
 
   after do
     cleanup_tubes!(['baz', 'tube_success', 'tube_release', 'tube_buried'])
   end
-end
+end # Beaneater::Jobs

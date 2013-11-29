@@ -1,4 +1,4 @@
-# test/connection_test.rb
+# test/tube_test.rb
 
 require File.expand_path('../test_helper', __FILE__)
 
@@ -206,4 +206,4 @@ describe Beaneater::Tube do
   after do
     cleanup_tubes!(['baz'])
   end
-end # Beaneater::Tubes
+end # Beaneater::Tube
