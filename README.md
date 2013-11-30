@@ -97,7 +97,7 @@ The concise summary of how to use beaneater:
 # Process jobs from tube
 while @tube.peek(:ready)
   job = @tube.reserve
-  puts "job value is #{job.body["key"]}!"
+  puts "job value is #{JSON.parse(job.body)["key"]}!"
   job.delete
 end
 # Disconnect the pool
