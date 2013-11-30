@@ -89,7 +89,7 @@ module Beaneater
     #
     # @return [Beaneater::StatStruct] Struct of tube related values
     # @example
-    #  @tube.stats.delayed # => 24
+    #  @tube.stats.current_jobs_delayed # => 24
     #
     # @api public
     def stats
