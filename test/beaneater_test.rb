@@ -23,12 +23,12 @@ describe "beanstalk-client" do
       # A: put one
       a = Thread.new do
         tube_one = @beanstalk.tubes.find('one')
-        sleep 4
+        sleep 0.5
         tube_one.put('one')
       end
 
       b = Thread.new do
-        sleep 1
+        sleep 0.125
         tube_two = @beanstalk.tubes.find('two')
         tube_two.put('two')
       end
@@ -52,13 +52,13 @@ describe "beanstalk-client" do
     before do
       a = Thread.new do
         tube_one = @beanstalk.tubes.find('one')
-        sleep 4
+        sleep 0.5
         tube_one.put('one')
       end
 
       b = Thread.new do
         tube_two = @beanstalk.tubes.find('two')
-        sleep 1
+        sleep 0.125
         tube_two.put('two')
       end
 
