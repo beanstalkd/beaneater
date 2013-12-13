@@ -458,6 +458,7 @@ There are other resources helpful when learning about beanstalk:
  * [beanstalk on github](https://github.com/kr/beanstalkd)
  * [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md)
  * [Backburner](https://github.com/nesquena/backburner) - Ruby job queue for Rails/Sinatra
+ * [BeanCounter](https://github.com/gemeraldbeanstalk/bean_counter) - TestUnit/MiniTest assertions and RSpec matchers for testing code that relies on Beaneater
 
 ## Contributors
 
