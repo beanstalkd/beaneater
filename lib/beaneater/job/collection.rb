@@ -16,6 +16,9 @@ module Beaneater
     # Delay in seconds before to make job ready again.
     RELEASE_DELAY = 1
 
+    # Number of seconds to wait for a job before checking a different server.
+    RESERVE_TIMEOUT = nil
+
     # Peek (or find) first job from beanstalkd pool.
     #
     # @param [Integer] id Job id to find
@@ -79,13 +82,15 @@ module Beaneater
     #
     # @param [Hash{String => Integer}] options Settings for processing
     # @option options [Integer] release_delay Delay in seconds before to make job ready again
+    # @option options [Integer] reserve_timeout Number of seconds to wait for a job before checking a different server
     #
     # @api public
     def process!(options={})
       release_delay = options.delete(:release_delay) || RELEASE_DELAY
+      reserve_timeout = options.delete(:reserve_timeout) || RESERVE_TIMEOUT
       tubes.watch!(*processors.keys)
       loop do
-        job = tubes.reserve
+        job = tubes.reserve(reserve_timeout)
         processor = processors[job.tube]
         begin
           processor[:block].call(job)
