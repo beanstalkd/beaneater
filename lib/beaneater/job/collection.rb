@@ -90,13 +90,15 @@ module Beaneater
       reserve_timeout = options.delete(:reserve_timeout) || RESERVE_TIMEOUT
       tubes.watch!(*processors.keys)
       loop do
-        job = tubes.reserve(reserve_timeout)
-        processor = processors[job.tube]
         begin
+          job = tubes.reserve(reserve_timeout)
+          processor = processors[job.tube]
           processor[:block].call(job)
           job.delete
         rescue AbortProcessingError
           break
+        rescue Beaneater::JobNotReserved, Beaneater::NotFoundError, Beaneater::TimedOutError
+          retry
         rescue *processor[:retry_on]
           job.release(:delay => release_delay) if job.stats.releases < processor[:max_retries]
         rescue StandardError => e # handles unspecified errors
