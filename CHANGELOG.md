@@ -1,6 +1,12 @@
 # CHANGELOG for Beaneater
 
-## 0.3.3 (Unreleased)
+## 0.3.3 (August 16th 2014)
+
+* Fix failure when job is not defined and fix exception handling for jobs (@nicholasorenrawlings)
+* Add reserve_timeout option to job processing (@nicholasorenrawlings)
+* Add travis-ci badge (@tdg5)
+* Fix tests to run more reliably (@tdg5)
+
 
 ## 0.3.2 (Sept 15 2013)
 
