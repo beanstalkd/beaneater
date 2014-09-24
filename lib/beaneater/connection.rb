@@ -91,7 +91,7 @@ module Beaneater
     def establish_connection
       @match = address.split(':')
       @host, @port = @match[0], Integer(@match[1] || DEFAULT_PORT)
-      config.socket_class @host, @port
+      config.socket_class.new @host, @port
     rescue Errno::ECONNREFUSED => e
       raise NotConnected, "Could not connect to '#{@host}:#{@port}'"
     rescue Exception => ex
