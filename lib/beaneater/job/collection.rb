@@ -104,7 +104,7 @@ module Beaneater
         rescue Beaneater::JobNotReserved, Beaneater::NotFoundError, Beaneater::TimedOutError
           retry
         rescue StandardError => e # handles unspecified errors
-          job.bury
+          job.bury if job
         ensure # bury if still reserved
           job.bury if job && job.exists? && job.reserved?
         end
