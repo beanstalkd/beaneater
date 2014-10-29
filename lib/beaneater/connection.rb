@@ -123,8 +123,9 @@ module Beaneater
         raise ExpectedCrlfError.new('EXPECTED_CRLF', cmd) if crlf != "\r\n"
       end
       id = body_values[1]
-      response = { :status => status, :body => body }
+      response = { :status => status }
       response[:id] = id if id
+      response[:body] = body if body
       response[:connection] = self
       response
     end
