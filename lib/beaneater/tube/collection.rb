@@ -133,7 +133,7 @@ module Beaneater
     #
     def use(tube)
       return tube if @last_used == tube
-      res = transmit_to_all("use #{tube}")
+      transmit_to_all("use #{tube}")
       @last_used = tube
     rescue BadFormatError
       raise InvalidTubeName, "Tube cannot be named '#{tube}'"
