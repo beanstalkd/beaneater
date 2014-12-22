@@ -92,7 +92,7 @@ module Beaneater
       @match = address.split(':')
       @host, @port = @match[0], Integer(@match[1] || DEFAULT_PORT)
       TCPSocket.new @host, @port
-    rescue Errno::ECONNREFUSED => e
+    rescue Errno::ECONNREFUSED
       raise NotConnected, "Could not connect to '#{@host}:#{@port}'"
     rescue Exception => ex
       raise NotConnected, "#{ex.class}: #{ex}"

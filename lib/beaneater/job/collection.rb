@@ -32,7 +32,7 @@ module Beaneater
     def find(id)
       res = transmit_until_res("peek #{id}", :status => "FOUND")
       Job.new(res)
-    rescue Beaneater::NotFoundError => ex
+    rescue Beaneater::NotFoundError
       nil
     end
     alias_method :peek, :find
@@ -49,7 +49,7 @@ module Beaneater
     def find_all(id)
       res = transmit_to_all("peek #{id}")
       res.compact.map { |r| Job.new(r) }
-    rescue Beaneater::NotFoundError => ex
+    rescue Beaneater::NotFoundError
       []
     end
 
@@ -103,7 +103,7 @@ module Beaneater
           break
         rescue Beaneater::JobNotReserved, Beaneater::NotFoundError, Beaneater::TimedOutError
           retry
-        rescue StandardError => e # handles unspecified errors
+        rescue StandardError # handles unspecified errors
           job.bury if job
         ensure # bury if still reserved
           job.bury if job && job.exists? && job.reserved?

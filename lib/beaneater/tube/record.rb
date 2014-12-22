@@ -53,7 +53,7 @@ module Beaneater
         res = transmit_until_res "peek-#{state}", :status => "FOUND"
         Job.new(res)
       end
-    rescue Beaneater::NotFoundError => ex
+    rescue Beaneater::NotFoundError
       # Return nil if not found
       nil
     end
@@ -161,6 +161,5 @@ module Beaneater
     def config
       Beaneater.configuration
     end
-
   end # Tube
 end # Beaneater
