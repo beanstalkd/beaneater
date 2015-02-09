@@ -33,10 +33,11 @@ module Beaneater
     # @api public
     def put(body, options={})
       safe_use do
+        serialized_body = config.job_serializer.call(body)
         options = { :pri => config.default_put_pri, :delay => config.default_put_delay,
                     :ttr => config.default_put_ttr }.merge(options)
-        cmd_options = "#{options[:pri]} #{options[:delay]} #{options[:ttr]} #{body.bytesize}"
-        transmit_to_rand("put #{cmd_options}\r\n#{body}")
+        cmd_options = "#{options[:pri]} #{options[:delay]} #{options[:ttr]} #{serialized_body.bytesize}"
+        transmit_to_rand("put #{cmd_options}\r\n#{serialized_body}")
       end
     end
 
