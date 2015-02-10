@@ -50,8 +50,7 @@ module Beaneater
         if connection
           command = command.force_encoding('ASCII-8BIT') if command.respond_to?(:force_encoding)
           connection.write(command.to_s + "\r\n")
-          res = connection.gets
-          raise_not_connected! unless res
+          res = connection.readline
           parse_response(command, res)
         else # no connection
           raise_not_connected!
