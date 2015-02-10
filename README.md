@@ -477,3 +477,4 @@ There are other resources helpful when learning about beanstalk:
  - [Nathan Esquenazi](https://github.com/nesquena) - Contributor and co-maintainer
  - [Keith Rarick](https://github.com/kr) - Much code inspired and adapted from beanstalk-client
  - [Vidar Hokstad](https://github.com/vidarh) - Replaced telnet with correct TCP socket handling
+ - [Andreas Loupasakis](https://github.com/alup) - Improve test coverage, improve job configuration
