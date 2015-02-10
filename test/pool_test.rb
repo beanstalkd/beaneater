@@ -161,6 +161,44 @@ describe Beaneater::Pool do
       assert_equal 'INSERTED', res[:status]
     end
 
+    it "should retry 3 times for temporary failed connection with Errno::EPIPE" do
+      TCPSocket.any_instance.expects(:write).times(3)
+      TCPSocket.any_instance.expects(:readline).raises(Errno::EPIPE).then.
+        raises(Errno::EPIPE).then.returns('INSERTED 254').times(3)
+      res = @bp.transmit_to_rand "put 0 0 10 2\r\nxy"
+      assert_equal '254', res[:id]
+      assert_equal 'INSERTED', res[:status]
+    end
+
+    it "should retry 3 times for temporary failed connection with DrainingError" do
+      ex = Beaneater::DrainingError.new('DRAINING', "foo")
+      TCPSocket.any_instance.expects(:write).times(3)
+      TCPSocket.any_instance.expects(:readline).raises(ex).then.
+        raises(ex).then.returns('INSERTED 254').times(3)
+      res = @bp.transmit_to_rand "put 0 0 10 2\r\nxy"
+      assert_equal '254', res[:id]
+      assert_equal 'INSERTED', res[:status]
+    end
+
+    it "should raise proper exception after max retries" do
+      TCPSocket.any_instance.expects(:write).times(3)
+      TCPSocket.any_instance.expects(:readline).raises(EOFError).then.
+        raises(EOFError).then.raises(EOFError).times(3)
+      assert_raises(Beaneater::NotConnected) do
+        @bp.transmit_to_rand "put 0 0 10 2\r\nxy"
+      end
+    end
+
+    it "should raise DrainingError exception after getting the error for more than max retries times" do
+      ex = Beaneater::DrainingError.new('DRAINING', "foo")
+      TCPSocket.any_instance.expects(:write).times(3)
+      TCPSocket.any_instance.expects(:readline).raises(ex).then.
+        raises(ex).then.raises(ex).times(3)
+      assert_raises(Beaneater::DrainingError) do
+        @bp.transmit_to_rand "put 0 0 10 2\r\nxy"
+      end
+    end
+
     it 'should raise proper exception for invalid status NOT_FOUND' do
       TCPSocket.any_instance.expects(:write).once
       TCPSocket.any_instance.expects(:readline).returns('NOT_FOUND')
