@@ -129,13 +129,14 @@ module Beaneater
     # Transmit command to beanstalk connections safely handling failed connections
     #
     # @param [Proc] block The command to execute.
+    # @param [Integer] grace_period The time to sleep before the next retry
     # @return [Object] Result of the block passed
     # @raise [Beaneater::DrainingError,Beaneater::NotConnected] Could not connect to Beanstalk client
     # @example
     #  safe_transmit { conn.transmit('foo') }
     #   # => "result of foo command from beanstalk"
     #
-    def safe_transmit(&block)
+    def safe_transmit(grace_period=1, &block)
       retries = 1
       begin
         yield
@@ -144,6 +145,7 @@ module Beaneater
         # https://github.com/kr/beanstalk-client-ruby/blob/master/lib/beanstalk-client/connection.rb#L405-410
         if retries < MAX_RETRIES
           retries += 1
+          sleep(grace_period) if grace_period
           retry
         else # finished retrying, fail out
           ex.is_a?(DrainingError) ? raise(ex) : raise(NotConnected, "Could not connect!")
