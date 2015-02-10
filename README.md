@@ -118,6 +118,7 @@ Beaneater.configure do |config|
   # config.default_put_pri     = 65536
   # config.default_put_ttr     = 120
   # config.job_parser          = lambda { |body| body }
+  # config.job_serializer      = lambda { |body| body }
   # config.beanstalkd_url      = ['localhost:11300']
 end
 ```
@@ -246,6 +247,16 @@ Beanstalkd can only stores strings as job bodies, but you can easily encode your
 
 ```ruby
 @tube.put({:foo => 'bar'}.to_json)
+```
+
+Moreover, you can provide a default job serializer by setting the corresponding configuration
+option (`job_serializer`), in order to apply the encoding on each job body which
+is going to be send using the `put` command. For example, to encode a ruby object to JSON format:
+
+```ruby
+Beaneater.configure do |config|
+  config.job_serializer = lambda { |body| JSON.dump(body) }
+end
 ```
 
 Each job has various metadata associated such as `priority`, `delay`, and `ttr` which can be
