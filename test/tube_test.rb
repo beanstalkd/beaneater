@@ -40,8 +40,15 @@ describe Beaneater::Tube do
       assert_raises(Beaneater::DrainingError) { @tube.put "bar put #{@time}" }
     end
 
+    it "should support custom serializer" do
+      Beaneater.configure.job_serializer = lambda { |b| JSON.dump(b) }
+      @tube.put({ foo: "bar"})
+      assert_equal '{"foo":"bar"}', @tube.peek(:ready).body
+    end
+
     after do
       Beaneater::Connection.any_instance.unstub(:transmit)
+      Beaneater.configure.job_serializer = lambda { |b| b }
     end
   end # put
 
