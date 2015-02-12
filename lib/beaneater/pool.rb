@@ -140,14 +140,17 @@ module Beaneater
       retries = 1
       begin
         yield
-      rescue DrainingError, EOFError, Errno::ECONNRESET, Errno::EPIPE => ex
-        # TODO remove faulty connections from pool?
-        # https://github.com/kr/beanstalk-client-ruby/blob/master/lib/beanstalk-client/connection.rb#L405-410
+      rescue NotConnected, DrainingError, EOFError, Errno::ECONNRESET, Errno::EPIPE => ex
         if retries < MAX_RETRIES
           retries += 1
           sleep(grace_period) if grace_period
           retry
         else # finished retrying, fail out
+          if ex.is_a?(NotConnected)
+            connection = @connections.delete(ex.connection)
+            connection.close
+          end
+
           ex.is_a?(DrainingError) ? raise(ex) : raise(NotConnected, "Could not connect!")
         end
       end

@@ -139,7 +139,7 @@ module Beaneater
     # Raises an error to be triggered when the connection has failed
     # @raise [Beaneater::NotConnected] Beanstalkd is no longer connected
     def raise_not_connected!
-      raise NotConnected, "Connection to beanstalk '#{@host}:#{@port}' is closed!"
+      raise NotConnected.new(self), "Connection to beanstalk '#{@host}:#{@port}' is closed!"
     end
   end # Connection
 end # Beaneater
