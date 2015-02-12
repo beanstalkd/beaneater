@@ -152,6 +152,18 @@ describe Beaneater::Pool do
       assert_equal 'INSERTED', res[:status]
     end
 
+    it "removes the connection with Beaneater::NotConnected" do
+      first_connection = @bp.connections.first
+      connections_count = @bp.connections.count
+      first_connection.stubs(:transmit).
+        raises(Beaneater::NotConnected.new(first_connection))
+
+      assert_raises(Beaneater::NotConnected) do
+        @bp.transmit_to_all "puts 0 0 10 2 \r\nxy"
+      end
+      assert_equal @bp.connections.count, connections_count - 1
+    end
+
     it "should retry 3 times for temporary failed connection with EOFError" do
       TCPSocket.any_instance.expects(:write).times(3)
       TCPSocket.any_instance.expects(:readline).raises(EOFError).then.
