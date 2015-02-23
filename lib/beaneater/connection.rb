@@ -1,9 +1,12 @@
 require 'yaml'
 require 'socket'
 
-module Beaneater
+class Beaneater
   # Represents a connection to a beanstalkd instance.
   class Connection
+
+    # Default number of retries to send a command to a connection
+    MAX_RETRIES = 3
 
     # @!attribute address
     #   @return [String] returns Beanstalkd server address
@@ -28,13 +31,21 @@ module Beaneater
     #
     # @param [String] address beanstalkd instance address.
     # @example
-    #   Beaneater::Connection.new('localhost')
-    #   Beaneater::Connection.new('localhost:11300')
+    #   Beaneater::Connection.new('127.0.0.1')
+    #   Beaneater::Connection.new('127.0.0.1:11300')
+    #
+    #   ENV['BEANSTALKD_URL'] = '127.0.0.1:11300'
+    #   @b = Beaneater.new
+    #   @b.connection.host # => '127.0.0.1'
+    #   @b.connection.port # => '11300'
     #
     def initialize(address)
-      @address = address
-      @connection = establish_connection
+      @address = address || _host_from_env || Beaneater.configuration.beanstalkd_url
       @mutex = Mutex.new
+
+      establish_connection
+    rescue
+      _raise_not_connected!
     end
 
     # Send commands to beanstalkd server via connection.
@@ -43,17 +54,19 @@ module Beaneater
     # @param [String] command Beanstalkd command
     # @return [Array<Hash{String => String, Number}>] Beanstalkd command response
     # @example
+    #   @conn = Beaneater::Connection.new
     #   @conn.transmit('bury 123')
+    #   @conn.transmit('stats')
     #
     def transmit(command, options={})
-      @mutex.synchronize do
-        if connection
+      _with_retry(options[:retry_interval]) do
+        @mutex.synchronize do
+          _raise_not_connected! unless connection
+
           command = command.force_encoding('ASCII-8BIT') if command.respond_to?(:force_encoding)
           connection.write(command.to_s + "\r\n")
           res = connection.readline
           parse_response(command, res)
-        else # no connection
-          raise_not_connected!
         end
       end
     end
@@ -64,8 +77,10 @@ module Beaneater
     #  @conn.close
     #
     def close
-      @connection.close
-      @connection = nil
+      if @connection
+        @connection.close
+        @connection = nil
+      end
     end
 
     # Returns string representation of job.
@@ -88,13 +103,10 @@ module Beaneater
     #  establish_connection('localhost:3005')
     #
     def establish_connection
-      @match = address.split(':')
-      @host, @port = @match[0], Integer(@match[1] || DEFAULT_PORT)
-      TCPSocket.new @host, @port
-    rescue Errno::ECONNREFUSED
-      raise NotConnected, "Could not connect to '#{@host}:#{@port}'"
-    rescue Exception => ex
-      raise NotConnected, "#{ex.class}: #{ex}"
+      match = address.split(':')
+      @host, @port = match[0], Integer(match[1] || DEFAULT_PORT)
+
+      @connection = TCPSocket.new @host, @port
     end
 
     # Parses the response and returns the useful beanstalk response.
@@ -102,11 +114,11 @@ module Beaneater
     #
     # @param [String] cmd Beanstalk command transmitted
     # @param [String] res Telnet command response
-    # @return [Array<Hash{String => String, Number}>] Beanstalk response with `status`, `id`, `body`, and `connection`
+    # @return [Array<Hash{String => String, Number}>] Beanstalk response with `status`, `id`, `body`
     # @raise [Beaneater::UnexpectedResponse] Response from beanstalk command was an error status
     # @example
     #  parse_response("delete 56", "DELETED 56\nFOO")
-    #   # => { :body => "FOO", :status => "DELETED", :id => 56, :connection => <Connection>  }
+    #   # => { :body => "FOO", :status => "DELETED", :id => 56 }
     #
     def parse_response(cmd, res)
       status = res.chomp
@@ -125,7 +137,6 @@ module Beaneater
       response = { :status => status }
       response[:id] = id if id
       response[:body] = body if body
-      response[:connection] = self
       response
     end
 
@@ -136,10 +147,59 @@ module Beaneater
       Beaneater.configuration
     end
 
+    private
+
+    # Wrapper method for capturing certain failures and retry the payload block
+    #
+    # @param [Proc] block The command to execute.
+    # @param [Integer] retry_interval The time to wait before the next retry
+    # @return [Object] Result of the block passed
+    #
+    def _with_retry(retry_interval=1, &block)
+      yield
+    rescue Beaneater::DrainingError, EOFError, Errno::ECONNRESET, Errno::EPIPE,
+      Errno::ECONNREFUSED => ex
+      _reconnect(ex, retry_interval)
+      retry
+    end
+
+    # Tries to re-establish connection to the beanstalkd
+    #
+    # @param [Exception] original_exception The exception caused the retry
+    # @param [Integer] retry_interval The time to wait before the next reconnect
+    # @param [Integer] tries The maximum number of attempts to reconnect
+    def _reconnect(original_exception, retry_interval=1, tries=MAX_RETRIES)
+      close
+      establish_connection
+    rescue Beaneater::DrainingError, Errno::ECONNREFUSED
+      tries -= 1
+      if tries.zero?
+        if original_exception.is_a?(Beaneater::DrainingError)
+          raise(original_exception)
+        else
+          _raise_not_connected!
+        end
+      end
+      sleep(retry_interval)
+      retry
+    end
+
+    # The host provided by BEANSTALKD_URL environment variable, if available.
+    #
+    # @return [String] A beanstalkd host address
+    # @example
+    #  ENV['BEANSTALKD_URL'] = "localhost:1212"
+    #   # => 'localhost:1212'
+    #
+    def _host_from_env
+      ENV['BEANSTALKD_URL'].respond_to?(:length) && ENV['BEANSTALKD_URL'].length > 0 && ENV['BEANSTALKD_URL'].strip
+    end
+
     # Raises an error to be triggered when the connection has failed
     # @raise [Beaneater::NotConnected] Beanstalkd is no longer connected
-    def raise_not_connected!
-      raise NotConnected.new(self), "Connection to beanstalk '#{@host}:#{@port}' is closed!"
+    def _raise_not_connected!
+      raise Beaneater::NotConnected, "Connection to beanstalk '#{@host}:#{@port}' is closed!"
     end
+
   end # Connection
 end # Beaneater
