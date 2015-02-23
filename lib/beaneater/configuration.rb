@@ -1,4 +1,4 @@
-module Beaneater
+class Beaneater
   class Configuration
     attr_accessor :default_put_delay   # default delay value to put a job
     attr_accessor :default_put_pri     # default priority value to put a job
