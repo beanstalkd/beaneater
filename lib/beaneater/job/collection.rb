@@ -1,14 +1,16 @@
-module Beaneater
+class Beaneater
   # Exception to stop processing jobs during a `process!` loop.
   # Simply `raise AbortProcessingError` in any job process handler to stop the processing loop.
   class AbortProcessingError < RuntimeError; end
 
   # Represents collection of job-related commands.
-  class Jobs < PoolCommand
+  class Jobs
 
     # @!attribute processors
     #   @return [Array<Proc>] returns Collection of proc to handle beanstalkd jobs
-    attr_reader :processors
+    # @!attribute client
+    #   @return [Beaneater] returns the client instance
+    attr_reader :processors, :client
 
     # Number of retries to process a job.
     MAX_RETRIES = 3
@@ -19,39 +21,41 @@ module Beaneater
     # Number of seconds to wait for a job before checking a different server.
     RESERVE_TIMEOUT = nil
 
-    # Peek (or find) first job from beanstalkd pool.
+    # Creates new jobs instance.
+    #
+    # @param [Beaneater] client The beaneater client instance.
+    # @example
+    #  Beaneater::Jobs.new(@client)
+    #
+    def initialize(client)
+      @client = client
+    end
+
+    # Delegates transmit to the connection object.
+    #
+    # @see Beaneater::Connection#transmit
+    def transmit(command, options={})
+      client.connection.transmit(command, options)
+    end
+
+    # Peek (or find) job by id from beanstalkd.
     #
     # @param [Integer] id Job id to find
     # @return [Beaneater::Job] Job matching given id
     # @example
-    #   @beaneater_pool.jobs[123] # => <Beaneater::Job>
-    #   @beaneater_pool.jobs.find(123) # => <Beaneater::Job>
-    #   @beaneater_pool.jobs.peek(123) # => <Beaneater::Job>
+    #   @beaneater.jobs[123] # => <Beaneater::Job>
+    #   @beaneater.jobs.find(123) # => <Beaneater::Job>
+    #   @beaneater.jobs.peek(123) # => <Beaneater::Job>
     #
     # @api public
     def find(id)
-      res = transmit_until_res("peek #{id}", :status => "FOUND")
-      Job.new(res)
+      res = transmit("peek #{id}")
+      Job.new(client, res)
     rescue Beaneater::NotFoundError
       nil
     end
     alias_method :peek, :find
     alias_method :[], :find
-
-    # Find all jobs with specified id fromm all beanstalkd servers in pool.
-    #
-    # @param [Integer] id Job id to find
-    # @return [Array<Beaneater::Job>] Jobs matching given id
-    # @example
-    #   @beaneater_pool.jobs.find_all(123) # => [<Beaneater::Job>, <Beaneater::Job>]
-    #
-    # @api public
-    def find_all(id)
-      res = transmit_to_all("peek #{id}")
-      res.compact.map { |r| Job.new(r) }
-    rescue Beaneater::NotFoundError
-      []
-    end
 
     # Register a processor to handle beanstalkd job on particular tube.
     #
@@ -88,10 +92,10 @@ module Beaneater
     def process!(options={})
       release_delay = options.delete(:release_delay) || RELEASE_DELAY
       reserve_timeout = options.delete(:reserve_timeout) || RESERVE_TIMEOUT
-      tubes.watch!(*processors.keys)
+      client.tubes.watch!(*processors.keys)
       loop do
         begin
-          job = tubes.reserve(reserve_timeout)
+          job = client.tubes.reserve(reserve_timeout)
           processor = processors[job.tube]
           begin
             processor[:block].call(job)
