@@ -4,9 +4,9 @@ require File.expand_path('../test_helper', __FILE__)
 
 describe Beaneater::Jobs do
   before do
-    @pool = Beaneater::Pool.new(['localhost'])
-    @jobs = Beaneater::Jobs.new(@pool)
-    @tube = @pool.tubes.find('baz')
+    @beanstalk = Beaneater.new('localhost')
+    @jobs = Beaneater::Jobs.new(@beanstalk)
+    @tube = @beanstalk.tubes.find('baz')
   end
 
   describe "for #find" do
@@ -32,30 +32,6 @@ describe Beaneater::Jobs do
       assert_nil @jobs.find(-1)
     end
   end # find
-
-  describe "for #find_all" do
-    before do
-      @time = Time.now.to_i
-      @tube.put("foo find #{@time}")
-      @job = @tube.peek(:ready)
-    end
-
-      it "should return job from id" do
-        assert_equal "foo find #{@time}", @jobs.find_all(@job.id).first.body
-      end
-
-      it "should return job using peek" do
-        assert_equal "foo find #{@time}", @jobs.find_all(@job.id).first.body
-      end
-
-      it "should return job using hash syntax" do
-        assert_equal "foo find #{@time}", @jobs.find_all(@job.id).first.body
-      end
-
-      it "should return nil for invalid id" do
-        assert_equal [], @jobs.find_all(-1)
-      end
-  end # find_all
 
   describe "for #register!" do
     before do
@@ -98,10 +74,10 @@ describe Beaneater::Jobs do
 
       cleanup_tubes!(['tube_success', 'tube_release', 'tube_buried'])
 
-      @pool.tubes.find('tube_success').put("success abort", :pri => 2**31 + 1)
-      @pool.tubes.find('tube_success').put("success 2", :pri => 1)
-      @pool.tubes.find('tube_release').put("released")
-      @pool.tubes.find('tube_buried').put("buried")
+      @beanstalk.tubes.find('tube_success').put("success abort", :pri => 2**31 + 1)
+      @beanstalk.tubes.find('tube_success').put("success 2", :pri => 1)
+      @beanstalk.tubes.find('tube_release').put("released")
+      @beanstalk.tubes.find('tube_buried').put("buried")
 
       @jobs.process!(:release_delay => 0)
     end
@@ -111,17 +87,17 @@ describe Beaneater::Jobs do
     end
 
     it "should clear successful_jobs" do
-      assert_equal 0, @pool.tubes.find('tube_success').stats.current_jobs_ready
-      assert_equal 1, @pool.tubes.find('tube_success').stats.current_jobs_buried
-      assert_equal 0, @pool.tubes.find('tube_success').stats.current_jobs_reserved
+      assert_equal 0, @beanstalk.tubes.find('tube_success').stats.current_jobs_ready
+      assert_equal 1, @beanstalk.tubes.find('tube_success').stats.current_jobs_buried
+      assert_equal 0, @beanstalk.tubes.find('tube_success').stats.current_jobs_reserved
     end
 
     it "should retry release jobs 2 times" do
-      assert_equal 2, @pool.tubes.find('tube_release').peek(:buried).stats.releases
+      assert_equal 2, @beanstalk.tubes.find('tube_release').peek(:buried).stats.releases
     end
 
     it "should bury unexpected exception" do
-      assert_equal 1, @pool.tubes.find('tube_buried').stats.current_jobs_buried
+      assert_equal 1, @beanstalk.tubes.find('tube_buried').stats.current_jobs_buried
     end
   end # for_process!
 

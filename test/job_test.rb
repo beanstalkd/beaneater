@@ -4,8 +4,8 @@ require File.expand_path('../test_helper', __FILE__)
 
 describe Beaneater::Job do
   before do
-    @pool  = Beaneater::Pool.new(['localhost'])
-    @tube  = @pool.tubes.find 'tube'
+    @beanstalk  = Beaneater.new('localhost')
+    @tube  = @beanstalk.tubes.find 'tube'
   end
 
   describe "for #bury" do
@@ -139,7 +139,7 @@ describe Beaneater::Job do
       assert_equal 'foo touch', job.body
       job.bury
       assert_equal 1, @tube.stats.current_jobs_buried
-      if @pool.stats.version.to_f > 1.7
+      if @beanstalk.stats.version.to_f > 1.7
         job.kick
         assert_equal 0, @tube.stats.current_jobs_buried
         assert_equal 1, @tube.stats.current_jobs_ready
