@@ -1,11 +1,65 @@
 require 'thread' unless defined?(Mutex)
 
-%w(version configuration errors pool_command pool connection stats tube job).each do |f|
+%w(version configuration errors connection tube job stats).each do |f|
   require "beaneater/#{f}"
 end
 
-module Beaneater
-  # Simple ruby client for beanstalkd.
+class Beaneater
+
+  # @!attribute connection
+  #   @return <Beaneater::Connection> returns the associated connection object
+  attr_reader :connection
+
+  # Initialize new instance of Beaneater
+  #
+  # @param [Hash] options multiple params to customize a new instance
+  # @example
+  #   Beaneater.new(host: "127.0.0.1', port: 11300)
+  #   Beaneater.new(address: '127.0.0.1:11300')
+  #
+  #   ENV['BEANSTALKD_URL'] = '127.0.0.1:11300'
+  #   @b = Beaneater.new
+  #   @b.connection.host # => '127.0.0.1'
+  #   @b.connection.port # => '11300'
+  #
+  def initialize(options={})
+    @connection =  Connection.new(options)
+  end
+
+  # Returns Beaneater::Tubes object for accessing tube related functions.
+  #
+  # @return [Beaneater::Tubes] tubes object
+  # @api public
+  def tubes
+    @tubes ||= Beaneater::Tubes.new(self)
+  end
+
+  # Returns Beaneater::Jobs object for accessing job related functions.
+  #
+  # @return [Beaneater::Jobs] jobs object
+  # @api public
+  def jobs
+    @jobs ||= Beaneater::Jobs.new(self)
+  end
+
+  # Returns Beaneater::Stats object for accessing beanstalk stats.
+  #
+  # @return [Beaneater::Stats] stats object
+  # @api public
+  def stats
+    @stats ||= Stats.new(self)
+  end
+
+  # Closes the related connection
+  #
+  # @example
+  #  @beaneater_instance.close
+  #
+  def close
+    connection.close if connection
+  end
+
+  protected
 
   class << self
     # Yields a configuration block
