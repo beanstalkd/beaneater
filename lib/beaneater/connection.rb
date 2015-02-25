@@ -8,6 +8,9 @@ class Beaneater
     # Default number of retries to send a command to a connection
     MAX_RETRIES = 3
 
+    # Default retry interval
+    DEFAULT_RETRY_INTERVAL = 1
+
     # @!attribute address
     #   @return [String] returns Beanstalkd server address
     #   @example
@@ -155,7 +158,7 @@ class Beaneater
     # @param [Integer] retry_interval The time to wait before the next retry
     # @return [Object] Result of the block passed
     #
-    def _with_retry(retry_interval=1, &block)
+    def _with_retry(retry_interval, &block)
       yield
     rescue Beaneater::DrainingError, EOFError, Errno::ECONNRESET, Errno::EPIPE,
       Errno::ECONNREFUSED => ex
@@ -168,7 +171,7 @@ class Beaneater
     # @param [Exception] original_exception The exception caused the retry
     # @param [Integer] retry_interval The time to wait before the next reconnect
     # @param [Integer] tries The maximum number of attempts to reconnect
-    def _reconnect(original_exception, retry_interval=1, tries=MAX_RETRIES)
+    def _reconnect(original_exception, retry_interval, tries=MAX_RETRIES)
       close
       establish_connection
     rescue Beaneater::DrainingError, Errno::ECONNREFUSED
@@ -180,7 +183,7 @@ class Beaneater
           _raise_not_connected!
         end
       end
-      sleep(retry_interval)
+      sleep(retry_interval || DEFAULT_RETRY_INTERVAL)
       retry
     end
 
