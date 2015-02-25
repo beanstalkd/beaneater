@@ -174,7 +174,7 @@ class Beaneater
     def _reconnect(original_exception, retry_interval, tries=MAX_RETRIES)
       close
       establish_connection
-    rescue Beaneater::DrainingError, Errno::ECONNREFUSED
+    rescue Errno::ECONNREFUSED
       tries -= 1
       if tries.zero?
         if original_exception.is_a?(Beaneater::DrainingError)
