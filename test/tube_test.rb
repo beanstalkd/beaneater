@@ -26,20 +26,6 @@ describe Beaneater::Tube do
       assert_equal "delayed put #{@time}", @tube.peek(:delayed).body
     end
 
-#    it "should try to put 2 times before put successfully" do
-#      Beaneater::Connection.any_instance.expects(:transmit).once.with(includes('use baz'), {})
-#      Beaneater::Connection.any_instance.expects(:parse_response).times(2).
-#        raises(Beaneater::DrainingError.new(nil, nil)).then.returns({ :body => "foo", :id => 9000 })
-#      assert_equal 'foo', @tube.put("bar put #{@time}")
-#    end
-
-#    it "should try to put 3 times before to raise" do
-#      Beaneater::Connection.any_instance.expects(:transmit).once.with(includes('use baz'), {})
-#      Beaneater::Connection.any_instance.expects(:transmit).with(includes("bar put #{@time}"), {}).
-#        times(3).raises(Beaneater::DrainingError.new(nil, nil))
-#      assert_raises(Beaneater::DrainingError) { @tube.put "bar put #{@time}" }
-#    end
-
     it "should support custom serializer" do
       Beaneater.configure.job_serializer = lambda { |b| JSON.dump(b) }
       @tube.put({ foo: "bar"})
