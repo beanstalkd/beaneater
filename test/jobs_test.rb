@@ -100,8 +100,4 @@ describe Beaneater::Jobs do
       assert_equal 1, @beanstalk.tubes.find('tube_buried').stats.current_jobs_buried
     end
   end # for_process!
-
-  after do
-    cleanup_tubes!(['baz', 'tube_success', 'tube_release', 'tube_buried'])
-  end
 end # Beaneater::Jobs

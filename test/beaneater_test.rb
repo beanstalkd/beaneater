@@ -107,9 +107,4 @@ describe "beanstalk-client" do
       assert_nil @beanstalk.jobs.find(@job.id)
     end
   end
-
-  after do
-    cleanup_tubes!(@tubes, @beanstalk)
-  end
-
 end

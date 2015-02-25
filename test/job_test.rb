@@ -244,8 +244,4 @@ describe Beaneater::Job do
       assert_equal 5, @job.delay
     end
   end # delay
-
-  after do
-    cleanup_tubes!(['tube'])
-  end
 end # Beaneater::Job

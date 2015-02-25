@@ -51,6 +51,7 @@ describe "Reading from socket client" do
   end
 
   after do
+    @beanstalk.close
     @fake_server.kill
   end
 end

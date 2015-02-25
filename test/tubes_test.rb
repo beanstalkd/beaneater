@@ -145,8 +145,5 @@ describe Beaneater::Tubes do
       assert_raises(Beaneater::DeadlineSoonError) { @beanstalk.tubes.reserve(0) }
     end
 
-    after do
-      cleanup_tubes!(['foo', 'tube'])
-    end
   end # reserve
 end # Beaneater::Tubes

@@ -209,8 +209,4 @@ describe Beaneater::Tube do
       assert_equal [0, 0, 0], tube_counts.call
     end
   end # clear
-
-  after do
-    cleanup_tubes!(['baz'])
-  end
 end # Beaneater::Tube
