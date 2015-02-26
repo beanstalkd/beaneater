@@ -10,7 +10,9 @@ class Beaneater
     #   @return [Array<Proc>] returns Collection of proc to handle beanstalkd jobs
     # @!attribute client
     #   @return [Beaneater] returns the client instance
-    attr_reader :processors, :client
+    # @!attribute current_job
+    #   @return [Beaneater] returns the currently processing job in the process loop
+    attr_reader :processors, :client, :current_job
 
     # Number of retries to process a job.
     MAX_RETRIES = 3
@@ -82,6 +84,18 @@ class Beaneater
       @processors[tube_name.to_s] = { :block => block, :retry_on => retry_on, :max_retries => max_retries }
     end
 
+    # Sets flag to indicate that process loop should stop after current job
+    def stop!
+      @stop = true
+    end
+
+    # Returns whether the process loop should stop
+    #
+    # @return [Boolean] if true the loop should stop after current processing
+    def stop?
+      !!@stop
+    end
+
     # Watch, reserve, process and delete or bury or release jobs.
     #
     # @param [Hash{String => Integer}] options Settings for processing
@@ -93,24 +107,27 @@ class Beaneater
       release_delay = options.delete(:release_delay) || RELEASE_DELAY
       reserve_timeout = options.delete(:reserve_timeout) || RESERVE_TIMEOUT
       client.tubes.watch!(*processors.keys)
-      loop do
+      while !stop? do
         begin
-          job = client.tubes.reserve(reserve_timeout)
-          processor = processors[job.tube]
+          @current_job = client.tubes.reserve(reserve_timeout)
+          processor = processors[@current_job.tube]
           begin
-            processor[:block].call(job)
-            job.delete
+            processor[:block].call(@current_job)
+            @current_job.delete
           rescue *processor[:retry_on]
-            job.release(:delay => release_delay) if job.stats.releases < processor[:max_retries]
+            if @current_job.stats.releases < processor[:max_retries]
+              @current_job.release(:delay => release_delay)
+            end
           end
         rescue AbortProcessingError
           break
         rescue Beaneater::JobNotReserved, Beaneater::NotFoundError, Beaneater::TimedOutError
           retry
         rescue StandardError # handles unspecified errors
-          job.bury if job
+          @current_job.bury if @current_job
         ensure # bury if still reserved
-          job.bury if job && job.exists? && job.reserved?
+          @current_job.bury if @current_job && @current_job.exists? && @current_job.reserved?
+          @current_job = nil
         end
       end
     end # process!
