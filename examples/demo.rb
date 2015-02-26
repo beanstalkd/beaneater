@@ -6,8 +6,7 @@ require 'beaneater'
 
 # Establish a pool of beanstalks
 puts step("Connecting to Beanstalk")
-bc = Beaneater::Pool.new('localhost')
-# bc = Beaneater::Pool.new(['localhost', 'localhost:11301', 'localhost:11302'])
+bc = Beaneater.new('localhost')
 puts bc
 
 # Print out key stats
