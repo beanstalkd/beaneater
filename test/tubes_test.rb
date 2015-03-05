@@ -60,6 +60,20 @@ describe Beaneater::Tubes do
     end
   end # all
 
+  describe "for Enumerable" do
+    before do
+      @pool = Beaneater::Pool.new(['localhost'])
+      @pool.tubes.find('foo').put 'bar'
+      @pool.tubes.find('bar').put 'foo'
+    end
+
+    it 'should map tubes' do
+      ['default', 'foo', 'bar'].each do |t|
+        assert @pool.tubes.map(&:name).include?(t)
+      end
+    end
+  end
+
   describe "for #used" do
     before do
       @pool = Beaneater::Pool.new(['localhost'])

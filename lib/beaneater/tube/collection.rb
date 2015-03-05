@@ -1,6 +1,7 @@
 module Beaneater
   # Represents collection of tube related commands.
   class Tubes < PoolCommand
+    include Enumerable
 
     # Creates new tubes instance.
     #
@@ -56,6 +57,17 @@ module Beaneater
     # @api public
     def all
       transmit_to_all('list-tubes', :merge => true)[:body].map { |tube_name| Tube.new(self.pool, tube_name) }
+    end
+
+    # Calls the given block once for each known beanstalk tube, passing that element as a parameter.
+    #
+    # @return An Enumerator is returned if no block is given.
+    # @example
+    #   @pool.tubes.each {|t| puts t.name}
+    #
+    # @api public
+    def each
+      block_given? ? all.each(&Proc.new) : all.each
     end
 
     # List of watched beanstalk tubes.

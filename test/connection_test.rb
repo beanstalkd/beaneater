@@ -18,7 +18,12 @@ describe Beaneater::Connection do
 
     it "should init connection" do
       assert_kind_of TCPSocket, @bc.connection
-      assert_equal '127.0.0.1', @bc.connection.peeraddr[3]
+      if @bc.connection.peeraddr[0] == 'AF_INET'
+        assert_equal '127.0.0.1', @bc.connection.peeraddr[3]
+      else
+        assert_equal 'AF_INET6', @bc.connection.peeraddr[0]
+        assert_equal '::1', @bc.connection.peeraddr[3]
+      end
       assert_equal 11300, @bc.connection.peeraddr[1]
     end
 
