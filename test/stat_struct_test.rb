@@ -38,4 +38,14 @@ describe Beaneater::StatStruct do
       assert_equal ['foo', 'bar', 'baz', 'under_score'].sort, @struct.keys.sort
     end
   end # keys
+
+  describe "for #to_h" do
+    it "should return 4 keys / values" do
+      assert_equal 4, @struct.to_h.size
+    end
+
+    it "should return expect hash" do
+      assert_equal [['foo', 'bar'], ['bar', 'baz'], ['baz', 'foo'], ['under_score', 'demo']].sort, @struct.to_h.sort
+    end
+  end # to_h
 end # Beaneater::StatStruct
