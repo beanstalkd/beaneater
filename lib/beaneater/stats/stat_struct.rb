@@ -35,5 +35,11 @@ module Beaneater
     def keys
       @hash.keys.map { |k| k.to_s }
     end
+
+    # Returns the initialization hash
+    #
+    def to_h
+      @hash
+    end
   end # StatStruct
 end # Beaneater
