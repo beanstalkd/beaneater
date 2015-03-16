@@ -156,13 +156,22 @@ class Beaneater
     #
     # @param [Proc] block The command to execute.
     # @param [Integer] retry_interval The time to wait before the next retry
+    # @param [Integer] tries The maximum number of tries in draining mode
     # @return [Object] Result of the block passed
     #
-    def _with_retry(retry_interval, &block)
+    def _with_retry(retry_interval, tries=MAX_RETRIES, &block)
       yield
-    rescue Beaneater::DrainingError, EOFError, Errno::ECONNRESET, Errno::EPIPE,
+    rescue EOFError, Errno::ECONNRESET, Errno::EPIPE,
       Errno::ECONNREFUSED => ex
       _reconnect(ex, retry_interval)
+      retry
+    rescue Beaneater::DrainingError
+      tries -= 1
+      if tries.zero?
+        close
+        raise
+      end
+      sleep(retry_interval || DEFAULT_RETRY_INTERVAL)
       retry
     end
 
@@ -177,11 +186,7 @@ class Beaneater
     rescue Errno::ECONNREFUSED
       tries -= 1
       if tries.zero?
-        if original_exception.is_a?(Beaneater::DrainingError)
-          raise(original_exception)
-        else
-          _raise_not_connected!
-        end
+        _raise_not_connected!
       end
       sleep(retry_interval || DEFAULT_RETRY_INTERVAL)
       retry
