@@ -27,6 +27,12 @@ class Beaneater
     #   @return [Net::TCPSocket] returns connection object
     attr_reader :address, :host, :port, :connection
 
+    # @!attribute tubes_watched
+    #   @returns [Array<String>] returns currently watched tube names
+    # @!attribute tube_used
+    #   @returns [String] returns currently used tube name
+    attr_accessor :tubes_watched, :tube_used
+
     # Default port value for beanstalk connection
     DEFAULT_PORT = 11300
 
@@ -45,6 +51,8 @@ class Beaneater
     def initialize(address)
       @address = address || _host_from_env || Beaneater.configuration.beanstalkd_url
       @mutex = Mutex.new
+      @tube_used = 'default'
+      @tubes_watched = ['default']
 
       establish_connection
     rescue
@@ -62,7 +70,7 @@ class Beaneater
     #   @conn.transmit('stats')
     #
     def transmit(command, options={})
-      _with_retry(options[:retry_interval]) do
+      _with_retry(options[:retry_interval], options[:init]) do
         @mutex.synchronize do
           _raise_not_connected! unless connection
 
@@ -95,6 +103,15 @@ class Beaneater
       "#<Beaneater::Connection host=#{host.inspect} port=#{port.inspect}>"
     end
     alias :inspect :to_s
+
+    def add_to_watched(tube_name)
+      @tubes_watched << tube_name
+      @tubes_watched.uniq
+    end
+
+    def remove_from_watched(tube_name)
+      @tubes_watched.delete(tube_name)
+    end
 
     protected
 
@@ -152,6 +169,16 @@ class Beaneater
 
     private
 
+    def _initialize_tubes
+      if @tubes_watched != ['default']
+        tubes_watched.each do |t|
+          transmit("watch #{t}", init: false)
+        end
+      end
+
+      transmit("use #{tube_used}", init: false) if @tube_used != 'default'
+    end
+
     # Wrapper method for capturing certain failures and retry the payload block
     #
     # @param [Proc] block The command to execute.
@@ -159,11 +186,12 @@ class Beaneater
     # @param [Integer] tries The maximum number of tries in draining mode
     # @return [Object] Result of the block passed
     #
-    def _with_retry(retry_interval, tries=MAX_RETRIES, &block)
+    def _with_retry(retry_interval, init=true, tries=MAX_RETRIES, &block)
       yield
     rescue EOFError, Errno::ECONNRESET, Errno::EPIPE,
       Errno::ECONNREFUSED => ex
       _reconnect(ex, retry_interval)
+      _initialize_tubes if init
       retry
     rescue Beaneater::DrainingError
       tries -= 1

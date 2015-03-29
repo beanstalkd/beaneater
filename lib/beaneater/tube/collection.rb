@@ -12,8 +12,15 @@ class Beaneater
     #  Beaneater::Tubes.new(@client)
     #
     def initialize(client)
-      @last_used = 'default'
       @client = client
+    end
+
+    def last_used
+      client.connection.tube_used
+    end
+
+    def last_used=(tube_name)
+      client.connection.tube_used = tube_name
     end
 
     # Delegates transmit to the connection object.
@@ -80,7 +87,9 @@ class Beaneater
     #
     # @api public
     def watched
-      transmit('list-tubes-watched')[:body].map do |tube_name|
+      last_watched = transmit('list-tubes-watched')[:body]
+      client.connection.tubes_watched = last_watched.dup
+      last_watched.map do |tube_name|
         Tube.new(client, tube_name)
       end
     end
@@ -94,7 +103,8 @@ class Beaneater
     #
     # @api public
     def used
-      Tube.new(client, transmit('list-tube-used')[:id])
+      last_used = transmit('list-tube-used')[:id]
+      Tube.new(client, last_used)
     end
 
     # Add specified beanstalkd tubes as watched.
@@ -106,7 +116,10 @@ class Beaneater
     #
     # @api public
     def watch(*names)
-      names.each { |t| transmit "watch #{t}" }
+      names.each do |t|
+        transmit "watch #{t}"
+        client.connection.add_to_watched(t)
+      end
     rescue BadFormatError => ex
       raise InvalidTubeName, "Tube in '#{ex.cmd}' is invalid!"
     end
@@ -133,7 +146,10 @@ class Beaneater
     #
     # @api public
     def ignore(*names)
-      names.each { |w| transmit "ignore #{w}" }
+      names.each do |w|
+        transmit "ignore #{w}"
+        client.connection.remove_from_watched(w)
+      end
     end
 
     # Set specified tube as used.
@@ -143,9 +159,9 @@ class Beaneater
     #  @conn.tubes.use("some-tube")
     #
     def use(tube)
-      return tube if @last_used == tube
+      return tube if last_used == tube
       transmit("use #{tube}")
-      @last_used = tube
+      last_used = tube
     rescue BadFormatError
       raise InvalidTubeName, "Tube cannot be named '#{tube}'"
     end
