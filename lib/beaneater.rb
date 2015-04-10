@@ -12,18 +12,17 @@ class Beaneater
 
   # Initialize new instance of Beaneater
   #
-  # @param [Hash] options multiple params to customize a new instance
+  # @param [String] address in the form "host:port"
   # @example
-  #   Beaneater.new(host: "127.0.0.1', port: 11300)
-  #   Beaneater.new(address: '127.0.0.1:11300')
+  #   Beaneater.new('127.0.0.1:11300')
   #
   #   ENV['BEANSTALKD_URL'] = '127.0.0.1:11300'
   #   @b = Beaneater.new
   #   @b.connection.host # => '127.0.0.1'
   #   @b.connection.port # => '11300'
   #
-  def initialize(options={})
-    @connection =  Connection.new(options)
+  def initialize(address)
+    @connection =  Connection.new(address)
   end
 
   # Returns Beaneater::Tubes object for accessing tube related functions.
