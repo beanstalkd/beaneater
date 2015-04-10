@@ -9,7 +9,7 @@ running time-consuming tasks asynchronously. Read the [yardocs](http://rdoc.info
 [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for more details.
 
 > ## Beaneater version disclaimer
-> ***This README is for a branch which is still in development.
+> ***This README is for branch 1.0.x which is still in development.
 > Please switch to latest `0.x` branch for stable version.***
 
 ## Why Beanstalk?
@@ -86,13 +86,21 @@ gem 'beaneater'
 
 and run `bundle install` to install the dependency.
 
+## Breaking Changes since 1.x!
+
+* Beginning from version 1.0.0 the support for Beaneater::Pool has been dropped.
+The specific feature may be supported again in the next versions as separate module
+or through a separate gem. If you want to use the pool feature you should switch to
+0.x stable branches instead.
+* ```find_all``` method has been dropped, since it is no more necessary.
+
 ## Quick Overview:
 
 The concise summary of how to use beaneater:
 
 ```ruby
 # Connect to pool
-@beanstalk = Beaneater::Pool.new(['localhost:11300'])
+@beanstalk = Beaneater.new('localhost:11300')
 # Enqueue jobs to tube
 @tube = @beanstalk.tubes["my-tube"]
 @tube.put '{ "key" : "foo" }', :pri => 5
@@ -122,7 +130,7 @@ Beaneater.configure do |config|
   # config.default_put_ttr     = 120
   # config.job_parser          = lambda { |body| body }
   # config.job_serializer      = lambda { |body| body }
-  # config.beanstalkd_url      = ['localhost:11300']
+  # config.beanstalkd_url      = 'localhost:11300'
 end
 ```
 
@@ -130,18 +138,17 @@ The above options are all defaults, so only include a configuration block if you
 
 ### Connection
 
-To interact with a beanstalk queue, first establish a connection by providing a set of addresses:
+To interact with a beanstalk queue, first establish a connection by providing an address:
 
 ```ruby
-@beanstalk = Beaneater::Pool.new(['10.0.1.5:11300'])
+@beanstalk = Beaneater.new('10.0.1.5:11300')
 
-# Or if ENV['BEANSTALKD_URL'] == 'localhost:11300,127.0.0.1:11300'
-@beanstalk = Beaneater::Pool.new
-@beanstalk.connections.first # => localhost:11300
-@beanstalk.connections.last # => 127.0.0.1:11300
+# Or if ENV['BEANSTALKD_URL'] == '127.0.0.1:11300'
+@beanstalk = Beaneater.new
+@beanstalk.connectiont # => localhost:11300
 ```
 
-You can conversely close and dispose of a pool at any time with:
+You can conversely close and dispose of a connection at any time with:
 
 ```ruby
 @beanstalk.close
@@ -280,7 +287,7 @@ In order to process jobs, the client should first specify the intended tubes to 
 this will default to watching just the `default` tube.
 
 ```ruby
-@beanstalk = Beaneater::Pool.new(['10.0.1.5:11300'])
+@beanstalk = Beaneater.new('10.0.1.5:11300')
 @beanstalk.tubes.watch!('tube-name', 'other-tube')
 ```
 
@@ -342,13 +349,6 @@ inspected using the 'peek' commands. To find and peek at a particular job based 
 ```ruby
 @beanstalk.jobs.find(123)
 # => <Beaneater::Job id=123 body="foo">
-```
-
-You can also `find_all` jobs across all connections:
-
-```ruby
-@beanstalk.jobs.find_all(123)
-# => [<Beaneater::Job id=123 body="foo">, <Beaneater::Job id=123 body="bar">]
 ```
 
 or you can peek at jobs within a tube:
@@ -438,8 +438,9 @@ beanstalk overall:
 ```ruby
 # Get overall stats about the job processing that has occurred
 print @beanstalk.stats
-# => { 'current_connections': 1, 'current_jobs_buried': 0, ... }
-print @beanstalk.stats.current_connections
+# => #<Beaneater::StatStruct current_jobs_urgent=0, current_jobs_ready=0, current_jobs_reserved=0, current_jobs_delayed=0, current_jobs_buried=0, ...
+
+print @beanstalk.stats.current_tubes
 # => 1
 ```
 
