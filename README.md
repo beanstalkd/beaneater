@@ -8,6 +8,9 @@ originally designed for reducing the latency of page views in high-volume web ap
 running time-consuming tasks asynchronously. Read the [yardocs](http://rdoc.info/github/beanstalkd/beaneater) and/or the
 [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for more details.
 
+> ## Beaneater version disclaimer
+> ***This README is for a branch which is still in development.
+> Please switch to latest `0.x` branch for stable version.***
 
 ## Why Beanstalk?
 
