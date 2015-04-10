@@ -41,6 +41,14 @@ class Beaneater
       data[key]
     end
 
+    # Delegates inspection to the real data structure
+    #
+    # @return [String] returns a string containing a detailed stats summary
+    def inspect
+      data.to_s
+    end
+    alias :to_s :inspect
+
     # Defines a cached method for looking up data for specified key
     # Protects against infinite loops by checking stacktrace
     # @api public
