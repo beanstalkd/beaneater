@@ -4,18 +4,18 @@ require File.expand_path('../test_helper', __FILE__)
 
 describe Beaneater::Stats do
   before do
-    @pool =  stub(:transmit_to_all => [{ :body => { 'uptime' => 1, 'cmd-use' => 2 }, :status => "OK"},
-      {:body => { 'uptime' => 3,'cmd-use' => 4 }, :status => "OK" }])
-    @stats = Beaneater::Stats.new(@pool)
+    connection = stub(:transmit => { :body => { 'uptime' => 1, 'cmd-use' => 2 }, :status => "OK"})
+    @beanstalk = stub(:connection => connection)
+    @stats = Beaneater::Stats.new(@beanstalk)
   end
 
   describe 'for #[]' do
     it "should return stats by key" do
-      assert_equal 4, @stats[:uptime]
+      assert_equal 1, @stats[:uptime]
     end
 
     it "should return stats by underscore key" do
-      assert_equal 6, @stats[:'cmd_use']
+      assert_equal 2, @stats[:'cmd_use']
     end
   end # []
 
@@ -29,11 +29,11 @@ describe Beaneater::Stats do
 
   describe 'for #method_missing' do
     it "should return stats by key" do
-      assert_equal 4, @stats.uptime
+      assert_equal 1, @stats.uptime
     end
 
     it "should return stats by underscore key" do
-      assert_equal 6, @stats.cmd_use
+      assert_equal 2, @stats.cmd_use
     end
 
     it "should raise NoMethodError" do

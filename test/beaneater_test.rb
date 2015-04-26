@@ -2,8 +2,7 @@ require File.expand_path('../test_helper', __FILE__)
 
 describe "beanstalk-client" do
   before do
-    @beanstalk = Beaneater::Pool.new(['127.0.0.1:11300'])
-    # @beanstalk = Beaneater::Pool.new(['127.0.0.1:11300', '127.0.0.1:11301'])
+    @beanstalk = Beaneater.new('127.0.0.1:11300')
     @tubes = ['one', 'two', 'three']
 
     # Put something on each tube so they exist
@@ -108,9 +107,4 @@ describe "beanstalk-client" do
       assert_nil @beanstalk.jobs.find(@job.id)
     end
   end
-
-  after do
-    cleanup_tubes!(@tubes, @beanstalk)
-  end
-
 end

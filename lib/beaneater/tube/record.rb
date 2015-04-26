@@ -1,22 +1,31 @@
-module Beaneater
+class Beaneater
   # Beanstalk tube which contains jobs which can be inserted, reserved, et al.
-  class Tube < PoolCommand
+  class Tube
 
     # @!attribute name
     #   @return [String] name of the tube
-    attr_reader :name
+    # @!attribute client
+    #   @return [Beaneater] returns the client instance
+    attr_reader :name, :client
 
     # Fetches the specified tube.
     #
-    # @param [Beaneater::Pool] pool The beaneater pool for this tube.
+    # @param [Beaneater] client The beaneater client instance.
     # @param [String] name The name for this tube.
     # @example
-    #  Beaneater::Tube.new(@pool, 'tube-name')
+    #  Beaneater::Tube.new(@client, 'tube-name')
     #
-    def initialize(pool, name)
+    def initialize(client, name)
+      @client = client
       @name = name.to_s
       @mutex = Mutex.new
-      super(pool)
+    end
+
+    # Delegates transmit to the connection object.
+    #
+    # @see Beaneater::Connection#transmit
+    def transmit(command, options={})
+      client.connection.transmit(command, options)
     end
 
     # Inserts job with specified body onto tube.
@@ -34,10 +43,15 @@ module Beaneater
     def put(body, options={})
       safe_use do
         serialized_body = config.job_serializer.call(body)
-        options = { :pri => config.default_put_pri, :delay => config.default_put_delay,
-                    :ttr => config.default_put_ttr }.merge(options)
+
+        options = {
+          :pri   => config.default_put_pri,
+          :delay => config.default_put_delay,
+          :ttr   => config.default_put_ttr
+        }.merge(options)
+
         cmd_options = "#{options[:pri]} #{options[:delay]} #{options[:ttr]} #{serialized_body.bytesize}"
-        transmit_to_rand("put #{cmd_options}\r\n#{serialized_body}")
+        transmit("put #{cmd_options}\r\n#{serialized_body}")
       end
     end
 
@@ -51,8 +65,8 @@ module Beaneater
     # @api public
     def peek(state)
       safe_use do
-        res = transmit_until_res "peek-#{state}", :status => "FOUND"
-        Job.new(res)
+        res = transmit("peek-#{state}")
+        Job.new(client, res)
       end
     rescue Beaneater::NotFoundError
       # Return nil if not found
@@ -70,8 +84,8 @@ module Beaneater
     #
     # @api public
     def reserve(timeout=nil, &block)
-      pool.tubes.watch!(self.name)
-      pool.tubes.reserve(timeout, &block)
+      client.tubes.watch!(self.name)
+      client.tubes.reserve(timeout, &block)
     end
 
     # Kick specified number of jobs from buried to ready state.
@@ -83,7 +97,7 @@ module Beaneater
     #
     # @api public
     def kick(bounds=1)
-      safe_use { transmit_to_rand("kick #{bounds}") }
+      safe_use { transmit("kick #{bounds}") }
     end
 
     # Returns related stats for this tube.
@@ -94,7 +108,7 @@ module Beaneater
     #
     # @api public
     def stats
-      res = transmit_to_all("stats-tube #{name}", :merge => true)
+      res = transmit("stats-tube #{name}")
       StatStruct.from_hash(res[:body])
     end
 
@@ -107,7 +121,7 @@ module Beaneater
     #
     # @api public
     def pause(delay)
-      transmit_to_all("pause-tube #{name} #{delay}")
+      transmit("pause-tube #{name} #{delay}")
     end
 
     # Clears all unreserved jobs in all states from the tube
@@ -116,13 +130,13 @@ module Beaneater
     #   @tube.clear
     #
     def clear
-      pool.tubes.watch!(self.name)
+      client.tubes.watch!(self.name)
       %w(delayed buried ready).each do |state|
         while job = self.peek(state.to_sym)
           job.delete
         end
       end
-      pool.tubes.ignore(name)
+      client.tubes.ignore(name)
     rescue Beaneater::UnexpectedResponse
       # swallow any issues
     end
@@ -145,12 +159,12 @@ module Beaneater
     # @param [Proc] block Beanstalk command to transmit.
     # @return [Object] Result of block passed
     # @example
-    #  safe_use { transmit_to_rand("kick 1") }
+    #  safe_use { transmit("kick 1") }
     #    # => "Response to kick command"
     #
     def safe_use(&block)
       @mutex.lock
-      tubes.use(self.name)
+      client.tubes.use(self.name)
       yield
     ensure
       @mutex.unlock

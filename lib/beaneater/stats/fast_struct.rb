@@ -1,4 +1,4 @@
-module Beaneater
+class Beaneater
   #
   # Borrowed from:
   # https://github.com/dolzenko/faster_open_struct/blob/master/lib/faster_open_struct.rb

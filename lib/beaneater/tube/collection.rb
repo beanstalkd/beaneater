@@ -1,17 +1,36 @@
-module Beaneater
+class Beaneater
   # Represents collection of tube related commands.
-  class Tubes < PoolCommand
+
+  class Tubes
     include Enumerable
+
+    # @!attribute client
+    #   @return [Beaneater] returns the client instance
+    attr_reader :client
 
     # Creates new tubes instance.
     #
-    # @param [Beaneater::Pool] pool The beaneater pool for this tube.
+    # @param [Beaneater] client The beaneater client instance.
     # @example
-    #  Beaneater::Tubes.new(@pool)
+    #  Beaneater::Tubes.new(@client)
     #
-    def initialize(pool)
-      @last_used = 'default'
-      super
+    def initialize(client)
+      @client = client
+    end
+
+    def last_used
+      client.connection.tube_used
+    end
+
+    def last_used=(tube_name)
+      client.connection.tube_used = tube_name
+    end
+
+    # Delegates transmit to the connection object.
+    #
+    # @see Beaneater::Connection#transmit
+    def transmit(command, options={})
+      client.connection.transmit(command, options)
     end
 
     # Finds the specified beanstalk tube.
@@ -25,7 +44,7 @@ module Beaneater
     #
     # @api public
     def find(tube_name)
-      Tube.new(self.pool, tube_name)
+      Tube.new(client, tube_name)
     end
     alias_method :[], :find
 
@@ -36,13 +55,14 @@ module Beaneater
     # @yield [job] Reserved beaneater job.
     # @return [Beaneater::Job] Reserved beaneater job.
     # @example
-    #   @conn.tubes.reserve { |job| process(job) }
+    #   @client.tubes.reserve { |job| process(job) }
     #     # => <Beaneater::Job id=5 body="foo">
     #
     # @api public
     def reserve(timeout=nil, &block)
-      res = transmit_to_rand(timeout ? "reserve-with-timeout #{timeout}" : 'reserve')
-      job = Job.new(res)
+      res = transmit(
+        timeout ? "reserve-with-timeout #{timeout}" : 'reserve')
+      job = Job.new(client, res)
       block.call(job) if block_given?
       job
     end
@@ -51,12 +71,14 @@ module Beaneater
     #
     # @return [Array<Beaneater::Tube>] List of all beanstalk tubes.
     # @example
-    #   @pool.tubes.all
+    #   @client.tubes.all
     #     # => [<Beaneater::Tube name="tube2">, <Beaneater::Tube name="tube3">]
     #
     # @api public
     def all
-      transmit_to_all('list-tubes', :merge => true)[:body].map { |tube_name| Tube.new(self.pool, tube_name) }
+      transmit('list-tubes')[:body].map do |tube_name|
+        Tube.new(client, tube_name)
+      end
     end
 
     # Calls the given block once for each known beanstalk tube, passing that element as a parameter.
@@ -74,24 +96,29 @@ module Beaneater
     #
     # @return [Array<Beaneater::Tube>] List of watched beanstalk tubes.
     # @example
-    #   @pool.tubes.watched
+    #   @client.tubes.watched
     #     # => [<Beaneater::Tube name="tube2">, <Beaneater::Tube name="tube3">]
     #
     # @api public
     def watched
-      transmit_to_all('list-tubes-watched', :merge => true)[:body].map { |tube_name| Tube.new(self.pool, tube_name) }
+      last_watched = transmit('list-tubes-watched')[:body]
+      client.connection.tubes_watched = last_watched.dup
+      last_watched.map do |tube_name|
+        Tube.new(client, tube_name)
+      end
     end
 
     # Currently used beanstalk tube.
     #
     # @return [Beaneater::Tube] Currently used beanstalk tube.
     # @example
-    #   @pool.tubes.used
+    #   @client.tubes.used
     #     # => <Beaneater::Tube name="tube2">
     #
     # @api public
     def used
-      Tube.new(self.pool, transmit_to_rand('list-tube-used')[:id])
+      last_used = transmit('list-tube-used')[:id]
+      Tube.new(client, last_used)
     end
 
     # Add specified beanstalkd tubes as watched.
@@ -99,12 +126,13 @@ module Beaneater
     # @param [*String] names Name of tubes to watch
     # @raise [Beaneater::InvalidTubeName] Tube to watch was invalid.
     # @example
-    #   @pool.tubes.watch('foo', 'bar')
+    #   @client.tubes.watch('foo', 'bar')
     #
     # @api public
     def watch(*names)
       names.each do |t|
-        transmit_to_all "watch #{t}"
+        transmit "watch #{t}"
+        client.connection.add_to_watched(t)
       end
     rescue BadFormatError => ex
       raise InvalidTubeName, "Tube in '#{ex.cmd}' is invalid!"
@@ -115,7 +143,7 @@ module Beaneater
     # @param [*String] names Name of tubes to watch
     # @raise [Beaneater::InvalidTubeName] Tube to watch was invalid.
     # @example
-    #   @pool.tubes.watch!('foo', 'bar')
+    #   @client.tubes.watch!('foo', 'bar')
     #
     # @api public
     def watch!(*names)
@@ -128,12 +156,13 @@ module Beaneater
     #
     # @param [*String] names Name of tubes to ignore
     # @example
-    #   @pool.tubes.ignore('foo', 'bar')
+    #   @client.tubes.ignore('foo', 'bar')
     #
     # @api public
     def ignore(*names)
       names.each do |w|
-        transmit_to_all "ignore #{w}"
+        transmit "ignore #{w}"
+        client.connection.remove_from_watched(w)
       end
     end
 
@@ -144,9 +173,9 @@ module Beaneater
     #  @conn.tubes.use("some-tube")
     #
     def use(tube)
-      return tube if @last_used == tube
-      transmit_to_all("use #{tube}")
-      @last_used = tube
+      return tube if last_used == tube
+      transmit("use #{tube}")
+      last_used = tube
     rescue BadFormatError
       raise InvalidTubeName, "Tube cannot be named '#{tube}'"
     end

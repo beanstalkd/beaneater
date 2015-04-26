@@ -1,14 +1,18 @@
-module Beaneater
+class Beaneater
   # Exception to stop processing jobs during a `process!` loop.
   # Simply `raise AbortProcessingError` in any job process handler to stop the processing loop.
   class AbortProcessingError < RuntimeError; end
 
   # Represents collection of job-related commands.
-  class Jobs < PoolCommand
+  class Jobs
 
     # @!attribute processors
     #   @return [Array<Proc>] returns Collection of proc to handle beanstalkd jobs
-    attr_reader :processors
+    # @!attribute client
+    #   @return [Beaneater] returns the client instance
+    # @!attribute current_job
+    #   @return [Beaneater] returns the currently processing job in the process loop
+    attr_reader :processors, :client, :current_job
 
     # Number of retries to process a job.
     MAX_RETRIES = 3
@@ -19,39 +23,41 @@ module Beaneater
     # Number of seconds to wait for a job before checking a different server.
     RESERVE_TIMEOUT = nil
 
-    # Peek (or find) first job from beanstalkd pool.
+    # Creates new jobs instance.
+    #
+    # @param [Beaneater] client The beaneater client instance.
+    # @example
+    #  Beaneater::Jobs.new(@client)
+    #
+    def initialize(client)
+      @client = client
+    end
+
+    # Delegates transmit to the connection object.
+    #
+    # @see Beaneater::Connection#transmit
+    def transmit(command, options={})
+      client.connection.transmit(command, options)
+    end
+
+    # Peek (or find) job by id from beanstalkd.
     #
     # @param [Integer] id Job id to find
     # @return [Beaneater::Job] Job matching given id
     # @example
-    #   @beaneater_pool.jobs[123] # => <Beaneater::Job>
-    #   @beaneater_pool.jobs.find(123) # => <Beaneater::Job>
-    #   @beaneater_pool.jobs.peek(123) # => <Beaneater::Job>
+    #   @beaneater.jobs[123] # => <Beaneater::Job>
+    #   @beaneater.jobs.find(123) # => <Beaneater::Job>
+    #   @beaneater.jobs.peek(123) # => <Beaneater::Job>
     #
     # @api public
     def find(id)
-      res = transmit_until_res("peek #{id}", :status => "FOUND")
-      Job.new(res)
+      res = transmit("peek #{id}")
+      Job.new(client, res)
     rescue Beaneater::NotFoundError
       nil
     end
     alias_method :peek, :find
     alias_method :[], :find
-
-    # Find all jobs with specified id fromm all beanstalkd servers in pool.
-    #
-    # @param [Integer] id Job id to find
-    # @return [Array<Beaneater::Job>] Jobs matching given id
-    # @example
-    #   @beaneater_pool.jobs.find_all(123) # => [<Beaneater::Job>, <Beaneater::Job>]
-    #
-    # @api public
-    def find_all(id)
-      res = transmit_to_all("peek #{id}")
-      res.compact.map { |r| Job.new(r) }
-    rescue Beaneater::NotFoundError
-      []
-    end
 
     # Register a processor to handle beanstalkd job on particular tube.
     #
@@ -78,6 +84,18 @@ module Beaneater
       @processors[tube_name.to_s] = { :block => block, :retry_on => retry_on, :max_retries => max_retries }
     end
 
+    # Sets flag to indicate that process loop should stop after current job
+    def stop!
+      @stop = true
+    end
+
+    # Returns whether the process loop should stop
+    #
+    # @return [Boolean] if true the loop should stop after current processing
+    def stop?
+      !!@stop
+    end
+
     # Watch, reserve, process and delete or bury or release jobs.
     #
     # @param [Hash{String => Integer}] options Settings for processing
@@ -88,25 +106,28 @@ module Beaneater
     def process!(options={})
       release_delay = options.delete(:release_delay) || RELEASE_DELAY
       reserve_timeout = options.delete(:reserve_timeout) || RESERVE_TIMEOUT
-      tubes.watch!(*processors.keys)
-      loop do
+      client.tubes.watch!(*processors.keys)
+      while !stop? do
         begin
-          job = tubes.reserve(reserve_timeout)
-          processor = processors[job.tube]
+          @current_job = client.tubes.reserve(reserve_timeout)
+          processor = processors[@current_job.tube]
           begin
-            processor[:block].call(job)
-            job.delete
+            processor[:block].call(@current_job)
+            @current_job.delete
           rescue *processor[:retry_on]
-            job.release(:delay => release_delay) if job.stats.releases < processor[:max_retries]
+            if @current_job.stats.releases < processor[:max_retries]
+              @current_job.release(:delay => release_delay)
+            end
           end
         rescue AbortProcessingError
           break
         rescue Beaneater::JobNotReserved, Beaneater::NotFoundError, Beaneater::TimedOutError
           retry
         rescue StandardError # handles unspecified errors
-          job.bury if job
+          @current_job.bury if @current_job
         ensure # bury if still reserved
-          job.bury if job && job.exists? && job.reserved?
+          @current_job.bury if @current_job && @current_job.exists? && @current_job.reserved?
+          @current_job = nil
         end
       end
     end # process!

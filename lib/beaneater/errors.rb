@@ -1,24 +1,6 @@
-module Beaneater
+class Beaneater
   # Raises when a beanstalkd instance is no longer accessible.
-  class NotConnected < RuntimeError
-    # @!attribute connection
-    #   @return [Connection] returns the connection that errored
-    #   @example @ex.connection # => #<Beaneater::Connection host="localhost" port=11300>
-    attr_reader :connection
-
-    # Initialize connection error
-    #
-    # @param [Beaneater::Connection] the connection that errored
-    #
-    # @example
-    #   Beaneater::UnexpectedResponse.new(NotConnected, conn)
-    #
-    def initialize(connection)
-      @connection = connection
-      super
-    end
-  end
-
+  class NotConnected < RuntimeError; end
   # Raises when the tube name specified is invalid.
   class InvalidTubeName < RuntimeError; end
   # Raises when a job has not been reserved properly.

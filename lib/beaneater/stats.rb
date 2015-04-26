@@ -1,9 +1,24 @@
 require 'beaneater/stats/fast_struct'
 require 'beaneater/stats/stat_struct'
 
-module Beaneater
+class Beaneater
   # Represents stats related to the beanstalkd pool.
-  class Stats < PoolCommand
+  class Stats
+
+    # @!attribute client
+    #   @return [Beaneater] returns the client instance
+    attr_reader :client
+
+    # Creates new stats instance.
+    #
+    # @param [Beaneater] client The beaneater client instance.
+    # @example
+    #  Beaneater::Stats.new(@client)
+    #
+    def initialize(client)
+      @client = client
+    end
+
     # Returns keys for stats data
     #
     # @return [Array<String>] Set of keys for stats.
@@ -26,6 +41,14 @@ module Beaneater
       data[key]
     end
 
+    # Delegates inspection to the real data structure
+    #
+    # @return [String] returns a string containing a detailed stats summary
+    def inspect
+      data.to_s
+    end
+    alias :to_s :inspect
+
     # Defines a cached method for looking up data for specified key
     # Protects against infinite loops by checking stacktrace
     # @api public
@@ -42,15 +65,15 @@ module Beaneater
 
     protected
 
-    # Returns struct based on stats data merged from all connections.
+    # Returns struct based on stats data from response.
     #
-    # @return [Beaneater::StatStruct] the combined stats for all beanstalk connections in the pool
+    # @return [Beaneater::StatStruct] the stats
     # @example
     #  self.data # => { 'version' : 1.7, 'total_connections' : 23 }
     #  self.data.total_connections # => 23
     #
     def data
-      StatStruct.from_hash(transmit_to_all('stats', :merge => true)[:body])
+      StatStruct.from_hash(client.connection.transmit('stats')[:body])
     end
   end # Stats
 end # Beaneater

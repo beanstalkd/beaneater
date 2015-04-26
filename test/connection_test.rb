@@ -65,6 +65,30 @@ describe Beaneater::Connection do
       res = @bc.transmit "put 0 0 100 256\r\n"+(0..255).to_a.pack("c*")
       assert_equal 'INSERTED', res[:status]
     end
+
+    it "should retry command with success after one connection failure" do
+      TCPSocket.any_instance.expects(:readline).times(2).
+        raises(EOFError.new).then.
+        returns("DELETED 56\nFOO")
+
+      res = @bc.transmit "delete 56\r\n"
+      assert_equal 'DELETED', res[:status]
+    end
+
+    it "should fail after exceeding retries with DrainingError" do
+      TCPSocket.any_instance.expects(:readline).times(3).
+        raises(Beaneater::UnexpectedResponse.from_status("DRAINING", "delete 56"))
+
+      assert_raises(Beaneater::DrainingError) { @bc.transmit "delete 56\r\n" }
+    end
+
+    it "should fail after exceeding reconnect max retries" do
+      # next connection attempts should fail
+      TCPSocket.stubs(:new).times(3).raises(Errno::ECONNREFUSED.new)
+      TCPSocket.any_instance.stubs(:readline).times(1).raises(EOFError.new)
+
+      assert_raises(Beaneater::NotConnected) { @bc.transmit "delete 56\r\n" }
+    end
   end # transmit
 
   describe 'for #close' do

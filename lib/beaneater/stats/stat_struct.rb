@@ -1,4 +1,4 @@
-module Beaneater
+class Beaneater
   # Represents a stats hash with proper underscored keys
   class StatStruct < FasterOpenStruct
     # Convert a stats hash into a struct.

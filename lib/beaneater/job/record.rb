@@ -1,4 +1,4 @@
-module Beaneater
+class Beaneater
   # Represents job related commands.
   class Job
 
@@ -6,21 +6,21 @@ module Beaneater
     #   @return [Integer] id for the job.
     # @!attribute body
     #   @return [String] the job's body.
-    # @!attribute connection
-    #   @return [Beaneater::Connection] connection which has retrieved job.
     # @!attribute reserved
     #   @return [Boolean] whether the job has been reserved.
-    attr_reader :id, :body, :connection, :reserved
+    # @!attribute client
+    #   @return [Beaneater] returns the client instance
+    attr_reader :id, :body, :reserved, :client
 
 
     # Initializes a new job object.
     #
     # @param [Hash{Symbol => String,Number}] res Result from beanstalkd response
     #
-    def initialize(res)
+    def initialize(client, res)
+      @client     = client
       @id         = res[:id]
       @body       = res[:body]
-      @connection = res[:connection]
       @reserved   = res[:status] == 'RESERVED'
     end
 
@@ -31,8 +31,8 @@ module Beaneater
     # @return [Hash{Symbol => String,Number}] Beanstalkd response for the command.
     #
     # @example
-    #   @beaneater_connection.bury({:pri => 100})
-    #     # => {:status=>"BURIED", :body=>nil, :connection=>#<Beaneater::Connection host="localhost" port=11300>}
+    #   @job.bury({:pri => 100})
+    #     # => {:status=>"BURIED", :body=>nil}
     #
     # @api public
     def bury(options={})
@@ -49,8 +49,8 @@ module Beaneater
     # @option options [Integer] delay Assign new delay to job
     # @return [Hash{Symbol => String,Number}] Beanstalkd response for the command.
     # @example
-    #   @beaneater_connection.jobs.find(123).release(:pri => 10, :delay => 5)
-    #     # => {:status=>"RELEASED", :body=>nil, :connection=>#<Beaneater::Connection host="localhost" port=11300>}
+    #   @beaneater.jobs.find(123).release(:pri => 10, :delay => 5)
+    #     # => {:status=>"RELEASED", :body=>nil}
     #
     # @api public
     def release(options={})
@@ -64,8 +64,8 @@ module Beaneater
     #
     # @return [Hash{Symbol => String,Number}] Beanstalkd response for the command.
     # @example
-    #   @beaneater_connection.jobs.find(123).touch
-    #     # => {:status=>"TOUCHED", :body=>nil, :connection=>#<Beaneater::Connection host="localhost" port=11300>}
+    #   @beaneater.jobs.find(123).touch
+    #     # => {:status=>"TOUCHED", :body=>nil}
     #
     # @api public
     def touch
@@ -76,8 +76,8 @@ module Beaneater
     #
     # @return [Hash{Symbol => String,Number}] Beanstalkd response for the command.
     # @example
-    #   @beaneater_connection.jobs.find(123).delete
-    #     # => {:status=>"DELETED", :body=>nil, :connection=>#<Beaneater::Connection host="localhost" port=11300>}
+    #   @beaneater.jobs.find(123).delete
+    #     # => {:status=>"DELETED", :body=>nil}
     #
     # @api public
     def delete
@@ -88,8 +88,8 @@ module Beaneater
     #
     # @return [Hash{Symbol => String,Number}] Beanstalkd response for the command.
     # @example
-    #   @beaneater_connection.jobs.find(123).kick
-    #     # => {:status=>"KICKED", :body=>nil, :connection=>#<Beaneater::Connection host="localhost" port=11300>}
+    #   @beaneater.jobs.find(123).kick
+    #     # => {:status=>"KICKED", :body=>nil}
     #
     # @api public
     def kick
@@ -100,7 +100,7 @@ module Beaneater
     #
     # @return [Beaneater::StatStruct] struct filled with relevant job stats
     # @example
-    #   @beaneater_connection.jobs.find(123).stats
+    #   @beaneater.jobs.find(123).stats
     #   @job.stats.tube # => "some-tube"
     #
     # @api public
@@ -113,7 +113,7 @@ module Beaneater
     #
     # @return [Boolean] Returns true if the job is in a reserved state
     # @example
-    #   @beaneater_connection.jobs.find(123).reserved?
+    #   @beaneater.jobs.find(123).reserved?
     #
     # @api public
     def reserved?
@@ -124,7 +124,7 @@ module Beaneater
     #
     # @return [Boolean] Returns true if the job still exists
     # @example
-    #   @beaneater_connection.jobs.find(123).exists?
+    #   @beaneater.jobs.find(123).exists?
     #
     # @api public
     def exists?
@@ -137,7 +137,7 @@ module Beaneater
     #
     # @return [String] The name of the tube for this job
     # @example
-    #   @beaneater_connection.jobs.find(123).tube
+    #   @beaneater.jobs.find(123).tube
     #     # => "some-tube"
     #
     # @api public
@@ -149,7 +149,7 @@ module Beaneater
     #
     # @return [Integer] The ttr of this job
     # @example
-    #   @beaneater_connection.jobs.find(123).ttr
+    #   @beaneater.jobs.find(123).ttr
     #     # => 123
     #
     # @api public
@@ -161,7 +161,7 @@ module Beaneater
     #
     # @return [Integer] The pri of this job
     # @example
-    #   @beaneater_connection.jobs.find(123).pri
+    #   @beaneater.jobs.find(123).pri
     #     # => 1
     #
     def pri
@@ -172,7 +172,7 @@ module Beaneater
     #
     # @return [Integer] The delay of this job
     # @example
-    #   @beaneater_connection.jobs.find(123).delay
+    #   @beaneater.jobs.find(123).delay
     #     # => 5
     #
     def delay
@@ -183,8 +183,8 @@ module Beaneater
     #
     # @return [String] string representation
     # @example
-    #   @beaneater_connection.jobs.find(123).to_s
-    #   @beaneater_connection.jobs.find(123).inspect
+    #   @beaneater.jobs.find(123).to_s
+    #   @beaneater.jobs.find(123).inspect
     #
     def to_s
       "#<Beaneater::Job id=#{id} body=#{body.inspect}>"
@@ -193,7 +193,7 @@ module Beaneater
 
     protected
 
-    # Transmit command to beanstalkd instances and fetch response.
+    # Transmit command to beanstalkd instance and fetch response.
     #
     # @param [String] cmd Beanstalkd command to send.
     # @return [Hash{Symbol => String,Number}] Beanstalkd response for the command.
@@ -202,7 +202,7 @@ module Beaneater
     #  transmit('stats') { 'success' }
     #
     def transmit(cmd, &block)
-      res = connection.transmit(cmd)
+      res = client.connection.transmit(cmd)
       yield if block_given?
       res
     end
