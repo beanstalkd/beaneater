@@ -30,6 +30,13 @@ describe Beaneater::Connection do
     it "should raise on invalid connection" do
       assert_raises(Beaneater::NotConnected) { Beaneater::Connection.new("localhost:8544") }
     end
+
+    it "should support array connection to single connection" do
+      @bc2 = Beaneater::Connection.new([@host])
+      assert_equal 'localhost', @bc.address
+      assert_equal 'localhost', @bc.host
+      assert_equal 11300, @bc.port
+    end
   end # new
 
   describe 'for #transmit' do

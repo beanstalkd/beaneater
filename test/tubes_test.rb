@@ -62,14 +62,14 @@ describe Beaneater::Tubes do
 
   describe "for Enumerable" do
     before do
-      @pool = Beaneater::Pool.new(['localhost'])
-      @pool.tubes.find('foo').put 'bar'
-      @pool.tubes.find('bar').put 'foo'
+      @beanstalk = Beaneater.new('localhost')
+      @beanstalk.tubes.find('foo').put 'bar'
+      @beanstalk.tubes.find('bar').put 'foo'
     end
 
     it 'should map tubes' do
       ['default', 'foo', 'bar'].each do |t|
-        assert @pool.tubes.map(&:name).include?(t)
+        assert @beanstalk.tubes.map(&:name).include?(t)
       end
     end
   end

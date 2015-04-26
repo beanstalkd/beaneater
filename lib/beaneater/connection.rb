@@ -123,6 +123,7 @@ class Beaneater
     #  establish_connection('localhost:3005')
     #
     def establish_connection
+      @address = address.first if address.is_a?(Array)
       match = address.split(':')
       @host, @port = match[0], Integer(match[1] || DEFAULT_PORT)
 
