@@ -8,9 +8,7 @@ originally designed for reducing the latency of page views in high-volume web ap
 running time-consuming tasks asynchronously. Read the [yardocs](http://rdoc.info/github/beanstalkd/beaneater) and/or the
 [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for more details.
 
-> ## Beaneater version disclaimer
-> ***This README is for branch 1.0.x which is still in development.
-> Please switch to latest `0.x` branch for stable version.***
+**Important Note**: This README is **for branch 1.0.x which is under development**. Please switch to latest `0.x` branch for stable version.
 
 ## Why Beanstalk?
 
@@ -86,13 +84,17 @@ gem 'beaneater'
 
 and run `bundle install` to install the dependency.
 
-## Breaking Changes since 1.x!
+## Breaking Changes since 1.0!
 
-* Beginning from version 1.0.0 the support for Beaneater::Pool has been dropped.
+Starting in 1.0, we removed the concept of the `Beaneater::Pool` which introduced considerable complexity into this gem.
+
+* Beginning from version 1.0.0 the support for `Beaneater::Pool` has been dropped.
 The specific feature may be supported again in the next versions as separate module
 or through a separate gem. If you want to use the pool feature you should switch to
 0.x stable branches instead.
-* ```find_all``` method has been dropped, since it is no more necessary.
+* `Jobs#find_all` method has been removed, since it is no longer necessary.
+
+To manage a pool of beanstalkd instances, we'd prefer to leave the handling to the developer or other higher-level libraries.
 
 ## Quick Overview:
 
