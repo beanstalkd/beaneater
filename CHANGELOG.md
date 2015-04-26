@@ -2,8 +2,9 @@
 
 ## 1.0.0 (April 26th 2015)
 
-* Beginning from version 1.0.0 the support for `Beaneater::Pool` has been dropped.
-* `Jobs#find_all` method has been removed, since it is no longer necessary after removing pool.
+* Beginning from version 1.0.0 the support for `Beaneater::Pool` has been dropped (@alup)
+* `Jobs#find_all` method has been removed, since it is no longer necessary after removing pool (@alup)
+* `Tubes` is now an enumerable allowing `tubes` to be handled as a collection (@Aethelflaed)
 
 ## 0.3.3 (August 16th 2014)
 
