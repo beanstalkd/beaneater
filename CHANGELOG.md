@@ -1,12 +1,16 @@
 # CHANGELOG for Beaneater
 
+## 1.0.0 (April 26th 2015)
+
+* Beginning from version 1.0.0 the support for `Beaneater::Pool` has been dropped.
+* `Jobs#find_all` method has been removed, since it is no longer necessary after removing pool.
+
 ## 0.3.3 (August 16th 2014)
 
 * Fix failure when job is not defined and fix exception handling for jobs (@nicholasorenrawlings)
 * Add reserve_timeout option to job processing (@nicholasorenrawlings)
 * Add travis-ci badge (@tdg5)
 * Fix tests to run more reliably (@tdg5)
-
 
 ## 0.3.2 (Sept 15 2013)
 
