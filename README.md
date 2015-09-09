@@ -147,7 +147,7 @@ To interact with a beanstalk queue, first establish a connection by providing an
 
 # Or if ENV['BEANSTALKD_URL'] == '127.0.0.1:11300'
 @beanstalk = Beaneater.new
-@beanstalk.connectiont # => localhost:11300
+@beanstalk.connection # => localhost:11300
 ```
 
 You can conversely close and dispose of a connection at any time with:
