@@ -133,11 +133,15 @@ class Beaneater
       client.tubes.watch!(self.name)
       %w(delayed buried ready).each do |state|
         while job = self.peek(state.to_sym)
-          job.delete
+          begin
+            job.delete
+          rescue Beaneater::UnexpectedResponse, Beaneater::NotFoundError
+            # swallow any issues
+          end
         end
       end
       client.tubes.ignore(name)
-    rescue Beaneater::UnexpectedResponse
+    rescue Beaneater::NotIgnoredError
       # swallow any issues
     end
 
