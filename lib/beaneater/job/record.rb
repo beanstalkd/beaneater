@@ -93,7 +93,7 @@ class Beaneater
     #
     # @api public
     def kick
-      transmit("kick-job #{id}")
+      transmit("kick #{id}")
     end
 
     # Sends command to get stats about job.
