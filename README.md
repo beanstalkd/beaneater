@@ -6,7 +6,7 @@ Beaneater is the best way to interact with beanstalkd from within Ruby.
 [Beanstalkd](http://kr.github.com/beanstalkd/) is a simple, fast work queue. Its interface is generic, but was
 originally designed for reducing the latency of page views in high-volume web applications by
 running time-consuming tasks asynchronously. Read the [yardocs](http://rdoc.info/github/beanstalkd/beaneater) and/or the
-[beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for more details.
+[beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.txt) for more details.
 
 **Important Note**: This README is **for branch 1.0.x which is under development**. Please switch to latest `0.x` branch for stable version.
 
