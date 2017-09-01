@@ -69,7 +69,7 @@ class Beaneater
   class ExpectedCrlfError < UnexpectedResponse; end
   # Raises when the body of a job was too large.
   class JobTooBigError < UnexpectedResponse; end
-  # Raises when a job was attempted to be reserved but the timeout occured.
+  # Raises when a job was attempted to be reserved but the timeout occurred.
   class TimedOutError < UnexpectedResponse; end
   # Raises when a tube could not be ignored because it is the last watched tube.
   class NotIgnoredError < UnexpectedResponse; end
