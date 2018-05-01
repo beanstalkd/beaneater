@@ -20,7 +20,7 @@ describe Beaneater::Tubes do
     end
 
     it "should switch to used tube for valid name" do
-      tube = Beaneater::Tube.new(@beanstalk, 'some_name')
+      Beaneater::Tube.new(@beanstalk, 'some_name')
       @beanstalk.tubes.use('some_name')
       assert_equal 'some_name', @beanstalk.tubes.used.name
     end
@@ -141,7 +141,7 @@ describe Beaneater::Tubes do
     it("should reserve job with block and timeout") do
       @beanstalk.tubes.watch 'tube'
       job = nil
-      res = @beanstalk.tubes.reserve(0)  { |j| job = j; job.delete }
+      @beanstalk.tubes.reserve(0)  { |j| job = j; job.delete }
       assert_equal "foo reserve #{@time}", job.body
     end
 
