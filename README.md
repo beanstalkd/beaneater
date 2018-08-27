@@ -429,7 +429,7 @@ are listed below:
 There are other exceptions that are less common such as `OutOfMemoryError`, `DrainingError`,
 `DeadlineSoonError`, `InternalError`, `BadFormatError`, `UnknownCommandError`,
 `ExpectedCRLFError`, `JobTooBigError`, `NotIgnoredError`. Be sure to check the
-[beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for more information.
+[beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.txt) for more information.
 
 
 ### Stats
@@ -462,7 +462,7 @@ print @beanstalk.jobs[some_job_id].stats
 # => {'age': 0, 'id': 2, 'state': 'reserved', 'tube': 'default', ... }
 ```
 
-Be sure to check the [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md) for
+Be sure to check the [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.txt) for
 more details about the stats commands.
 
 ## Resources
@@ -473,7 +473,7 @@ There are other resources helpful when learning about beanstalk:
  * [Beaneater on Rubygems](https://rubygems.org/gems/beaneater)
  * [Beanstalkd homepage](http://kr.github.com/beanstalkd/)
  * [beanstalk on github](https://github.com/kr/beanstalkd)
- * [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.md)
+ * [beanstalk protocol](https://github.com/kr/beanstalkd/blob/master/doc/protocol.txt)
  * [Backburner](https://github.com/nesquena/backburner) - Ruby job queue for Rails/Sinatra
  * [BeanCounter](https://github.com/gemeraldbeanstalk/bean_counter) - TestUnit/MiniTest assertions and RSpec matchers for testing code that relies on Beaneater
 
