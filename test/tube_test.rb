@@ -191,7 +191,7 @@ describe Beaneater::Tube do
       tube_counts = lambda { %w(ready buried delayed).map { |s| @tube.stats["current_jobs_#{s}"] } }
       assert_equal [2, 2, 2], tube_counts.call
       @tube.clear
-      stats = @tube.stats
+      @tube.stats
       assert_equal [0, 0, 0], tube_counts.call
     end
   end # clear
