@@ -175,7 +175,7 @@ class Beaneater
     def use(tube)
       return tube if last_used == tube
       transmit("use #{tube}")
-      last_used = tube
+      self.last_used = tube
     rescue BadFormatError
       raise InvalidTubeName, "Tube cannot be named '#{tube}'"
     end
