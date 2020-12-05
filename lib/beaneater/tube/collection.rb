@@ -88,8 +88,8 @@ class Beaneater
     #   @pool.tubes.each {|t| puts t.name}
     #
     # @api public
-    def each
-      block_given? ? all.each(&Proc.new) : all.each
+    def each(&block)
+      all.each(&block)
     end
 
     # List of watched beanstalk tubes.
