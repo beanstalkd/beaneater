@@ -96,6 +96,24 @@ describe Beaneater::Connection do
 
       assert_raises(Beaneater::NotConnected) { @bc.transmit "delete 56\r\n" }
     end
+
+    it "tubes_watched are restored after reconnect" do
+      client = Beaneater.new('127.0.0.1:11300')
+      client.tubes.watch! "another"
+
+      TCPSocket.prepend Module.new {
+        def readline
+          if !$called
+            $called = true
+            raise EOFError
+          end
+
+          super
+        end
+      }
+
+      assert_equal %w[another], client.tubes.watched.map(&:name)
+    end
   end # transmit
 
   describe 'for #close' do
