@@ -29,8 +29,8 @@ class Beaneater
     # Delegates transmit to the connection object.
     #
     # @see Beaneater::Connection#transmit
-    def transmit(command, options={})
-      client.connection.transmit(command, options)
+    def transmit(command, **options)
+      client.connection.transmit(command, **options)
     end
 
     # Finds the specified beanstalk tube.
