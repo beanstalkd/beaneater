@@ -1,5 +1,14 @@
 # CHANGELOG for Beaneater
 
+## 1.1.0 (April 25th 2021)
+
+* 'clear' behavior was failing unexpectedly, swallow issues during delete as well (@bfolkens)
+* Fix assigned but unused variables (@utilum)
+* Fix last_used tube not stored (@albb0920)
+* Fix deprecation warning in ruby 2.7 (@albb0920)
+* Fix watched tubes not restored after reconnect (@albb0920)
+* Fix keyword arguemnt warning (@albb0920)
+
 ## 1.0.0 (April 26th 2015)
 
 * Beginning from version 1.0.0 the support for `Beaneater::Pool` has been dropped (@alup)
