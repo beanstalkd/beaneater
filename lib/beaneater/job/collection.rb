@@ -37,7 +37,7 @@ class Beaneater
     #
     # @see Beaneater::Connection#transmit
     def transmit(command, options={})
-      client.connection.transmit(command, options)
+      client.connection.transmit(command, **options)
     end
 
     # Peek (or find) job by id from beanstalkd.
