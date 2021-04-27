@@ -1,5 +1,10 @@
 # CHANGELOG for Beaneater
 
+## 1.1.1 (April 27th 2021)
+
+* Support Ruby 3 keyword arguments (@yahonda)
+* Add CI for Ruby 3 (@yahonda)
+
 ## 1.1.0 (April 25th 2021)
 
 * 'clear' behavior was failing unexpectedly, swallow issues during delete as well (@bfolkens)
