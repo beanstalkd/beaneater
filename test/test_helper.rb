@@ -7,7 +7,7 @@ $:.unshift File.expand_path("../../lib")
 require 'beaneater'
 require 'timeout'
 begin
-  require 'mocha/setup'
+  require 'mocha/minitest'
 rescue LoadError
   require 'mocha'
 end
