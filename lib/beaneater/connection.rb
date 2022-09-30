@@ -150,7 +150,8 @@ class Beaneater
       if ['OK','FOUND', 'RESERVED'].include?(status)
         bytes_size = body_values[-1].to_i
         raw_body = connection.read(bytes_size)
-        body = status == 'OK' ? YAML.load(raw_body) : config.job_parser.call(raw_body)
+        psych_v4_valid_body = raw_body.gsub(/^(.*?): (.*)$/) { "#{$1}: #{$2.gsub(/[\:\-\~]/, '_')}" }
+        body = status == 'OK' ? YAML.load(psych_v4_valid_body) : config.job_parser.call(psych_v4_valid_body)
         crlf = connection.read(2) # \r\n
         raise ExpectedCrlfError.new('EXPECTED_CRLF', cmd) if crlf != "\r\n"
       end
