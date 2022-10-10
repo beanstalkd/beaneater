@@ -1,5 +1,9 @@
 # CHANGELOG for Beaneater
 
+## 1.1.2 (Oct 10 2022)
+
+* Fixes beaneater when used with Ruby 3.1 and YAML 4 (@pond)
+
 ## 1.1.1 (April 27th 2021)
 
 * Support Ruby 3 keyword arguments (@yahonda)
