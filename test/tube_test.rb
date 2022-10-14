@@ -89,9 +89,9 @@ describe Beaneater::Tube do
 
     it "should support custom parser" do
       Beaneater.configure.job_parser = lambda { |b| JSON.parse(b) }
-      json = '{"message":"hi"}'
+      json = '{"message": "hi: there! this: is a long message"}'
       @tube.put(json)
-      assert_equal 'hi', @tube.peek(:ready).body['message']
+      assert_equal 'hi: there! this: is a long message', @tube.peek(:ready).body['message']
     end
 
     after do
