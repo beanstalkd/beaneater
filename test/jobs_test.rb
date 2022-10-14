@@ -28,8 +28,12 @@ describe Beaneater::Jobs do
       assert_equal "foo find #{@time}", @jobs.find(@job.id).body
     end
 
-    it "should return nil for invalid id" do
-      assert_nil @jobs.find(-1)
+    it "should return nil for invalid negative id" do
+      assert_nil @jobs.find(10000) 
+    end
+
+    it "should return nil for invalid negative id" do
+      assert_raises(Beaneater::BadFormatError) { @jobs.find(-1) }
     end
   end # find
 

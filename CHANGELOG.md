@@ -1,5 +1,10 @@
 # CHANGELOG for Beaneater
 
+## 1.1.3 (Oct 14 2022)
+
+* Fixes issue introduced in 1.1.2 re YML parsing (@pond)
+* Fix job lookup test so it passes again
+
 ## 1.1.2 (Oct 10 2022)
 
 * Fixes beaneater when used with Ruby 3.1 and YAML 4 (@pond)
