@@ -1,5 +1,5 @@
 # Beaneater
-[![Build Status](https://secure.travis-ci.org/beanstalkd/beaneater.png)](http://travis-ci.org/beanstalkd/beaneater)
+![Build Status](https://github.com/beanstalkd/beaneater/actions/workflows/ruby.yml/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/beanstalkd/beaneater/badge.png?branch=master)](https://coveralls.io/r/beanstalkd/beaneater)
 
 Beaneater is the best way to interact with beanstalkd from within Ruby.
