@@ -26,14 +26,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Make beaneater
+    - name: Download & Extract beanstalkd
+      run: curl -L https://github.com/beanstalkd/beanstalkd/archive/refs/tags/v1.13.tar.gz | tar xz -C beanstalkd
+    - name: Make beanstalkd
       run: make
+      working-directory: beanstalkd
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: ${{ matrix.ruby-version }}
         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
-    - name: Daemonize beaneater
-      run: ./beanstalkd &
+    - name: Daemonize beanstalkd
+      run: ./beanstalkd/beanstalkd &
     - name: Run tests
       run: bundle exec rake test:full
