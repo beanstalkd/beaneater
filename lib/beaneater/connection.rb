@@ -70,7 +70,7 @@ class Beaneater
     #   @conn.transmit('stats')
     #
     def transmit(command, **options)
-      _with_retry(**options.slice(:retry_interval, :init)) do
+      _with_retry(options[:retry_interval], options[:init]) do
         @mutex.synchronize do
           _raise_not_connected! unless connection
 
@@ -194,7 +194,7 @@ class Beaneater
     # @param [Integer] tries The maximum number of tries in draining mode
     # @return [Object] Result of the block passed
     #
-    def _with_retry(retry_interval: DEFAULT_RETRY_INTERVAL, init: true, tries: MAX_RETRIES, &block)
+    def _with_retry(retry_interval = DEFAULT_RETRY_INTERVAL, init = true, tries = MAX_RETRIES, &block)
       yield
     rescue EOFError, Errno::ECONNRESET, Errno::EPIPE,
       Errno::ECONNREFUSED => ex
