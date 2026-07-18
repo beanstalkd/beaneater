@@ -29,6 +29,11 @@ describe Beaneater::StatStruct do
       assert_equal 'foo', @struct[:baz]
       assert_equal 'demo', @struct[:"under_score"]
     end
+
+    it "should look up hyphenated beanstalkd keys" do
+      assert_equal 'demo', @struct['under-score']
+      assert_equal 'demo', @struct[:"under-score"]
+    end
   end # []
 
   describe "for #keys" do

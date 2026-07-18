@@ -5,6 +5,7 @@
 * Fix stats and tube lists mangling values since 1.1.2: `-`, `:` and `~` were rewritten to `_`, so `job.tube` for tube `email-jobs` was `"email_jobs"` and `Jobs#process!` buried its jobs; tube names that look like dates or numbers (`2026-10-30`, `1.10`) are now returned as strings instead of raising or being converted (@nesquena)
 * Add `connect_timeout` (Ruby 3+), `resolv_timeout` (Ruby 3+), `read_timeout`, and `write_timeout` configuration options (@rveznaver)
 * Fix fractional timeout handling for `read_timeout` and `write_timeout` socket options
+* Fix `StatStruct#[]` raising a `SyntaxError` when looking up hyphenated beanstalkd keys (e.g. `stats['current-jobs-ready']`); keys are now underscored before lookup to match how they are stored (@dkam)
 
 ## 1.1.4 (March 6 2026)
 
