@@ -273,6 +273,7 @@ class Beaneater
     #
     def _with_retry(retry_interval: DEFAULT_RETRY_INTERVAL, init: true, tries: MAX_RETRIES, &block)
       restore = false
+      reconnects = 0
       begin
         if restore
           begin
@@ -289,6 +290,13 @@ class Beaneater
         yield
       rescue EOFError, Errno::ECONNRESET, Errno::EPIPE,
         Errno::ECONNREFUSED, Errno::ENOTCONN => ex
+        reconnects += 1
+        if reconnects > MAX_RETRIES
+          # something accepts connections but drops every command (a proxy with no backend):
+          # give up rather than reconnect in a tight loop
+          _drop_connection
+          _raise_not_connected!
+        end
         _reconnect(ex, retry_interval)
         restore = init
         retry

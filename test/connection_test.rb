@@ -358,6 +358,30 @@ describe Beaneater::Connection do
       server.close if server
     end
 
+    it "gives up when every new connection is dropped as soon as a command is sent" do
+      # like a proxy that accepts connections while its backend is down
+      server = TCPServer.new('127.0.0.1', 0)
+      accepted = 0
+      acceptor = Thread.new do
+        loop do
+          peer = server.accept
+          accepted += 1
+          if accepted == 1
+            Thread.new(peer) { |p| p.gets("\r\n"); p.write("USING x\r\n"); p.gets("\r\n"); p.close }
+          else
+            Thread.new(peer) { |p| p.gets("\r\n"); p.close }
+          end
+        end
+      end
+      bc = Beaneater::Connection.new("127.0.0.1:#{server.addr[1]}")
+      assert_equal 'USING', bc.transmit('use x')[:status]
+      assert_raises(Beaneater::NotConnected) { Timeout.timeout(5) { bc.transmit('stats', retry_interval: 0) } }
+      assert_operator accepted, :<=, Beaneater::Connection::MAX_RETRIES + 1
+    ensure
+      acceptor.kill if acceptor
+      server.close if server
+    end
+
     describe "after the server was down for longer than the reconnect retries" do
       before do
         @port = free_port
