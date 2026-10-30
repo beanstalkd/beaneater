@@ -83,6 +83,7 @@ class Beaneater
     def transmit(command, **options)
       _with_retry(**options.slice(:retry_interval, :init)) do
         @mutex.synchronize do
+          completed = false
           unless connection
             _raise_not_connected! if @closed
             # lost after a failure: _with_retry reconnects, restores the tubes and retries
@@ -93,7 +94,18 @@ class Beaneater
           _write(command.to_s + "\r\n", command)
           @read_deadline = _read_deadline(command) # bounds the status line and the body read in parse_response
           res = _read_line(command)
-          parse_response(command, res)
+          response = parse_response(command, res)
+          completed = true
+          response
+        rescue UnexpectedResponse => ex
+          # an error status line is the whole reply, so the stream is still in step
+          completed = !ex.is_a?(ExpectedCrlfError)
+          raise
+        ensure
+          # Interrupted between the write and the end of the reply (Timeout, Interrupt, an I/O
+          # error): the rest of the reply may still arrive, so drop the socket rather than let the
+          # next command read it. The next command reconnects.
+          _drop_connection unless completed
         end
       end
     end

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* Drop the connection when a command is interrupted mid-reply (for example by `Timeout.timeout`), so the next command no longer reads the stale reply (reported by @tdegrunt)
 * Honour `stop!` while `process!` is waiting for a job with `reserve_timeout` set (reported by @martint17r)
 * Keep `process!` running when a handler deletes or releases its job, or overruns its TTR, and then raises; it used to stop with `NotFoundError` or `JobNotReserved` (reported by @pagojo)
 * Reconnect on the next command after the connection was lost, restoring the used and watched tubes, and make `process!` raise `NotConnected` instead of looping while beanstalkd is down (reported by @b-sridhar and @Meekohi)

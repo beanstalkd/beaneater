@@ -252,7 +252,7 @@ describe Beaneater::Connection do
 
       assert_equal %w[another], client.tubes.watched.map(&:name)
     ensure
-      $called = nil
+      $called = true # the prepended readpartial stays for later tests: leave it disarmed
     end
 
     it "should raise NotConnected when reconnecting fails with any connect error" do
@@ -268,6 +268,30 @@ describe Beaneater::Connection do
 
       TCPSocket.any_instance.unstub(:readpartial)
       assert_equal 'OK', @bc.transmit('stats')[:status]
+    end
+
+    it "should drop the connection when a command is interrupted, so the next command reads its own reply" do
+      client = Beaneater.new('localhost')
+      client.tubes.watch!('interrupted')
+      assert_raises(Timeout::Error) { Timeout.timeout(0.3) { client.tubes.reserve } }
+
+      producer = Beaneater.new('localhost')
+      producer.tubes.find('interrupted').put('late job')
+      producer.close
+      sleep 0.1 # let a reserve still pending on the old socket take the job
+
+      assert_equal %w[interrupted], client.tubes.watched.map(&:name)
+      job = client.tubes.reserve(1)
+      assert_equal 'late job', job.body
+      job.delete
+    ensure
+      client.close if client
+    end
+
+    it "should keep the connection after an error reply" do
+      socket = @bc.connection
+      assert_raises(Beaneater::NotFoundError) { @bc.transmit 'peek 4294967295' }
+      assert_same socket, @bc.connection
     end
 
     describe "after the server was down for longer than the reconnect retries" do
