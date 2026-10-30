@@ -60,6 +60,13 @@ describe Beaneater::Tubes do
         assert @beanstalk.tubes.all.map(&:name).include?(t)
       end
     end
+
+    it 'should return tube names that look like numbers or dates as strings' do
+      names = ['1.10', '2026-10-30', 'true', 'a-b']
+      names.each { |t| @beanstalk.tubes.find(t).put 'x' }
+      all = @beanstalk.tubes.all.map(&:name)
+      names.each { |t| assert_includes all, t }
+    end
   end # all
 
   describe "for Enumerable" do

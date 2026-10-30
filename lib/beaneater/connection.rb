@@ -13,6 +13,15 @@ class Beaneater
     # Default retry interval
     DEFAULT_RETRY_INTERVAL = 1
 
+    # Fields of the stats responses that are text even when they look numeric
+    # (a tube named "1.12", a server id made only of digits). beanstalkd 1.13
+    # quotes most of these, 1.12 does not.
+    STRING_STAT_FIELDS = {
+      'stats'      => %w(version id hostname os platform),
+      'stats-job'  => %w(tube state),
+      'stats-tube' => %w(name)
+    }.freeze
+
     # @!attribute address
     #   @return [String] returns Beanstalkd server address
     #   @example
@@ -168,8 +177,7 @@ class Beaneater
         bytes_size = body_values[-1].to_i
         raw_body = connection.read(bytes_size)
         body = if status == 'OK'
-          psych_v4_valid_body = raw_body.gsub(/^(.*?): (.*)$/) { "#{$1}: #{$2.gsub(/[\:\-\~]/, '_')}" }
-          YAML.load(psych_v4_valid_body)
+          parse_yaml_body(cmd, raw_body)
         else
           config.job_parser.call(raw_body)
         end
@@ -181,6 +189,33 @@ class Beaneater
       response[:id] = id if id
       response[:body] = body if body
       response
+    end
+
+    # Parses the YAML body of an OK response (stats, stats-job, stats-tube,
+    # list-tubes, list-tubes-watched). beanstalkd emits only a "---" line
+    # followed by "key: value" lines or "- item" lines, so the body is parsed
+    # directly rather than through a YAML loader, which would turn tube names
+    # such as "2022-09-30", "1.12" or "true" into dates, numbers or booleans.
+    #
+    # @param [String] cmd Beanstalk command transmitted
+    # @param [String] raw_body Response body
+    # @return [Hash{String => String, Integer, Float, Boolean}, Array<String>] Parsed body
+    # @example
+    #  parse_yaml_body("stats-job 1", "---\nid: 1\ntube: email-jobs\n")
+    #   # => { "id" => 1, "tube" => "email-jobs" }
+    #
+    def parse_yaml_body(cmd, raw_body)
+      lines = raw_body.dup.force_encoding(Encoding::UTF_8).each_line.map(&:chomp)
+      lines.shift if lines.first == '---'
+      if lines.first && lines.first.start_with?('- ')
+        lines.map { |line| _stat_value(line[2..-1], true) }
+      else
+        text_fields = STRING_STAT_FIELDS[cmd.to_s.split(' ').first] || []
+        lines.each_with_object({}) do |line, hash|
+          key, value = line.split(': ', 2)
+          hash[key] = _stat_value(value.to_s, text_fields.include?(key)) unless key.to_s.empty?
+        end
+      end
     end
 
     # Returns configuration options for beaneater
@@ -254,6 +289,25 @@ class Beaneater
     #
     def _host_from_env
       ENV['BEANSTALKD_URL'].respond_to?(:length) && ENV['BEANSTALKD_URL'].length > 0 && ENV['BEANSTALKD_URL'].strip
+    end
+
+    # Converts one value of a stats or list response to its Ruby type:
+    # quoted values and text fields stay Strings, whole numbers become
+    # Integers, decimals Floats, and true/false Booleans.
+    def _stat_value(value, text)
+      if value.length >= 2 && value.start_with?('"') && value.end_with?('"')
+        value[1..-2]
+      elsif text
+        value
+      elsif value =~ /\A-?\d+\z/
+        value.to_i
+      elsif value =~ /\A-?\d+\.\d+\z/
+        value.to_f
+      elsif value == 'true' || value == 'false'
+        value == 'true'
+      else
+        value
+      end
     end
 
     # Packs a timeout value (in seconds) into a struct timeval binary string.

@@ -106,4 +106,21 @@ describe Beaneater::Jobs do
       assert_equal 1, @beanstalk.tubes.find('tube_buried').stats.current_jobs_buried
     end
   end # for_process!
+
+  describe "for process! with a dashed tube name" do
+    before do
+      $ran = []
+      cleanup_tubes!(['email-jobs', 'tube_stop'])
+      @jobs.register('email-jobs') { |job| $ran << job.body }
+      @jobs.register('tube_stop') { |job| $ran << job.body; @jobs.stop! }
+      @beanstalk.tubes.find('email-jobs').put('email', :pri => 1)
+      @beanstalk.tubes.find('tube_stop').put('stop', :pri => 2)
+      @jobs.process!(:release_delay => 0)
+    end
+
+    it "should run the handler registered for the tube" do
+      assert_equal ['email', 'stop'], $ran
+      assert_nil @beanstalk.tubes.find('email-jobs').peek(:buried)
+    end
+  end # process! with a dashed tube name
 end # Beaneater::Jobs

@@ -108,6 +108,24 @@ describe Beaneater::Connection do
       assert_equal 'OK', res[:status]
     end
 
+    it "should keep the types of stats values without mangling them" do
+      @bc.transmit "use stats-tube.1"
+      id = @bc.transmit("put 0 0 100 1\r\nX")[:id]
+      tube = @bc.transmit('stats-tube stats-tube.1')[:body]
+      assert_equal 'stats-tube.1', tube['name']
+      assert_equal 1, tube['current-jobs-ready']
+
+      stats = @bc.transmit('stats')[:body]
+      assert_kind_of Integer, stats['current-connections']
+      assert_kind_of Float, stats['rusage-utime']
+      assert_kind_of String, stats['version']
+      assert_kind_of String, stats['hostname']
+      assert_equal false, stats['draining']
+    ensure
+      @bc.transmit "delete #{id}" if id
+      @bc.transmit "use default"
+    end
+
     it "should return id" do
       res = @bc.transmit "put 0 0 100 1\r\nX"
       assert res[:id]
