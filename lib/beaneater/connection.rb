@@ -84,6 +84,7 @@ class Beaneater
       _with_retry(**options.slice(:retry_interval, :init)) do
         @mutex.synchronize do
           completed = false
+          @reply_read = false # set by parse_response once the whole reply is off the socket
           unless connection
             _raise_not_connected! if @closed
             # lost after a failure: _with_retry reconnects, restores the tubes and retries
@@ -104,8 +105,10 @@ class Beaneater
         ensure
           # Interrupted between the write and the end of the reply (Timeout, Interrupt, an I/O
           # error): the rest of the reply may still arrive, so drop the socket rather than let the
-          # next command read it. The next command reconnects.
-          _drop_connection unless completed
+          # next command read it. The next command reconnects. Once the whole reply has been read
+          # (a job_parser that raised, say) the stream is in step: keep the socket, and with it the
+          # jobs this connection has reserved.
+          _drop_connection unless completed || @reply_read
         end
       end
     end
@@ -189,6 +192,7 @@ class Beaneater
         # leaves the stream at the start of the next reply.
         crlf = _read_bytes(2, cmd) # \r\n
         raise ExpectedCrlfError.new('EXPECTED_CRLF', cmd) if crlf != "\r\n"
+        @reply_read = true
         body = if status == 'OK'
           parse_yaml_body(cmd, raw_body)
         else

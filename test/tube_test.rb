@@ -99,7 +99,9 @@ describe Beaneater::Tube do
     it "should keep the connection usable when the custom parser raises" do
       Beaneater.configure.job_parser = lambda { |b| JSON.parse(b) }
       @tube.put('not json')
+      socket = @beanstalk.connection.connection
       assert_raises(JSON::ParserError) { @tube.peek(:ready) }
+      assert_same socket, @beanstalk.connection.connection
       assert_equal 'baz', @beanstalk.tubes.used.name
     end
 
@@ -107,6 +109,30 @@ describe Beaneater::Tube do
       Beaneater.configure.job_parser = lambda { |b| b }
     end
   end # peek
+
+  describe "for a job_parser that raises on reserve" do
+    before do
+      Beaneater.configure.job_parser = lambda { |b| JSON.parse(b) }
+      @tube = @beanstalk.tubes.find('poison_tube')
+      @poison_id = @tube.put('not json', :pri => 1)[:id]
+      @tube.put('{"ok":1}', :pri => 2)
+      @beanstalk.tubes.watch!('poison_tube')
+    end
+
+    after do
+      Beaneater.configure.job_parser = lambda { |b| b }
+    end
+
+    it "should keep the connection, so the bad job stays reserved and the next job is delivered" do
+      socket = @beanstalk.connection.connection
+      assert_raises(JSON::ParserError) { @beanstalk.tubes.reserve(0) }
+      assert_same socket, @beanstalk.connection.connection
+      job = @beanstalk.tubes.reserve(0)
+      assert_equal({ 'ok' => 1 }, job.body)
+      job.delete
+      @beanstalk.connection.transmit("delete #{@poison_id}")
+    end
+  end # job_parser that raises on reserve
 
   describe "for #reserve" do
     before do
