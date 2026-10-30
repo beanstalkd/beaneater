@@ -382,5 +382,25 @@ describe Beaneater::Connection do
       assert_nil @bc.connection
       assert_raises(Beaneater::NotConnected) { @bc.transmit 'stats' }
     end
+
+    it "should unblock a reserve waiting in another thread" do
+      client = Beaneater.new('localhost')
+      client.tubes.watch!('close-unblocks-reserve')
+      result = nil
+      waiter = Thread.new do
+        begin
+          client.tubes.reserve
+          result = :reserved
+        rescue Exception => ex
+          result = ex
+        end
+      end
+      sleep 0.3 # the waiter is blocked in reserve
+      client.close
+      assert waiter.join(1), "reserve still blocked 1s after close"
+      assert_kind_of IOError, result
+    ensure
+      waiter.kill if waiter
+    end
   end # close
 end # Beaneater::Connection

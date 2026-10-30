@@ -2,6 +2,7 @@
 
 require 'yaml'
 require 'socket'
+require 'io/wait'
 require 'monitor'
 
 class Beaneater
@@ -395,8 +396,9 @@ class Beaneater
     def _wait_for(direction, deadline, cmd)
       remaining = deadline && deadline - _now
       ready = if remaining.nil? || remaining > 0
-        readers, writers = direction == :read ? [[connection], nil] : [nil, [connection]]
-        IO.select(readers, writers, nil, remaining)
+        # IO#wait_* rather than IO.select: a thread waiting here is woken (with IOError) when
+        # another thread calls #close, as a blocked read was before.
+        direction == :read ? connection.wait_readable(remaining) : connection.wait_writable(remaining)
       end
       return if ready
 
