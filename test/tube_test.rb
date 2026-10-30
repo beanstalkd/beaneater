@@ -96,6 +96,13 @@ describe Beaneater::Tube do
       assert_equal 'hi: there! this: is a long message', @tube.peek(:ready).body['message']
     end
 
+    it "should keep the connection usable when the custom parser raises" do
+      Beaneater.configure.job_parser = lambda { |b| JSON.parse(b) }
+      @tube.put('not json')
+      assert_raises(JSON::ParserError) { @tube.peek(:ready) }
+      assert_equal 'baz', @beanstalk.tubes.used.name
+    end
+
     after do
       Beaneater.configure.job_parser = lambda { |b| b }
     end

@@ -176,13 +176,15 @@ class Beaneater
       if ['OK','FOUND', 'RESERVED'].include?(status)
         bytes_size = body_values[-1].to_i
         raw_body = connection.read(bytes_size)
+        # Consume the trailing CRLF before parsing, so a parser that raises
+        # leaves the stream at the start of the next reply.
+        crlf = connection.read(2) # \r\n
+        raise ExpectedCrlfError.new('EXPECTED_CRLF', cmd) if crlf != "\r\n"
         body = if status == 'OK'
           parse_yaml_body(cmd, raw_body)
         else
           config.job_parser.call(raw_body)
         end
-        crlf = connection.read(2) # \r\n
-        raise ExpectedCrlfError.new('EXPECTED_CRLF', cmd) if crlf != "\r\n"
       end
       id = body_values[1]
       response = { :status => status }
