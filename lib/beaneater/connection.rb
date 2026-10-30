@@ -86,8 +86,9 @@ class Beaneater
           _raise_not_connected! unless connection
 
           command = command.dup.force_encoding('ASCII-8BIT') if command.respond_to?(:force_encoding)
-          connection.write(command.to_s + "\r\n")
-          res = connection.readline
+          _write(command.to_s + "\r\n", command)
+          @read_deadline = _read_deadline(command) # bounds the status line and the body read in parse_response
+          res = _read_line(command)
           parse_response(command, res)
         end
       end
@@ -146,14 +147,8 @@ class Beaneater
         TCPSocket.new(@host, @port)
       end
 
-      begin
-        socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_RCVTIMEO, _timeval_for(config.read_timeout)) if config.read_timeout
-        socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDTIMEO, _timeval_for(config.write_timeout)) if config.write_timeout
-        @connection = socket
-      rescue
-        socket.close rescue nil
-        raise
-      end
+      @read_buffer = String.new # binary; bytes read but not yet consumed
+      @connection = socket
     end
 
     # Parses the response and returns the useful beanstalk response.
@@ -175,10 +170,10 @@ class Beaneater
       body = nil
       if ['OK','FOUND', 'RESERVED'].include?(status)
         bytes_size = body_values[-1].to_i
-        raw_body = connection.read(bytes_size)
+        raw_body = _read_bytes(bytes_size, cmd)
         # Consume the trailing CRLF before parsing, so a parser that raises
         # leaves the stream at the start of the next reply.
-        crlf = connection.read(2) # \r\n
+        crlf = _read_bytes(2, cmd) # \r\n
         raise ExpectedCrlfError.new('EXPECTED_CRLF', cmd) if crlf != "\r\n"
         body = if status == 'OK'
           parse_yaml_body(cmd, raw_body)
@@ -312,12 +307,76 @@ class Beaneater
       end
     end
 
-    # Packs a timeout value (in seconds) into a struct timeval binary string.
-    # Supports fractional seconds (e.g., 0.5 => 500000 usec).
-    def _timeval_for(timeout)
-      sec = timeout.to_i
-      usec = ((timeout.to_f - sec) * 1_000_000).to_i
-      [sec, usec].pack('l_l_')
+    # Writes data to the socket, waiting at most write_timeout seconds.
+    #
+    # Ruby waits on its sockets itself, so the socket-level SO_SNDTIMEO and
+    # SO_RCVTIMEO options have no effect; the deadlines are kept here instead.
+    def _write(data, cmd)
+      deadline = _deadline_in(config.write_timeout)
+      until data.empty?
+        written = connection.write_nonblock(data, exception: false)
+        if written == :wait_writable
+          _wait_for(:write, deadline, cmd)
+        else
+          data = data.byteslice(written..-1)
+        end
+      end
+    end
+
+    # Returns the time by which the reply to cmd must have arrived, or nil to
+    # wait without limit. reserve-with-timeout gets its own timeout on top of
+    # read_timeout; a plain reserve blocks until a job arrives, by design.
+    def _read_deadline(cmd)
+      return nil if config.read_timeout.nil? || cmd =~ /\Areserve\s*\z/
+      extra = cmd =~ /\Areserve-with-timeout (\d+)/ ? $1.to_i : 0
+      _deadline_in(config.read_timeout + extra)
+    end
+
+    # Reads one reply line (the status line), without its line ending.
+    def _read_line(cmd)
+      until (eol = @read_buffer.index("\n"))
+        _fill_read_buffer(cmd)
+      end
+      @read_buffer.slice!(0, eol + 1)
+    end
+
+    # Reads exactly size bytes of a reply body.
+    def _read_bytes(size, cmd)
+      _fill_read_buffer(cmd) while @read_buffer.bytesize < size
+      @read_buffer.slice!(0, size)
+    end
+
+    # Waits until the socket has data (up to the reply's deadline) and appends
+    # what is available to the read buffer.
+    def _fill_read_buffer(cmd)
+      _wait_for(:read, @read_deadline, cmd)
+      @read_buffer << connection.readpartial(16_384)
+    end
+
+    # Waits for the socket to become readable or writable before deadline.
+    # On timeout the connection is closed: a late reply would otherwise be
+    # read as the answer to the next command.
+    #
+    # @raise [Beaneater::SocketTimeout] The deadline passed.
+    def _wait_for(direction, deadline, cmd)
+      remaining = deadline && deadline - _now
+      ready = if remaining.nil? || remaining > 0
+        readers, writers = direction == :read ? [[connection], nil] : [nil, [connection]]
+        IO.select(readers, writers, nil, remaining)
+      end
+      return if ready
+
+      close
+      action = direction == :read ? 'waiting for the reply to' : 'writing'
+      raise SocketTimeout, "Timed out #{action} '#{cmd.to_s.split("\r\n").first}' on beanstalk '#{@host}:#{@port}'; connection closed"
+    end
+
+    def _deadline_in(seconds)
+      seconds && _now + seconds
+    end
+
+    def _now
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
     end
 
     # Raises an error to be triggered when the connection has failed

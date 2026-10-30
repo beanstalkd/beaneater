@@ -10,8 +10,8 @@ class Beaneater
     attr_accessor :beanstalkd_url      # default beanstalkd url
     attr_accessor :connect_timeout     # TCP connect timeout in seconds
     attr_accessor :resolv_timeout      # DNS resolve timeout in seconds
-    attr_accessor :read_timeout        # socket read timeout in seconds
-    attr_accessor :write_timeout       # socket write timeout in seconds
+    attr_accessor :read_timeout        # seconds to wait for a reply (added to reserve-with-timeout's own timeout; plain reserve is never cut off)
+    attr_accessor :write_timeout       # seconds to wait for a command to be written
 
     def initialize
       @default_put_delay   = 0

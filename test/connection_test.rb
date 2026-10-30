@@ -81,17 +81,79 @@ describe Beaneater::Connection do
       assert_same real_socket, bc.connection
     end
 
-    it "should set SO_RCVTIMEO and SO_SNDTIMEO when read/write timeouts are configured" do
-      Beaneater.configure do |config|
-        config.read_timeout  = 3
-        config.write_timeout = 5
-      end
+    # A server that accepts connections and then neither reads nor replies.
+    def with_silent_server
+      server = TCPServer.new('127.0.0.1', 0)
+      clients = []
+      acceptor = Thread.new { loop { clients << server.accept } }
+      yield "127.0.0.1:#{server.addr[1]}"
+    ensure
+      acceptor.kill if acceptor
+      clients.each(&:close)
+      server.close if server
+    end
 
-      bc = Beaneater::Connection.new('localhost')
-      rcv = bc.connection.getsockopt(Socket::SOL_SOCKET, Socket::SO_RCVTIMEO).unpack('l_l_')[0]
-      snd = bc.connection.getsockopt(Socket::SOL_SOCKET, Socket::SO_SNDTIMEO).unpack('l_l_')[0]
-      assert_equal 3, rcv
-      assert_equal 5, snd
+    def elapsed
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      yield
+      Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+    end
+
+    it "should raise SocketTimeout and close the connection when no reply arrives within read_timeout" do
+      Beaneater.configure { |config| config.read_timeout = 0.5 }
+      with_silent_server do |address|
+        bc = Beaneater::Connection.new(address)
+        time = elapsed do
+          assert_raises(Beaneater::SocketTimeout) { Timeout.timeout(5) { bc.transmit('stats') } }
+        end
+        assert_in_delta 0.5, time, 0.4
+        assert_nil bc.connection
+        assert_raises(Beaneater::NotConnected) { bc.transmit('stats') }
+      end
+    end
+
+    it "should raise SocketTimeout when a command cannot be written within write_timeout" do
+      Beaneater.configure { |config| config.write_timeout = 0.5 }
+      with_silent_server do |address|
+        bc = Beaneater::Connection.new(address)
+        body = 'x' * (64 * 1024 * 1024) # more than the socket buffers hold
+        time = elapsed do
+          assert_raises(Beaneater::SocketTimeout) do
+            Timeout.timeout(5) { bc.transmit("put 0 0 100 #{body.bytesize}\r\n#{body}") }
+          end
+        end
+        assert_operator time, :<, 2
+        assert_nil bc.connection
+      end
+    end
+
+    it "should wait reserve-with-timeout's own timeout on top of read_timeout" do
+      Beaneater.configure { |config| config.read_timeout = 0.5 }
+      client = Beaneater.new('localhost')
+      client.tubes.watch!('read_timeout_empty')
+      time = elapsed do
+        assert_raises(Beaneater::TimedOutError) { client.tubes.reserve(1) }
+      end
+      assert_operator time, :>=, 0.9
+      assert client.connection.connection, "connection should stay open"
+      client.close
+    end
+
+    it "should not cut off a plain reserve with read_timeout" do
+      Beaneater.configure { |config| config.read_timeout = 0.5 }
+      client = Beaneater.new('localhost')
+      client.tubes.watch!('read_timeout_reserve')
+      producer = Thread.new do
+        sleep 1
+        Beaneater.new('localhost').tubes['read_timeout_reserve'].put('late')
+      end
+      job = nil
+      time = elapsed { job = Timeout.timeout(5) { client.tubes.reserve } }
+      assert_equal 'late', job.body
+      assert_operator time, :>=, 0.9
+      job.delete
+      producer.join
+      client.close
     end
 
   end # timeout configuration
@@ -149,16 +211,16 @@ describe Beaneater::Connection do
     end
 
     it "should retry command with success after one connection failure" do
-      TCPSocket.any_instance.expects(:readline).times(2).
+      TCPSocket.any_instance.expects(:readpartial).times(2).
         raises(EOFError.new).then.
-        returns("DELETED 56\nFOO")
+        returns("DELETED 56\r\n")
 
       res = @bc.transmit "delete 56\r\n"
       assert_equal 'DELETED', res[:status]
     end
 
     it "should fail after exceeding retries with DrainingError" do
-      TCPSocket.any_instance.expects(:readline).times(3).
+      TCPSocket.any_instance.expects(:readpartial).times(3).
         raises(Beaneater::UnexpectedResponse.from_status("DRAINING", "delete 56"))
 
       assert_raises(Beaneater::DrainingError) { @bc.transmit "delete 56\r\n" }
@@ -167,7 +229,7 @@ describe Beaneater::Connection do
     it "should fail after exceeding reconnect max retries" do
       # next connection attempts should fail
       TCPSocket.stubs(:new).times(3).raises(Errno::ECONNREFUSED.new)
-      TCPSocket.any_instance.stubs(:readline).times(1).raises(EOFError.new)
+      TCPSocket.any_instance.stubs(:readpartial).times(1).raises(EOFError.new)
 
       assert_raises(Beaneater::NotConnected) { @bc.transmit "delete 56\r\n" }
     end
@@ -178,7 +240,7 @@ describe Beaneater::Connection do
 
       $called = false
       TCPSocket.prepend Module.new {
-        def readline
+        def readpartial(*)
           if !$called
             $called = true
             raise EOFError
