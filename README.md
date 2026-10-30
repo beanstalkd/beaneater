@@ -142,7 +142,11 @@ end
 
 The above options are all defaults, so only include a configuration block if you need to make changes.
 
-`connect_timeout` and `resolv_timeout` are passed through to `TCPSocket.new` on Ruby 3.0 and newer (ignored on Ruby < 3.0 for compatibility). `read_timeout` bounds how long beaneater waits for beanstalkd's reply to a command; for `reserve(timeout)` it is added to the reserve's own timeout, and a plain `reserve` (no timeout) still waits as long as it takes for a job. `write_timeout` bounds how long sending a command may take. When either runs out, `Beaneater::SocketTimeout` (a `Beaneater::NotConnected`) is raised and the connection is dropped; the next command reconnects.
+`connect_timeout` and `resolv_timeout` are passed through to `TCPSocket.new` on Ruby 3.0 and newer (ignored on Ruby < 3.0 for compatibility). `read_timeout` bounds how long beaneater waits for beanstalkd's reply to a command; for `reserve(timeout)` it is added to the reserve's own timeout, and a plain `reserve` (no timeout) still waits as long as it takes for a job. `write_timeout` bounds how long sending a command may take. When either runs out, `Beaneater::SocketTimeout` (a `Beaneater::NotConnected`) is raised and the connection is dropped; the next command reconnects. Timeouts are in seconds; `read_timeout` and `write_timeout` may also be numeric strings (from `ENV`, say).
+
+A `SocketTimeout` on `put` does not tell you whether beanstalkd stored the job: the command may have reached the server and only the reply been lost. Retrying the `put` can therefore enqueue the job twice, so retry a timed-out `put` only if running the job twice is harmless.
+
+While beanstalkd is unreachable, every command tries to reconnect three times, one second apart, before raising `Beaneater::NotConnected`, so each command takes about 2 seconds to fail (longer per attempt when connecting itself hangs, as with an unreachable host). Apps that enqueue jobs inside web requests should set `connect_timeout` and expect this delay while beanstalkd is down.
 
 ### Connection
 
