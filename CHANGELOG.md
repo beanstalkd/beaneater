@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* Declare the minimum Ruby version, 2.5 (`Hash#slice`), in the gemspec, so older Rubies get a clear install-time error, #83 (@nesquena; reported by @hkmaly)
 * Make `read_timeout` and `write_timeout` take effect: they set `SO_RCVTIMEO`/`SO_SNDTIMEO`, which have no effect on Ruby 3 (Ruby waits on the socket itself), so a server that stopped answering still blocked forever. Beaneater now enforces both itself, adds `read_timeout` to `reserve(timeout)`'s own wait, never cuts off a plain `reserve`, and on timeout closes the connection and raises the new `Beaneater::SocketTimeout` (a `NotConnected`) (@nesquena)
 * Fix a raising `job_parser` (e.g. `JSON.parse` on a non-JSON job) leaving the connection one reply out of step, so later commands returned the wrong replies (@nesquena)
 * Fix stats and tube lists mangling values since 1.1.2: `-`, `:` and `~` were rewritten to `_`, so `job.tube` for tube `email-jobs` was `"email_jobs"` and `Jobs#process!` buried its jobs; tube names that look like dates or numbers (`2026-10-30`, `1.10`) are now returned as strings instead of raising or being converted (@nesquena)
