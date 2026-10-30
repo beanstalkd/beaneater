@@ -18,7 +18,7 @@ Gem::Specification.new do |gem|
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
-  gem.required_ruby_version = '>= 2.5' # Hash#slice
+  gem.required_ruby_version = '>= 2.7'
   gem.add_development_dependency 'minitest', "~> 4.1.0"
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'mocha'
