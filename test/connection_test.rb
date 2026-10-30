@@ -129,6 +129,33 @@ describe Beaneater::Connection do
       end
     end
 
+    it "should accept timeouts given as numeric strings" do
+      Beaneater.configure do |config|
+        config.read_timeout  = '0.5'
+        config.write_timeout = '0.5'
+      end
+      with_silent_server do |address|
+        bc = Beaneater::Connection.new(address)
+        assert_raises(Beaneater::SocketTimeout) { Timeout.timeout(5) { bc.transmit('stats') } }
+      end
+    end
+
+    it "should read a reply that is already there when the deadline has passed" do
+      Beaneater.configure { |config| config.read_timeout = 0 }
+      server = TCPServer.new('127.0.0.1', 0)
+      # answers before the command arrives, so the reply is waiting when the client polls
+      responder = Thread.new { peer = server.accept; peer.write("USING eager\r\n"); peer }
+      bc = Beaneater::Connection.new("127.0.0.1:#{server.addr[1]}")
+      peer = responder.value
+      sleep 0.2
+      res = bc.transmit('use eager')
+      assert_equal 'USING', res[:status]
+      assert_equal 'eager', res[:id]
+    ensure
+      peer.close if peer
+      server.close if server
+    end
+
     it "should wait reserve-with-timeout's own timeout on top of read_timeout" do
       Beaneater.configure { |config| config.read_timeout = 0.5 }
       client = Beaneater.new('localhost')

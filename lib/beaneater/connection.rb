@@ -96,8 +96,9 @@ class Beaneater
           end
 
           command = command.dup.force_encoding('ASCII-8BIT') if command.respond_to?(:force_encoding)
+          read_window = _read_window(command) # checked before anything is written
           _write(command.to_s + "\r\n", command)
-          @read_deadline = _read_deadline(command) # bounds the status line and the body read in parse_response
+          @read_deadline = _deadline_in(read_window) # bounds the status line and the body read in parse_response
           res = _read_line(command)
           response = parse_response(command, res)
           completed = true
@@ -347,7 +348,7 @@ class Beaneater
     # Ruby waits on its sockets itself, so the socket-level SO_SNDTIMEO and
     # SO_RCVTIMEO options have no effect; the deadlines are kept here instead.
     def _write(data, cmd)
-      deadline = _deadline_in(config.write_timeout)
+      deadline = _deadline_in(config.write_timeout && Float(config.write_timeout))
       until data.empty?
         written = connection.write_nonblock(data, exception: false)
         if written == :wait_writable
@@ -358,13 +359,14 @@ class Beaneater
       end
     end
 
-    # Returns the time by which the reply to cmd must have arrived, or nil to
-    # wait without limit. reserve-with-timeout gets its own timeout on top of
-    # read_timeout; a plain reserve blocks until a job arrives, by design.
-    def _read_deadline(cmd)
+    # Returns how many seconds the reply to cmd may take once it is written, or
+    # nil to wait without limit. reserve-with-timeout gets its own timeout on top
+    # of read_timeout; a plain reserve blocks until a job arrives, by design.
+    # Timeouts may be given as numeric strings (from ENV, say).
+    def _read_window(cmd)
       return nil if config.read_timeout.nil? || cmd =~ /\Areserve\s*\z/
       extra = cmd =~ /\Areserve-with-timeout (\d+)/ ? $1.to_i : 0
-      _deadline_in(config.read_timeout + extra)
+      Float(config.read_timeout) + extra
     end
 
     # Reads one reply line (the status line), without its line ending.
@@ -394,12 +396,12 @@ class Beaneater
     #
     # @raise [Beaneater::SocketTimeout] The deadline passed.
     def _wait_for(direction, deadline, cmd)
-      remaining = deadline && deadline - _now
-      ready = if remaining.nil? || remaining > 0
-        # IO#wait_* rather than IO.select: a thread waiting here is woken (with IOError) when
-        # another thread calls #close, as a blocked read was before.
-        direction == :read ? connection.wait_readable(remaining) : connection.wait_writable(remaining)
-      end
+      # Past the deadline this still polls once (timeout 0): data that is already there is
+      # not a timeout.
+      remaining = deadline && [deadline - _now, 0].max
+      # IO#wait_* rather than IO.select: a thread waiting here is woken (with IOError) when
+      # another thread calls #close, as a blocked read was before.
+      ready = direction == :read ? connection.wait_readable(remaining) : connection.wait_writable(remaining)
       return if ready
 
       _drop_connection
