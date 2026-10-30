@@ -86,7 +86,7 @@ describe Beaneater::Connection do
       server = TCPServer.new('127.0.0.1', 0)
       clients = []
       acceptor = Thread.new { loop { clients << server.accept } }
-      yield "127.0.0.1:#{server.addr[1]}"
+      yield "127.0.0.1:#{server.addr[1]}", clients
     ensure
       acceptor.kill if acceptor
       clients.each(&:close)
@@ -99,16 +99,18 @@ describe Beaneater::Connection do
       Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
     end
 
-    it "should raise SocketTimeout and close the connection when no reply arrives within read_timeout" do
+    it "should raise SocketTimeout and drop the connection when no reply arrives within read_timeout" do
       Beaneater.configure { |config| config.read_timeout = 0.5 }
-      with_silent_server do |address|
+      with_silent_server do |address, clients|
         bc = Beaneater::Connection.new(address)
         time = elapsed do
           assert_raises(Beaneater::SocketTimeout) { Timeout.timeout(5) { bc.transmit('stats') } }
         end
         assert_in_delta 0.5, time, 0.4
         assert_nil bc.connection
-        assert_raises(Beaneater::NotConnected) { bc.transmit('stats') }
+        # the next command opens a new connection rather than reading the late reply
+        assert_raises(Beaneater::SocketTimeout) { Timeout.timeout(5) { bc.transmit('stats') } }
+        assert_equal 2, clients.size
       end
     end
 

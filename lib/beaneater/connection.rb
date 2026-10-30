@@ -295,6 +295,7 @@ class Beaneater
     # Only #close is final.
     def _drop_connection
       socket, @connection = @connection, nil
+      @read_buffer = String.new
       socket.close if socket
     end
 
@@ -375,8 +376,8 @@ class Beaneater
     end
 
     # Waits for the socket to become readable or writable before deadline.
-    # On timeout the connection is closed: a late reply would otherwise be
-    # read as the answer to the next command.
+    # On timeout the connection is dropped (the next command reconnects): a late
+    # reply would otherwise be read as the answer to the next command.
     #
     # @raise [Beaneater::SocketTimeout] The deadline passed.
     def _wait_for(direction, deadline, cmd)
@@ -387,9 +388,9 @@ class Beaneater
       end
       return if ready
 
-      close
+      _drop_connection
       action = direction == :read ? 'waiting for the reply to' : 'writing'
-      raise SocketTimeout, "Timed out #{action} '#{cmd.to_s.split("\r\n").first}' on beanstalk '#{@host}:#{@port}'; connection closed"
+      raise SocketTimeout, "Timed out #{action} '#{cmd.to_s.split("\r\n").first}' on beanstalk '#{@host}:#{@port}'; the next command reconnects"
     end
 
     def _deadline_in(seconds)

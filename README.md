@@ -142,7 +142,7 @@ end
 
 The above options are all defaults, so only include a configuration block if you need to make changes.
 
-`connect_timeout` and `resolv_timeout` are passed through to `TCPSocket.new` on Ruby 3.0 and newer (ignored on Ruby < 3.0 for compatibility). `read_timeout` bounds how long beaneater waits for beanstalkd's reply to a command; for `reserve(timeout)` it is added to the reserve's own timeout, and a plain `reserve` (no timeout) still waits as long as it takes for a job. `write_timeout` bounds how long sending a command may take. When either runs out, the connection is closed and `Beaneater::SocketTimeout` (a `Beaneater::NotConnected`) is raised; create a new client to reconnect.
+`connect_timeout` and `resolv_timeout` are passed through to `TCPSocket.new` on Ruby 3.0 and newer (ignored on Ruby < 3.0 for compatibility). `read_timeout` bounds how long beaneater waits for beanstalkd's reply to a command; for `reserve(timeout)` it is added to the reserve's own timeout, and a plain `reserve` (no timeout) still waits as long as it takes for a job. `write_timeout` bounds how long sending a command may take. When either runs out, `Beaneater::SocketTimeout` (a `Beaneater::NotConnected`) is raised and the connection is dropped; the next command reconnects.
 
 ### Connection
 
@@ -434,7 +434,7 @@ are listed below:
 | Beaneater::InvalidTubeName  | Specified tube name for use or watch is not valid.    |
 | Beaneater::NotFoundError    | Specified job or tube could not be found.             |
 | Beaneater::TimedOutError    | Job could not be reserved within time specified.      |
-| Beaneater::SocketTimeout    | No reply within `read_timeout` (or the write exceeded `write_timeout`); the connection is closed. A subclass of `NotConnected`, not to be confused with `TimedOutError`. |
+| Beaneater::SocketTimeout    | No reply within `read_timeout` (or the write exceeded `write_timeout`); the connection is dropped and the next command reconnects. A subclass of `NotConnected`, not to be confused with `TimedOutError`. |
 | Beaneater::JobNotReserved   | Job has not been reserved and action cannot be taken. |
 
 There are other exceptions that are less common such as `OutOfMemoryError`, `DrainingError`,
