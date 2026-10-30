@@ -129,13 +129,22 @@ class Beaneater
           # reconnecting failed; the server releases a job reserved on the lost connection
           @current_job = nil
           raise
-        rescue StandardError # handles unspecified errors
-          @current_job.bury if @current_job
+        rescue StandardError # handles unspecified errors: the ensure below buries the job
         ensure # bury if still reserved
-          @current_job.bury if @current_job && @current_job.exists? && @current_job.reserved?
+          bury_if_reserved(@current_job)
           @current_job = nil
         end
       end
     end # process!
+
+    private
+
+    # Buries a job this worker still holds. NOT_FOUND means it no longer holds it (the handler
+    # deleted it, or its TTR ran out and the server released it), so there is nothing to bury.
+    def bury_if_reserved(job)
+      job.bury if job && job.exists? && job.reserved?
+    rescue Beaneater::NotFoundError
+      nil
+    end
   end # Jobs
 end # Beaneater

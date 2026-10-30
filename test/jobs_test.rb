@@ -124,6 +124,56 @@ describe Beaneater::Jobs do
     end
   end # process! with a dashed tube name
 
+  describe "for process! when a failing handler no longer holds its job" do
+    before do
+      $foo = []
+      cleanup_tubes!(['tube_lost'])
+    end
+
+    after do
+      cleanup_tubes!(['tube_lost'])
+    end
+
+    # The handler loses 'first', puts 'second' and raises. 'second' outranks 'first', so it is
+    # reserved next whatever happened to 'first'.
+    def process_until_second_job(ttr = 120, &lose_job)
+      tube = @beanstalk.tubes.find('tube_lost')
+      @jobs.register('tube_lost') do |job|
+        $foo << job.body
+        if job.body == 'second'
+          @jobs.stop!
+        else
+          lose_job.call(job)
+          tube.put('second', :pri => 0)
+          raise RuntimeError
+        end
+      end
+      tube.put('first', :pri => 1, :ttr => ttr)
+      Timeout.timeout(15) { @jobs.process!(:reserve_timeout => 1) }
+    end
+
+    it "keeps processing when the handler deleted the job" do
+      process_until_second_job { |job| job.delete }
+      assert_equal ['first', 'second'], $foo
+    end
+
+    it "keeps processing when the handler released the job" do
+      process_until_second_job { |job| job.release(:delay => 5) }
+      assert_equal ['first', 'second'], $foo
+      assert_equal 1, @beanstalk.tubes.find('tube_lost').stats.current_jobs_delayed
+    end
+
+    it "keeps processing when the handler overran the job's TTR" do
+      process_until_second_job(1) do |job|
+        # the server releases a job some time after its TTR runs out
+        deadline = Time.now + 10
+        sleep 0.1 while job.stats.state == 'reserved' && Time.now < deadline
+        refute_equal 'reserved', job.stats.state
+      end
+      assert_equal ['first', 'second'], $foo
+    end
+  end
+
   describe "for process! when the server goes away" do
     before do
       @port = free_port
