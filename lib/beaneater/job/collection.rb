@@ -124,7 +124,7 @@ class Beaneater
         rescue AbortProcessingError
           break
         rescue Beaneater::JobNotReserved, Beaneater::NotFoundError, Beaneater::TimedOutError
-          retry
+          retry unless stop?
         rescue Beaneater::NotConnected
           # reconnecting failed; the server releases a job reserved on the lost connection
           @current_job = nil

@@ -174,6 +174,60 @@ describe Beaneater::Jobs do
     end
   end
 
+  describe "for process! with stop!" do
+    before do
+      cleanup_tubes!(['tube_stop'])
+    end
+
+    after do
+      cleanup_tubes!(['tube_stop'])
+    end
+
+    # Runs process! in a thread and yields. Returns :returned, the exception process! raised, or
+    # :still_running if it hadn't finished within seconds.
+    def process_in_thread(seconds)
+      worker = Thread.new do
+        begin
+          @jobs.process!(:reserve_timeout => 1)
+          :returned
+        rescue StandardError => ex
+          ex
+        end
+      end
+      yield if block_given?
+      return worker.value if worker.join(seconds)
+      worker.kill
+      :still_running
+    end
+
+    it "returns within one reserve_timeout when stop! is called while idle" do
+      @jobs.register('tube_stop') { |job| }
+      result = process_in_thread(3) do
+        sleep 0.5
+        @jobs.stop!
+      end
+      assert_equal :returned, result
+    end
+
+    it "returns when stop! is called by a handler whose job another worker took over" do
+      other = Beaneater.new('localhost')
+      other.tubes.watch!('tube_stop')
+      runs = 0
+      @jobs.register('tube_stop') do |job|
+        runs += 1
+        job.release # as the server does once a job's TTR runs out
+        other.tubes.reserve(1)
+        @jobs.stop!
+      end
+      @beanstalk.tubes.find('tube_stop').put('taken over')
+
+      assert_equal :returned, process_in_thread(5)
+      assert_equal 1, runs
+    ensure
+      other.close if other
+    end
+  end
+
   describe "for process! when the server goes away" do
     before do
       @port = free_port
