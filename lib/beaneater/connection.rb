@@ -83,7 +83,11 @@ class Beaneater
     def transmit(command, **options)
       _with_retry(**options.slice(:retry_interval, :init)) do
         @mutex.synchronize do
-          _raise_not_connected! unless connection
+          unless connection
+            _raise_not_connected! if @closed
+            # lost after a failure: _with_retry reconnects, restores the tubes and retries
+            raise Errno::ENOTCONN
+          end
 
           command = command.dup.force_encoding('ASCII-8BIT') if command.respond_to?(:force_encoding)
           _write(command.to_s + "\r\n", command)
@@ -100,10 +104,8 @@ class Beaneater
     #  @conn.close
     #
     def close
-      if @connection
-        @connection.close
-        @connection = nil
-      end
+      @closed = true
+      _drop_connection
     end
 
     # Returns string representation of job.
@@ -230,7 +232,7 @@ class Beaneater
           transmit("watch #{t}", init: false)
         end
 
-        transmit("ignore default", init: false)
+        transmit("ignore default", init: false) unless tubes_watched.include?('default')
       end
 
       transmit("use #{tube_used}", init: false) if @tube_used != 'default'
@@ -246,14 +248,14 @@ class Beaneater
     def _with_retry(retry_interval: DEFAULT_RETRY_INTERVAL, init: true, tries: MAX_RETRIES, &block)
       yield
     rescue EOFError, Errno::ECONNRESET, Errno::EPIPE,
-      Errno::ECONNREFUSED => ex
+      Errno::ECONNREFUSED, Errno::ENOTCONN => ex
       _reconnect(ex, retry_interval)
       _initialize_tubes if init
       retry
     rescue Beaneater::DrainingError
       tries -= 1
       if tries.zero?
-        close
+        _drop_connection
         raise
       end
       sleep(retry_interval)
@@ -266,15 +268,22 @@ class Beaneater
     # @param [Integer] retry_interval The time to wait before the next reconnect
     # @param [Integer] tries The maximum number of attempts to reconnect
     def _reconnect(original_exception, retry_interval, tries=MAX_RETRIES)
-      close
+      _drop_connection
       establish_connection
-    rescue Errno::ECONNREFUSED
+    rescue SystemCallError, SocketError, IOError
       tries -= 1
       if tries.zero?
         _raise_not_connected!
       end
       sleep(retry_interval || DEFAULT_RETRY_INTERVAL)
       retry
+    end
+
+    # Closes the socket without marking the connection closed, so the next command reconnects.
+    # Only #close is final.
+    def _drop_connection
+      socket, @connection = @connection, nil
+      socket.close if socket
     end
 
     # The host provided by BEANSTALKD_URL environment variable, if available.

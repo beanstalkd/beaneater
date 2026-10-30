@@ -254,6 +254,48 @@ describe Beaneater::Connection do
     ensure
       $called = nil
     end
+
+    it "should raise NotConnected when reconnecting fails with any connect error" do
+      TCPSocket.stubs(:new).raises(Errno::EHOSTUNREACH.new)
+      TCPSocket.any_instance.stubs(:readpartial).raises(EOFError.new)
+
+      assert_raises(Beaneater::NotConnected) { @bc.transmit "stats", retry_interval: 0 }
+    end
+
+    it "should reconnect on the next command after draining retries ran out" do
+      TCPSocket.any_instance.stubs(:readpartial).raises(Beaneater::UnexpectedResponse.from_status("DRAINING", "stats"))
+      assert_raises(Beaneater::DrainingError) { @bc.transmit "stats", retry_interval: 0 }
+
+      TCPSocket.any_instance.unstub(:readpartial)
+      assert_equal 'OK', @bc.transmit('stats')[:status]
+    end
+
+    describe "after the server was down for longer than the reconnect retries" do
+      before do
+        @port = free_port
+        @pid = start_beanstalkd(@port)
+        @client = Beaneater.new("127.0.0.1:#{@port}")
+      end
+
+      after do
+        @client.close if @client
+        stop_beanstalkd(@pid) if @pid
+      end
+
+      it "reconnects on the next command and restores the used and watched tubes" do
+        @client.tubes.watch('reconnect-watched')
+        @client.tubes.use('reconnect-used')
+
+        stop_beanstalkd(@pid)
+        assert_raises(Beaneater::NotConnected) do
+          @client.connection.transmit('list-tubes', retry_interval: 0.01)
+        end
+
+        @pid = start_beanstalkd(@port)
+        assert_equal 'reconnect-used', @client.tubes.used.name
+        assert_equal %w[default reconnect-watched], @client.tubes.watched.map(&:name).sort
+      end
+    end
   end # transmit
 
   describe 'for #close' do

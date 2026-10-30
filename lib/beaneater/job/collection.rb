@@ -125,6 +125,10 @@ class Beaneater
           break
         rescue Beaneater::JobNotReserved, Beaneater::NotFoundError, Beaneater::TimedOutError
           retry
+        rescue Beaneater::NotConnected
+          # reconnecting failed; the server releases a job reserved on the lost connection
+          @current_job = nil
+          raise
         rescue StandardError # handles unspecified errors
           @current_job.bury if @current_job
         ensure # bury if still reserved

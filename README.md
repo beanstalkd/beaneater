@@ -418,6 +418,10 @@ The `process!` command is ideally suited for a beanstalk job processing daemon.
 Even though `process!` is intended to be a long-running process, you can stop the loop at any time
 by raising `AbortProcessingError` while processing is running.
 
+If beanstalkd goes away and reconnecting fails, `process!` raises `Beaneater::NotConnected`.
+The client reconnects on its next command, so calling `process!` again (for example from a
+supervisor loop) resumes once the server is back.
+
 ### Handling Errors
 
 While using Beaneater, certain errors may be encountered. Errors are encountered when

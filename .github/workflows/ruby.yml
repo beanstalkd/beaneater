@@ -40,3 +40,5 @@ jobs:
       run: ./beanstalkd-1.13/beanstalkd &
     - name: Run tests
       run: bundle exec rake test:full
+      env:
+        BEANSTALKD_BIN: ${{ github.workspace }}/beanstalkd-1.13/beanstalkd

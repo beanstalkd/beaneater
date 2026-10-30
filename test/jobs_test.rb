@@ -123,4 +123,49 @@ describe Beaneater::Jobs do
       assert_nil @beanstalk.tubes.find('email-jobs').peek(:buried)
     end
   end # process! with a dashed tube name
+
+  describe "for process! when the server goes away" do
+    before do
+      @port = free_port
+      @pid = start_beanstalkd(@port)
+      @client = Beaneater.new("127.0.0.1:#{@port}")
+    end
+
+    after do
+      @client.close if @client
+      stop_beanstalkd(@pid) if @pid
+    end
+
+    it "raises NotConnected instead of looping, and the client resumes once the server is back" do
+      seen = []
+      @client.jobs.register('reconnect') do |job|
+        seen << job.body
+        @client.jobs.stop! if job.body == 'after restart'
+      end
+      @client.tubes.find('reconnect').put('before outage')
+
+      worker = Thread.new do
+        begin
+          @client.jobs.process!(:reserve_timeout => 1)
+        rescue StandardError => ex
+          ex
+        end
+      end
+      Timeout.timeout(5) { sleep 0.05 while seen.empty? }
+      stop_beanstalkd(@pid)
+
+      finished = worker.join(10)
+      worker.kill unless finished
+      assert finished, "process! was still running 10s after the server went away"
+      assert_kind_of Beaneater::NotConnected, worker.value
+
+      @pid = start_beanstalkd(@port)
+      producer = Beaneater.new("127.0.0.1:#{@port}")
+      producer.tubes.find('reconnect').put('after restart')
+      producer.close
+
+      Timeout.timeout(10) { @client.jobs.process!(:reserve_timeout => 1) }
+      assert_equal ['before outage', 'after restart'], seen
+    end
+  end
 end # Beaneater::Jobs
