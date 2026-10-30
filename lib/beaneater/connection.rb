@@ -2,6 +2,7 @@
 
 require 'yaml'
 require 'socket'
+require 'monitor'
 
 class Beaneater
   # Represents a connection to a beanstalkd instance.
@@ -61,7 +62,7 @@ class Beaneater
     #
     def initialize(address)
       @address = address || _host_from_env || Beaneater.configuration.beanstalkd_url
-      @mutex = Mutex.new
+      @mutex = Monitor.new # reentrant: restoring the tubes after a reconnect transmits under the lock
       @tube_used = 'default'
       @tubes_watched = ['default']
 
@@ -81,8 +82,10 @@ class Beaneater
     #   @conn.transmit('stats')
     #
     def transmit(command, **options)
-      _with_retry(**options.slice(:retry_interval, :init)) do
-        @mutex.synchronize do
+      # The lock is held across reconnecting and restoring the tubes, so no other thread
+      # can be mid-command on the socket being replaced.
+      @mutex.synchronize do
+        _with_retry(**options.slice(:retry_interval, :init)) do
           completed = false
           @reply_read = false # set by parse_response once the whole reply is off the socket
           unless connection
@@ -285,7 +288,12 @@ class Beaneater
     # @param [Integer] tries The maximum number of attempts to reconnect
     def _reconnect(original_exception, retry_interval, tries=MAX_RETRIES)
       _drop_connection
+      _raise_not_connected! if @closed
       establish_connection
+      if @closed # #close ran while connecting
+        _drop_connection
+        _raise_not_connected!
+      end
     rescue SystemCallError, SocketError, IOError
       tries -= 1
       if tries.zero?
