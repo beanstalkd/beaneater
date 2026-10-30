@@ -266,22 +266,13 @@ describe Beaneater::Connection do
     it "tubes_watched are restored after reconnect" do
       client = Beaneater.new('127.0.0.1:11300')
       client.tubes.watch! "another"
-
-      $called = false
-      TCPSocket.prepend Module.new {
-        def readpartial(*)
-          if !$called
-            $called = true
-            raise EOFError
-          end
-
-          super
-        end
-      }
+      socket = client.connection.connection
+      socket.expects(:readpartial).once.raises(EOFError.new) # this socket only
 
       assert_equal %w[another], client.tubes.watched.map(&:name)
+      refute_same socket, client.connection.connection
     ensure
-      $called = true # the prepended readpartial stays for later tests: leave it disarmed
+      client.close if client
     end
 
     it "should raise NotConnected when reconnecting fails with any connect error" do
