@@ -63,7 +63,7 @@ class Beaneater
     #
     def initialize(address)
       @address = address || _host_from_env || Beaneater.configuration.beanstalkd_url
-      @mutex = Monitor.new # reentrant: restoring the tubes after a reconnect transmits under the lock
+      @mutex = Monitor.new # reentrant: a job_parser that uses this client runs under the lock
       @tube_used = 'default'
       @tubes_watched = ['default']
 
