@@ -86,35 +86,7 @@ class Beaneater
       # The lock is held across reconnecting and restoring the tubes, so no other thread
       # can be mid-command on the socket being replaced.
       @mutex.synchronize do
-        _with_retry(**options.slice(:retry_interval, :init)) do
-          completed = false
-          @reply_read = false # set by parse_response once the whole reply is off the socket
-          unless connection
-            _raise_not_connected! if @closed
-            # lost after a failure: _with_retry reconnects, restores the tubes and retries
-            raise Errno::ENOTCONN
-          end
-
-          command = command.dup.force_encoding('ASCII-8BIT') if command.respond_to?(:force_encoding)
-          read_window = _read_window(command) # checked before anything is written
-          _write(command.to_s + "\r\n", command)
-          @read_deadline = _deadline_in(read_window) # bounds the status line and the body read in parse_response
-          res = _read_line(command)
-          response = parse_response(command, res)
-          completed = true
-          response
-        rescue UnexpectedResponse => ex
-          # an error status line is the whole reply, so the stream is still in step
-          completed = !ex.is_a?(ExpectedCrlfError)
-          raise
-        ensure
-          # Interrupted between the write and the end of the reply (Timeout, Interrupt, an I/O
-          # error): the rest of the reply may still arrive, so drop the socket rather than let the
-          # next command read it. The next command reconnects. Once the whole reply has been read
-          # (a job_parser that raised, say) the stream is in step: keep the socket, and with it the
-          # jobs this connection has reserved.
-          _drop_connection unless completed || @reply_read
-        end
+        _with_retry(**options.slice(:retry_interval, :init)) { _exchange(command) }
       end
     end
 
@@ -247,16 +219,49 @@ class Beaneater
 
     private
 
+    # Sends one command and reads its whole reply, without retrying.
+    def _exchange(command)
+      completed = false
+      @reply_read = false # set by parse_response once the whole reply is off the socket
+      unless connection
+        _raise_not_connected! if @closed
+        # lost after a failure: _with_retry reconnects, restores the tubes and retries
+        raise Errno::ENOTCONN
+      end
+
+      command = command.dup.force_encoding('ASCII-8BIT') if command.respond_to?(:force_encoding)
+      read_window = _read_window(command) # checked before anything is written
+      _write(command.to_s + "\r\n", command)
+      @read_deadline = _deadline_in(read_window) # bounds the status line and the body read in parse_response
+      res = _read_line(command)
+      response = parse_response(command, res)
+      completed = true
+      response
+    rescue UnexpectedResponse => ex
+      # an error status line is the whole reply, so the stream is still in step
+      completed = !ex.is_a?(ExpectedCrlfError)
+      raise
+    ensure
+      # Interrupted between the write and the end of the reply (Timeout, Interrupt, an I/O
+      # error): the rest of the reply may still arrive, so drop the socket rather than let the
+      # next command read it. The next command reconnects. Once the whole reply has been read
+      # (a job_parser that raised, say) the stream is in step: keep the socket, and with it the
+      # jobs this connection has reserved.
+      _drop_connection unless completed || @reply_read
+    end
+
+    # Restores the watched and used tubes on a new connection. Sent with _exchange, not transmit:
+    # a failure here must go back to the _with_retry that is reconnecting, which starts over.
     def _initialize_tubes
       if @tubes_watched != ['default']
         tubes_watched.each do |t|
-          transmit("watch #{t}", init: false)
+          _exchange("watch #{t}")
         end
 
-        transmit("ignore default", init: false) unless tubes_watched.include?('default')
+        _exchange("ignore default") unless tubes_watched.include?('default')
       end
 
-      transmit("use #{tube_used}", init: false) if @tube_used != 'default'
+      _exchange("use #{tube_used}") if @tube_used != 'default'
     end
 
     # Wrapper method for capturing certain failures and retry the payload block
@@ -267,20 +272,35 @@ class Beaneater
     # @return [Object] Result of the block passed
     #
     def _with_retry(retry_interval: DEFAULT_RETRY_INTERVAL, init: true, tries: MAX_RETRIES, &block)
-      yield
-    rescue EOFError, Errno::ECONNRESET, Errno::EPIPE,
-      Errno::ECONNREFUSED, Errno::ENOTCONN => ex
-      _reconnect(ex, retry_interval)
-      _initialize_tubes if init
-      retry
-    rescue Beaneater::DrainingError
-      tries -= 1
-      if tries.zero?
-        _drop_connection
-        raise
+      restore = false
+      begin
+        if restore
+          begin
+            _initialize_tubes
+          rescue Exception
+            # never leave a half-restored connection watching the wrong tubes: drop it, so a
+            # lost connection reconnects and restores again below, and anything else makes the
+            # next command start over
+            _drop_connection
+            raise
+          end
+          restore = false
+        end
+        yield
+      rescue EOFError, Errno::ECONNRESET, Errno::EPIPE,
+        Errno::ECONNREFUSED, Errno::ENOTCONN => ex
+        _reconnect(ex, retry_interval)
+        restore = init
+        retry
+      rescue Beaneater::DrainingError
+        tries -= 1
+        if tries.zero?
+          _drop_connection
+          raise
+        end
+        sleep(retry_interval)
+        retry
       end
-      sleep(retry_interval)
-      retry
     end
 
     # Tries to re-establish connection to the beanstalkd

@@ -314,6 +314,50 @@ describe Beaneater::Connection do
       assert_same socket, @bc.connection
     end
 
+    it "restores the watched tubes again when the connection drops while restoring them" do
+      # A minimal beanstalkd that drops the 1st connection on 'stats' and the 2nd on 'ignore'
+      server = TCPServer.new('127.0.0.1', 0)
+      accepted = 0
+      fake = Thread.new do
+        loop do
+          sock = server.accept
+          accepted += 1
+          Thread.new(sock, accepted) do |peer, n|
+            watched = ['default']
+            while (line = peer.gets("\r\n"))
+              cmd, arg = line.chomp("\r\n").split(' ', 2)
+              if (n == 1 && cmd == 'stats') || (n == 2 && cmd == 'ignore')
+                peer.close
+                break
+              end
+              reply = case cmd
+                when 'watch' then watched |= [arg]; "WATCHING #{watched.size}\r\n"
+                when 'ignore'
+                  if watched == [arg] then "NOT_IGNORED\r\n"
+                  else watched -= [arg]; "WATCHING #{watched.size}\r\n"
+                  end
+                when 'list-tubes-watched', 'stats'
+                  body = cmd == 'stats' ? "---\nuptime: 1\n" : "---\n" + watched.map { |t| "- #{t}\n" }.join
+                  "OK #{body.bytesize}\r\n#{body}\r\n"
+                else "UNKNOWN_COMMAND\r\n"
+              end
+              peer.write(reply)
+            end
+          end
+        end
+      end
+      client = Beaneater.new("127.0.0.1:#{server.addr[1]}")
+      client.tubes.watch!('restore-a', 'restore-b')
+
+      assert_equal({ 'uptime' => 1 }, Timeout.timeout(5) { client.connection.transmit('stats', retry_interval: 0)[:body] })
+      assert_equal %w[restore-a restore-b], client.tubes.watched.map(&:name)
+      assert_equal 3, accepted
+    ensure
+      client.close if client
+      fake.kill if fake
+      server.close if server
+    end
+
     describe "after the server was down for longer than the reconnect retries" do
       before do
         @port = free_port
