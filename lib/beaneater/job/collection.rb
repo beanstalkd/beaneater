@@ -126,9 +126,13 @@ class Beaneater
         rescue Beaneater::JobNotReserved, Beaneater::NotFoundError, Beaneater::TimedOutError
           retry unless stop?
         rescue Beaneater::NotConnected
-          # reconnecting failed; the server releases a job reserved on the lost connection
-          @current_job = nil
-          raise
+          # Only when this client's own connection is gone (reconnecting failed, or it was
+          # closed): the server releases a job reserved on it. A NotConnected from a handler that
+          # uses another client is a failed job like any other, buried by the ensure below.
+          unless client.connection.connection
+            @current_job = nil
+            raise
+          end
         rescue StandardError # handles unspecified errors: the ensure below buries the job
         ensure # bury if still reserved
           bury_if_reserved(@current_job)

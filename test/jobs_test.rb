@@ -228,6 +228,28 @@ describe Beaneater::Jobs do
     end
   end
 
+  describe "for process! when a handler raises NotConnected for another server" do
+    before do
+      cleanup_tubes!(['tube_other_down'])
+    end
+
+    it "buries the job and keeps processing" do
+      seen = []
+      @jobs.register('tube_other_down') do |job|
+        seen << job.body
+        @jobs.stop! if job.body == 'second'
+        raise Beaneater::NotConnected, "the other server is down" if job.body == 'first'
+      end
+      tube = @beanstalk.tubes.find('tube_other_down')
+      tube.put('first', :pri => 1)
+      tube.put('second', :pri => 2)
+
+      Timeout.timeout(10) { @jobs.process!(:reserve_timeout => 1) }
+      assert_equal ['first', 'second'], seen
+      assert_equal 'first', tube.peek(:buried).body
+    end
+  end
+
   describe "for process! when the server goes away" do
     before do
       @port = free_port

@@ -5,7 +5,7 @@
 * Drop the connection when a command is interrupted mid-reply (for example by `Timeout.timeout`), so the next command no longer reads the stale reply (reported by @tdegrunt)
 * Honour `stop!` while `process!` is waiting for a job with `reserve_timeout` set (reported by @martint17r)
 * Keep `process!` running when a handler deletes or releases its job, or overruns its TTR, and then raises; it used to stop with `NotFoundError` or `JobNotReserved` (reported by @pagojo)
-* Reconnect on the next command after the connection was lost, restoring the used and watched tubes, and make `process!` raise `NotConnected` instead of looping while beanstalkd is down (reported by @b-sridhar and @Meekohi)
+* Reconnect on the next command after the connection was lost, restoring the used and watched tubes, and make `process!` raise `NotConnected` instead of looping while its beanstalkd is down (a handler that raises `NotConnected` for another server still has its job buried, as before) (reported by @b-sridhar and @Meekohi)
 * Test on Ruby 3.2, 3.3, 3.4 and 4.0 in CI, and update `actions/checkout` to v4 (@nesquena)
 * Declare the minimum Ruby version, 2.5 (`Hash#slice`), in the gemspec, so older Rubies get a clear install-time error, #83 (@nesquena; reported by @hkmaly)
 * Make `read_timeout` and `write_timeout` take effect: they set `SO_RCVTIMEO`/`SO_SNDTIMEO`, which have no effect on Ruby 3 (Ruby waits on the socket itself), so a server that stopped answering still blocked forever. Beaneater now enforces both itself, adds `read_timeout` to `reserve(timeout)`'s own wait, never cuts off a plain `reserve`, and on timeout raises the new `Beaneater::SocketTimeout` (a `NotConnected`) and drops the connection, so the next command reconnects (@nesquena)
