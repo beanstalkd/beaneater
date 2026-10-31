@@ -614,6 +614,14 @@ describe Beaneater::Connection do
         Process.wait(child)
         assert_parent_keeps(job)
       end
+
+      it "should leave the parent's connection alone when forked during a command" do
+        child = nil
+        Beaneater.configure.job_parser = lambda { |body| child = fork { @client.close; exit!(0) }; body }
+        job = @client.tubes.reserve(0)
+        Process.wait(child)
+        assert_parent_keeps(job)
+      end
     end
 
     it "should end a reserve when a signal handler on the same thread closes the client" do

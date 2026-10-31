@@ -117,12 +117,14 @@ class Beaneater
     def close
       @closed = true
       socket = @connection
-      if @mutex.mon_locked?
+      if @mutex.mon_locked? && @connection_pid == Process.pid
         # A thread (this one or another) is inside a command and may be waiting on the socket.
         # IO#close from a signal handler while any thread waits on that IO can crash Ruby 3.3
         # and 3.4 (segfault in IO#wait_readable) or raise ThreadError. Shut it down instead:
         # the wait ends with end-of-file, the command raises NotConnected, and its transmit
-        # closes the socket on its way out.
+        # closes the socket on its way out. Only in the process that opened the connection: a
+        # child forked during a command inherits the held lock, and shutting down would cut
+        # the parent's connection; the child just closes its own copy below.
         socket.shutdown(Socket::SHUT_RDWR) if socket && !socket.closed?
       else
         # ceiling: a thread can take the lock between the check above and this close and start
@@ -183,6 +185,7 @@ class Beaneater
 
       @read_buffer = String.new # binary; bytes read but not yet consumed
       @connection = socket
+      @connection_pid = Process.pid # a forked child shares the socket; see #close
     end
 
     # Parses the response and returns the useful beanstalk response.
