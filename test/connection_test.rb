@@ -429,6 +429,65 @@ describe Beaneater::Connection do
         assert_equal 'OK', @client.connection.transmit('stats')[:status]
       end
 
+      it "lets threads sharing the client recover when the server restarts under them" do
+        @client.tubes.use('restart-used')
+        stop = false
+        workers = 2.times.map do |i|
+          Thread.new do
+            until stop
+              begin
+                i.zero? ? @client.tubes['restart-used'].put('x') : @client.tubes.used
+              rescue Beaneater::NotConnected, IOError
+                sleep 0.01
+              end
+            end
+          end
+        end
+        5.times do
+          sleep 0.3
+          stop_beanstalkd(@pid)
+          @pid = start_beanstalkd(@port)
+        end
+        sleep 0.3
+        stop = true
+        stuck = workers.reject { |t| t.join(5) }
+        stuck.each(&:kill)
+        assert_empty stuck, "threads still blocked 5s after the last restart"
+        assert_equal 'restart-used', Timeout.timeout(5) { @client.tubes.used.name }
+      end
+
+      it "does not reopen a connection closed while it was reconnecting" do
+        stop_beanstalkd(@pid)
+        result = nil
+        worker = Thread.new do
+          begin
+            @client.connection.transmit('stats', retry_interval: 0.5)
+            result = :answered
+          rescue Exception => ex
+            result = ex.class
+          end
+        end
+        sleep 0.2 # the worker is between reconnect attempts
+        @client.close
+        @pid = start_beanstalkd(@port)
+        assert worker.join(5), "worker still running"
+        assert_equal Beaneater::NotConnected, result
+        assert_nil @client.connection.connection
+      end
+    end
+
+    describe "while the server is draining" do
+      before do
+        @port = free_port
+        @pid = start_beanstalkd(@port)
+        @client = Beaneater.new("127.0.0.1:#{@port}")
+      end
+
+      after do
+        @client.close if @client
+        stop_beanstalkd(@pid) if @pid
+      end
+
       it "lets threads sharing the client wait out their draining retries side by side" do
         Process.kill('USR1', @pid) # beanstalkd answers DRAINING to put from now on
         sleep 0.2
@@ -480,52 +539,6 @@ describe Beaneater::Connection do
         end
         elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
         assert_in_delta 2 * Beaneater::Connection::DEFAULT_RETRY_INTERVAL, elapsed, 0.5
-      end
-
-      it "lets threads sharing the client recover when the server restarts under them" do
-        @client.tubes.use('restart-used')
-        stop = false
-        workers = 2.times.map do |i|
-          Thread.new do
-            until stop
-              begin
-                i.zero? ? @client.tubes['restart-used'].put('x') : @client.tubes.used
-              rescue Beaneater::NotConnected, IOError
-                sleep 0.01
-              end
-            end
-          end
-        end
-        5.times do
-          sleep 0.3
-          stop_beanstalkd(@pid)
-          @pid = start_beanstalkd(@port)
-        end
-        sleep 0.3
-        stop = true
-        stuck = workers.reject { |t| t.join(5) }
-        stuck.each(&:kill)
-        assert_empty stuck, "threads still blocked 5s after the last restart"
-        assert_equal 'restart-used', Timeout.timeout(5) { @client.tubes.used.name }
-      end
-
-      it "does not reopen a connection closed while it was reconnecting" do
-        stop_beanstalkd(@pid)
-        result = nil
-        worker = Thread.new do
-          begin
-            @client.connection.transmit('stats', retry_interval: 0.5)
-            result = :answered
-          rescue Exception => ex
-            result = ex.class
-          end
-        end
-        sleep 0.2 # the worker is between reconnect attempts
-        @client.close
-        @pid = start_beanstalkd(@port)
-        assert worker.join(5), "worker still running"
-        assert_equal Beaneater::NotConnected, result
-        assert_nil @client.connection.connection
       end
     end
   end # transmit
