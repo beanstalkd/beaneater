@@ -87,7 +87,7 @@ class Beaneater
     #
     def transmit(command, **options)
       state = {
-        :retry_interval => options.fetch(:retry_interval, DEFAULT_RETRY_INTERVAL),
+        :retry_interval => options[:retry_interval] || DEFAULT_RETRY_INTERVAL, # nil too
         :init           => options.fetch(:init, true),
         :reconnects     => 0,
         :connect_tries  => MAX_RETRIES,

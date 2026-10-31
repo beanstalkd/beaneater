@@ -471,6 +471,17 @@ describe Beaneater::Connection do
         Beaneater.configure.job_parser = lambda { |body| body }
       end
 
+      it "uses the default retry interval between DRAINING retries when given nil" do
+        Process.kill('USR1', @pid)
+        sleep 0.2
+        started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        assert_raises(Beaneater::DrainingError) do
+          Timeout.timeout(5) { @client.connection.transmit("put 0 0 100 1\r\nx", retry_interval: nil) }
+        end
+        elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+        assert_in_delta 2 * Beaneater::Connection::DEFAULT_RETRY_INTERVAL, elapsed, 0.5
+      end
+
       it "lets threads sharing the client recover when the server restarts under them" do
         @client.tubes.use('restart-used')
         stop = false
