@@ -158,10 +158,10 @@ describe Beaneater::Tube do
       refute_nil error.backtrace_locations
     end
 
-    # An exception class that can't be cloned with clone(freeze: false)
-    class OneArgCloneError < StandardError
-      def initialize_clone(original)
-        super
+    # An exception class that can't be copied on any Ruby (clone calls initialize_copy)
+    class UncopyableError < StandardError
+      def initialize_copy(_original)
+        raise TypeError, "can't copy"
       end
     end
 
@@ -173,8 +173,8 @@ describe Beaneater::Tube do
     end
 
     it "should raise the parser's own exception, untagged, when it can't be copied" do
-      Beaneater.configure.job_parser = lambda { |b| raise OneArgCloneError, 'no copies' }
-      error = assert_raises(OneArgCloneError) { @beanstalk.tubes.reserve(0) }
+      Beaneater.configure.job_parser = lambda { |b| raise UncopyableError, 'no copies' }
+      error = assert_raises(UncopyableError) { @beanstalk.tubes.reserve(0) }
       assert_equal 'no copies', error.message
       refute_kind_of Beaneater::JobParseFailure, error
     end
