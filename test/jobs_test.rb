@@ -404,6 +404,21 @@ describe Beaneater::Jobs do
       assert_equal 'buried', stats['state']
       assert_equal 0, stats['timeouts']
     end
+
+    it "releases the job for another try instead when the error is in retry_on" do
+      runs = 0
+      @jobs.register('tube_not_found', :retry_on => [Beaneater::NotFoundError], :max_retries => 1) do |job|
+        runs += 1
+        @jobs.stop! if runs == 2
+        @beanstalk.connection.transmit('delete 999999') # NOT_FOUND for some other job
+      end
+      id = @beanstalk.tubes.find('tube_not_found').put('x')[:id]
+      Timeout.timeout(10) { @jobs.process!(:reserve_timeout => 1, :release_delay => 0) }
+      stats = @beanstalk.connection.transmit("stats-job #{id}")[:body]
+      assert_equal 2, runs
+      assert_equal 1, stats['releases'] # released once, then buried once the retries ran out
+      assert_equal 'buried', stats['state']
+    end
   end
 
   describe "for process! when a handler raises NotConnected for another server" do
