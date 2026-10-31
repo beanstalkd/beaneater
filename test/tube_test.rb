@@ -179,6 +179,14 @@ describe Beaneater::Tube do
       refute_kind_of Beaneater::JobParseFailure, error
     end
 
+    it "should raise a frozen exception that can't be copied as it is" do
+      frozen = UncopyableError.new('frozen, no copies').freeze
+      Beaneater.configure.job_parser = lambda { |b| raise frozen }
+      error = assert_raises(UncopyableError) { @beanstalk.tubes.reserve(0) }
+      assert_same frozen, error
+      assert_nil error.cause
+    end
+
     it "should tag the copy when the exception's cause is not an exception" do
       Beaneater.configure.job_parser = lambda { |b| raise OddCauseError, 'odd' }
       error = assert_raises(OddCauseError) { @beanstalk.tubes.reserve(0) }

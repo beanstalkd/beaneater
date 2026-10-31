@@ -269,8 +269,11 @@ class Beaneater
         tagged.job_id = id
         cause = ex.cause
       rescue StandardError
-        raise ex # it can't be copied (an initialize_clone or initialize_copy of its own): untagged
+        tagged = nil # it can't be copied (an initialize_clone or initialize_copy of its own)
       end
+      # Re-raised out here, where $! is still ex: raised inside the rescue above, a frozen ex
+      # would get the copying error as its cause and fail with "circular causes".
+      raise ex unless tagged
       raise tagged, :cause => (cause if cause.is_a?(Exception))
     end
 
