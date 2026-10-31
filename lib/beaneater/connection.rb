@@ -63,8 +63,10 @@ class Beaneater
     #
     def initialize(address)
       @address = address || _host_from_env || Beaneater.configuration.beanstalkd_url
-      @mutex = Monitor.new # reentrant: a job_parser that uses this client runs under the lock
-      @reconnect_wait = @mutex.new_cond # waits between retries with the lock released
+      # Held for each attempt at a command (reconnecting and restoring the tubes included), not
+      # across the pauses between attempts. Reentrant: a job_parser that uses this client runs
+      # while its command holds the lock.
+      @mutex = Monitor.new
       @tube_used = 'default'
       @tubes_watched = ['default']
 
@@ -84,10 +86,21 @@ class Beaneater
     #   @conn.transmit('stats')
     #
     def transmit(command, **options)
-      # The lock is held across reconnecting and restoring the tubes, so no other thread
-      # can be mid-command on the socket being replaced.
-      @mutex.synchronize do
-        _with_retry(**options.slice(:retry_interval, :init)) { _exchange(command) }
+      state = {
+        :retry_interval => options.fetch(:retry_interval, DEFAULT_RETRY_INTERVAL),
+        :init           => options.fetch(:init, true),
+        :reconnects     => 0,
+        :connect_tries  => MAX_RETRIES,
+        :draining_tries => MAX_RETRIES,
+        :connecting     => false
+      }
+      loop do
+        done, value = @mutex.synchronize { _attempt(command, state) }
+        return value if done
+        # Pause before the next attempt with the lock released, so other threads go on and
+        # Timeout or Thread#raise can stop this one. A reentrant call (from a job_parser) still
+        # holds its outer command's lock here.
+        sleep(value)
       end
     end
 
@@ -238,8 +251,7 @@ class Beaneater
       @reply_read = false # set by parse_response once the whole reply is off the socket
       unless connection
         _raise_not_connected! if @closed
-        # lost after a failure: _with_retry reconnects, restores the tubes and retries
-        raise Errno::ENOTCONN
+        raise Errno::ENOTCONN # _attempt reconnects and restores the tubes first
       end
 
       command = command.dup.force_encoding('ASCII-8BIT') if command.respond_to?(:force_encoding)
@@ -265,7 +277,7 @@ class Beaneater
     end
 
     # Restores the watched and used tubes on a new connection. Sent with _exchange, not transmit:
-    # a failure here must go back to the _with_retry that is reconnecting, which starts over.
+    # a failure here must go back to the _attempt that is reconnecting, which starts over.
     def _initialize_tubes
       if @tubes_watched != ['default']
         tubes_watched.each do |t|
@@ -278,18 +290,35 @@ class Beaneater
       _exchange("use #{tube_used}") if @tube_used != 'default'
     end
 
-    # Wrapper method for capturing certain failures and retry the payload block
-    #
-    # @param [Proc] block The command to execute.
-    # @param [Integer] retry_interval The time to wait before the next retry
-    # @param [Integer] tries The maximum number of tries in draining mode
-    # @return [Object] Result of the block passed
-    #
-    def _with_retry(retry_interval: DEFAULT_RETRY_INTERVAL, init: true, tries: MAX_RETRIES, &block)
-      restore = false
-      reconnects = 0
-      begin
-        if restore
+    # One attempt at a command, made holding the lock: reconnect (and restore the tubes) if the
+    # connection is gone, then send the command. Returns [true, response], or [false, seconds]
+    # to pause and try again. state carries the retry counts across attempts.
+    def _attempt(command, state)
+      if connection
+        state[:connecting] = false # another thread may have reconnected during our pause
+      else
+        _raise_not_connected! if @closed
+        unless state[:connecting] # a new reconnect, not the next try of one in progress
+          state[:reconnects] += 1
+          # something accepts connections but drops every command (a proxy with no backend):
+          # give up rather than reconnect in a tight loop
+          _raise_not_connected! if state[:reconnects] > MAX_RETRIES
+          state[:connecting] = true
+          state[:connect_tries] = MAX_RETRIES
+        end
+        begin
+          establish_connection
+        rescue SystemCallError, SocketError, IOError
+          state[:connect_tries] -= 1
+          _raise_not_connected! if state[:connect_tries].zero?
+          return [false, state[:retry_interval]]
+        end
+        state[:connecting] = false
+        if @closed # #close ran while connecting
+          _drop_connection
+          _raise_not_connected!
+        end
+        if state[:init]
           begin
             _initialize_tubes
           rescue Exception
@@ -299,55 +328,19 @@ class Beaneater
             _drop_connection
             raise
           end
-          restore = false
         end
-        yield
-      rescue EOFError, Errno::ECONNRESET, Errno::EPIPE,
-        Errno::ECONNREFUSED, Errno::ENOTCONN => ex
-        reconnects += 1
-        if reconnects > MAX_RETRIES
-          # something accepts connections but drops every command (a proxy with no backend):
-          # give up rather than reconnect in a tight loop
-          _drop_connection
-          _raise_not_connected!
-        end
-        _reconnect(ex, retry_interval)
-        restore = init
-        retry
-      rescue Beaneater::DrainingError
-        tries -= 1
-        if tries.zero?
-          _drop_connection
-          raise
-        end
-        @reconnect_wait.wait(retry_interval) # with the lock released, as in _reconnect
-        retry
       end
-    end
-
-    # Tries to re-establish connection to the beanstalkd
-    #
-    # @param [Exception] original_exception The exception caused the retry
-    # @param [Integer] retry_interval The time to wait before the next reconnect
-    # @param [Integer] tries The maximum number of attempts to reconnect
-    def _reconnect(original_exception, retry_interval, tries=MAX_RETRIES)
+      [true, _exchange(command)]
+    rescue EOFError, Errno::ECONNRESET, Errno::EPIPE, Errno::ECONNREFUSED, Errno::ENOTCONN
       _drop_connection
-      begin
-        _raise_not_connected! if @closed
-        establish_connection
-        if @closed # #close ran while connecting
-          _drop_connection
-          _raise_not_connected!
-        end
-      rescue SystemCallError, SocketError, IOError
-        tries -= 1
-        _raise_not_connected! if tries.zero?
-        # Wait with the lock released, so threads sharing this client wait out their retries
-        # side by side rather than one after another.
-        @reconnect_wait.wait(retry_interval || DEFAULT_RETRY_INTERVAL)
-        return if connection # another thread reconnected meanwhile: use its connection
-        retry
+      retry # reconnects at once, still holding the lock
+    rescue Beaneater::DrainingError
+      state[:draining_tries] -= 1
+      if state[:draining_tries].zero?
+        _drop_connection
+        raise
       end
+      [false, state[:retry_interval]]
     end
 
     # Closes the socket without marking the connection closed, so the next command reconnects.

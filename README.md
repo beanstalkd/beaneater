@@ -146,7 +146,7 @@ The above options are all defaults, so only include a configuration block if you
 
 A `SocketTimeout` on `put` does not tell you whether beanstalkd stored the job: the command may have reached the server and only the reply been lost. Retrying the `put` can therefore enqueue the job twice, so retry a timed-out `put` only if running the job twice is harmless.
 
-While beanstalkd is unreachable, every command tries to reconnect three times, one second apart, before raising `Beaneater::NotConnected`, so each command takes about 2 seconds to fail (longer per attempt when connecting itself hangs, as with an unreachable host). Threads sharing a client wait these retries out side by side, not one after another. Apps that enqueue jobs inside web requests should set `connect_timeout` and expect this delay while beanstalkd is down.
+While beanstalkd is unreachable, every command tries to reconnect three times, one second apart, before raising `Beaneater::NotConnected`, so each command takes about 2 seconds to fail (longer per attempt when connecting itself hangs, as with an unreachable host). Threads sharing a client pause between their retries side by side, but the connection attempts themselves still run one at a time. Apps that enqueue jobs inside web requests should set `connect_timeout` and expect this delay while beanstalkd is down.
 
 ### Connection
 

@@ -447,6 +447,30 @@ describe Beaneater::Connection do
         assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - started, :<, 1.5
       end
 
+      it "lets Timeout stop a command pausing between retries while another thread holds the client" do
+        @client.tubes.find('slow-parse').put('slow')
+        @client.tubes.watch!('slow-parse')
+        Process.kill('USR1', @pid) # draining: put is refused, reserve still works
+        sleep 0.2
+        Beaneater.configure.job_parser = lambda { |body| sleep 2 if body == 'slow'; body }
+        started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        put = Thread.new do
+          begin
+            Timeout.timeout(0.5) { @client.connection.transmit("put 0 0 100 1\r\nx", retry_interval: 0.3) }
+          rescue Exception => ex
+            [ex.class, Process.clock_gettime(Process::CLOCK_MONOTONIC) - started]
+          end
+        end
+        sleep 0.1 # the put got DRAINING and is pausing before its next try
+        holder = Thread.new { @client.connection.transmit('reserve-with-timeout 0') } # holds the client ~2 s
+        error, at = put.value
+        holder.join
+        assert_equal Timeout::Error, error
+        assert_operator at, :<, 1, "Timeout fired after #{at.round(2)}s"
+      ensure
+        Beaneater.configure.job_parser = lambda { |body| body }
+      end
+
       it "lets threads sharing the client recover when the server restarts under them" do
         @client.tubes.use('restart-used')
         stop = false
