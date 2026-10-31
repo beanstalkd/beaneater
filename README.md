@@ -424,11 +424,13 @@ by raising `AbortProcessingError` while processing is running.
 
 If the `job_parser` raises for a job (a body that isn't JSON, say), `process!` buries that job and
 goes on. The exceptions are a parser error that is one of those `process!` handles itself
-(`AbortProcessingError`, `NotConnected`, `NotFoundError`, `TimedOutError`, `JobNotReserved`) and
-one that isn't a `StandardError`: those are handled as they always were, and the job is not
-buried. A direct `tubes.reserve` raises a copy of the parser's error (same class, message,
-cause and backtrace, if it had one) that is also a `Beaneater::JobParseFailure`: its `job_id`
-names the job, still reserved by your connection, so you can bury, release or delete it.
+(`AbortProcessingError`, `NotConnected`, `NotFoundError`, `TimedOutError`, `JobNotReserved`),
+one that isn't a `StandardError`, and one that can't be copied (raised untagged): those are
+handled as they always were, and the job is not buried. A direct `tubes.reserve` raises a copy of
+the parser's error (same class, message, cause and backtrace; a frozen exception, for which Ruby
+records no backtrace, gets one that starts in beaneater) that is also a
+`Beaneater::JobParseFailure`: its `job_id` names the job, still reserved by your connection, so
+you can bury, release or delete it.
 
 If beanstalkd goes away and reconnecting fails, `process!` raises `Beaneater::NotConnected`.
 The client reconnects on its next command, so calling `process!` again (for example from a
