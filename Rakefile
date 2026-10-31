@@ -36,26 +36,29 @@ YARD::Rake::YardocTask.new do |t|
 end
 
 # rake release:check (rake release runs it first, before it builds, tags or pushes):
-# HEAD must be on master (or X.Y-stable), committed and not behind origin, version.rb
-# must match the top CHANGELOG.md heading, stamped with a date, and neither the tag nor
-# the gem version may exist yet.
+# HEAD must be on master (or X.Y-stable), committed and at the remote branch it will be
+# pushed to (`origin` unless `rake release[remote]` or the branch's upstream says
+# otherwise), version.rb must match the top CHANGELOG.md heading, stamped with a date,
+# and neither the tag nor the gem version may exist yet.
 desc "Check that HEAD can be released as beaneater #{Beaneater::VERSION}"
-task "release:check" do
+task "release:check", [:remote] do |_, args|
   version = Beaneater::VERSION
   tag = "v#{version}"
-  git = ->(*args) { IO.popen(["git", *args], err: File::NULL, &:read).strip }
+  git = ->(*a) { out = IO.popen(["git", *a], err: File::NULL, &:read); out.strip if $?.success? }
   errors = []
 
-  errors << "git fetch origin failed" unless system("git", "fetch", "--quiet", "origin")
-  branch = git.("rev-parse", "--abbrev-ref", "HEAD")
+  branch = git.("rev-parse", "--abbrev-ref", "HEAD").to_s
+  remote = args[:remote] || git.("config", "--get", "branch.#{branch}.remote") || "origin"
+  errors << "git fetch #{remote} failed" unless system("git", "fetch", "--quiet", remote)
   stable = "#{version[/\A\d+\.\d+/]}-stable"
   errors << "on #{branch}, not master or #{stable}" unless ["master", stable].include?(branch)
-  errors << "there are uncommitted changes" unless git.("status", "--porcelain").empty?
-  unless system("git", "merge-base", "--is-ancestor", "origin/#{branch}", "HEAD", err: File::NULL)
-    errors << "#{branch} is behind or diverged from origin/#{branch}"
+  errors << "there are uncommitted changes" unless git.("status", "--porcelain") == ""
+  head = git.("rev-parse", "HEAD")
+  unless head && head == git.("rev-parse", "--verify", "--quiet", "refs/remotes/#{remote}/#{branch}")
+    errors << "#{branch} is not at #{remote}/#{branch} (push or pull first; release a merged commit)"
   end
 
-  heading = File.foreach(File.expand_path('CHANGELOG.md', __dir__)).find { |l| l.start_with?("## ") }.to_s.strip
+  heading = File.foreach(File.expand_path('CHANGELOG.md', __dir__), encoding: "bom|utf-8").find { |l| l.start_with?("## ") }.to_s.strip
   top, rest = heading.match(/\A## (\d+\.\d+\.\d+)( .*|)\z/)&.captures
   if top != version
     errors << "CHANGELOG.md starts with '#{heading}', not #{version}"
@@ -63,7 +66,11 @@ task "release:check" do
     errors << "CHANGELOG.md's '#{heading}' isn't stamped with a date"
   end
 
-  unless git.("tag", "--list", tag).empty? && git.("ls-remote", "--tags", "origin", "refs/tags/#{tag}").empty?
+  local_tag = git.("tag", "--list", tag)
+  remote_tag = git.("ls-remote", "--tags", remote, "refs/tags/#{tag}")
+  if local_tag.nil? || remote_tag.nil?
+    errors << "couldn't check for tag #{tag}"
+  elsif !(local_tag.empty? && remote_tag.empty?)
     errors << "tag #{tag} already exists"
   end
 
@@ -75,8 +82,9 @@ task "release:check" do
   end
 
   abort "Not ready to release #{version}:\n#{errors.map { |e| "  - #{e}" }.join("\n")}" unless errors.empty?
-  puts "Ready to release beaneater #{version} (#{git.("rev-parse", "--short", "HEAD")} on #{branch})"
+  puts "Ready to release beaneater #{version} (#{git.("rev-parse", "--short", "HEAD")} on #{branch}, #{remote})"
 end
 Rake::Task["release"].prerequisites.unshift("release:check")
+%w[release:source_control_push release:rubygem_push].each { |t| Rake::Task[t].enhance(["release:check"]) }
 
 task :default => 'test:full'
