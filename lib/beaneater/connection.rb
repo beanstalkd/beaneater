@@ -263,10 +263,15 @@ class Beaneater
       config.job_parser.call(raw_body)
     rescue StandardError => ex
       raise unless status == 'RESERVED'
-      tagged = ex.clone(:freeze => false)
-      tagged.extend(JobParseFailure)
-      tagged.job_id = id
-      raise tagged, :cause => ex.cause
+      begin
+        tagged = ex.clone(:freeze => false)
+        tagged.extend(JobParseFailure)
+        tagged.job_id = id
+        cause = ex.cause
+      rescue StandardError
+        raise ex # it can't be copied (an initialize_clone or initialize_copy of its own): untagged
+      end
+      raise tagged, :cause => (cause if cause.is_a?(Exception))
     end
 
     # Returns configuration options for beaneater

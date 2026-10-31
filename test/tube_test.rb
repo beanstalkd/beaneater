@@ -158,6 +158,33 @@ describe Beaneater::Tube do
       refute_nil error.backtrace_locations
     end
 
+    # An exception class that can't be cloned with clone(freeze: false)
+    class OneArgCloneError < StandardError
+      def initialize_clone(original)
+        super
+      end
+    end
+
+    # An exception class whose #cause is not an exception
+    class OddCauseError < StandardError
+      def cause
+        'not an exception'
+      end
+    end
+
+    it "should raise the parser's own exception, untagged, when it can't be copied" do
+      Beaneater.configure.job_parser = lambda { |b| raise OneArgCloneError, 'no copies' }
+      error = assert_raises(OneArgCloneError) { @beanstalk.tubes.reserve(0) }
+      assert_equal 'no copies', error.message
+      refute_kind_of Beaneater::JobParseFailure, error
+    end
+
+    it "should tag the copy when the exception's cause is not an exception" do
+      Beaneater.configure.job_parser = lambda { |b| raise OddCauseError, 'odd' }
+      error = assert_raises(OddCauseError) { @beanstalk.tubes.reserve(0) }
+      assert_equal @poison_id, error.job_id
+    end
+
     it "should not tag an exception the parser reuses, so a later error carries no old id" do
       shared = JSON::ParserError.new('always this one')
       Beaneater.configure.job_parser = lambda { |b| raise shared }
