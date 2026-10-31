@@ -223,6 +223,7 @@ class Beaneater
     # Sends one command and reads its whole reply, without retrying.
     def _exchange(command)
       completed = false
+      outer_reply_read = @reply_read # a job_parser that uses this client runs an _exchange inside ours
       @reply_read = false # set by parse_response once the whole reply is off the socket
       unless connection
         _raise_not_connected! if @closed
@@ -249,6 +250,7 @@ class Beaneater
       # (a job_parser that raised, say) the stream is in step: keep the socket, and with it the
       # jobs this connection has reserved.
       _drop_connection unless completed || @reply_read
+      @reply_read = outer_reply_read
     end
 
     # Restores the watched and used tubes on a new connection. Sent with _exchange, not transmit:

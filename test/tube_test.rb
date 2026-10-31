@@ -121,9 +121,22 @@ describe Beaneater::Tube do
 
     after do
       Beaneater.configure.job_parser = lambda { |b| b }
+      cleanup_tubes!(['poison_tube']) # a failed test can leave the bad job behind
     end
 
     it "should keep the connection, so the bad job stays reserved and the next job is delivered" do
+      socket = @beanstalk.connection.connection
+      assert_raises(JSON::ParserError) { @beanstalk.tubes.reserve(0) }
+      assert_same socket, @beanstalk.connection.connection
+      job = @beanstalk.tubes.reserve(0)
+      assert_equal({ 'ok' => 1 }, job.body)
+      job.delete
+      @beanstalk.connection.transmit("delete #{@poison_id}")
+    end
+
+    it "should keep the connection when the raising parser used the same client first" do
+      tube = 'poison_tube'
+      Beaneater.configure.job_parser = lambda { |b| @beanstalk.connection.transmit("use #{tube}"); JSON.parse(b) }
       socket = @beanstalk.connection.connection
       assert_raises(JSON::ParserError) { @beanstalk.tubes.reserve(0) }
       assert_same socket, @beanstalk.connection.connection
