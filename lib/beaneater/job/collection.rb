@@ -138,8 +138,8 @@ class Beaneater
           break
         rescue Beaneater::JobNotReserved, Beaneater::NotFoundError, Beaneater::TimedOutError
           # No job yet (reserve timed out), or the job is gone (its handler deleted or released
-          # it, or its TTR ran out). If a handler raised this with its job still reserved, the
-          # ensure buries that job like any failure; then the loop goes on.
+          # it, or its TTR ran out). If a handler or the job_parser raised this with the job still
+          # reserved, the ensure buries that job like any failure; then the loop goes on.
           nil
         rescue Beaneater::NotConnected
           # Only when this client's own connection is gone (reconnecting failed, or it was
