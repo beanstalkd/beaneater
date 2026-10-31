@@ -116,15 +116,30 @@ class Beaneater
     #
     def close
       @closed = true
-      if @mutex.mon_owned?
-        # Called on a thread that is inside a command, so from a signal handler or a job_parser.
-        # Closing a socket that this thread is waiting on can crash Ruby 3.3 (segfault in
-        # IO#wait_readable). Shut it down instead: a wait in progress ends with end-of-file and
-        # its command raises NotConnected, and transmit closes the socket on its way out.
-        socket = @connection
+      socket = @connection
+      if @mutex.mon_locked?
+        # A thread (this one or another) is inside a command and may be waiting on the socket.
+        # IO#close from a signal handler while any thread waits on that IO can crash Ruby 3.3
+        # (segfault in IO#wait_readable) or raise ThreadError. Shut the socket down instead:
+        # the wait ends with end-of-file, the command raises NotConnected, and its transmit
+        # closes the socket on its way out.
         socket.shutdown(Socket::SHUT_RDWR) if socket && !socket.closed?
       else
+        # ceiling: a thread can take the lock between the check above and this close and start
+        # waiting on the socket. If this runs in a signal handler, Ruby then raises ThreadError
+        # (handled below), and on 3.3 the waiting thread gets a TypeError from Ruby instead of
+        # NotConnected. Closing under the lock would shut the window, but a signal handler
+        # cannot wait for the lock.
         _drop_connection
+      end
+    rescue ThreadError
+      # IO#close refused from a signal handler (a thread is waiting on the socket): shut it
+      # down so that thread's command ends, and leave it for that command to close.
+      @connection ||= socket
+      begin
+        socket.shutdown(Socket::SHUT_RDWR) if socket && !socket.closed?
+      rescue SystemCallError, IOError
+        nil
       end
     rescue SystemCallError, IOError
       nil # already disconnected, or closed by another thread meanwhile

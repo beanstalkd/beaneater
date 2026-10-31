@@ -595,6 +595,41 @@ describe Beaneater::Connection do
       assert_equal ['Beaneater::NotConnected'] * 20, out.lines.map(&:chomp)
     end
 
+    it "should end a reserve in another thread when a signal handler closes the client" do
+      # Same contract and same caveat as the test above (the 3.3 crash is caught only with high
+      # probability), with the reserve in a second thread and the main thread idle.
+      script = <<-RUBY
+        require 'beaneater'
+        20.times do
+          client = Beaneater.new('localhost')
+          client.tubes.watch!('close-from-trap-other-thread')
+          trap_error = '-'
+          Signal.trap('USR2') do
+            begin
+              client.close
+            rescue Exception => ex
+              trap_error = ex.class.name
+            end
+          end
+          waiter = Thread.new { begin; client.tubes.reserve; 'reserved'; rescue Exception => ex; ex.class.name; end }
+          sleep 0.05 # the waiter is blocked in reserve
+          Process.kill('USR2', Process.pid)
+          puts "\#{waiter.join(5) ? waiter.value : 'still blocked'} \#{trap_error}"
+        end
+      RUBY
+      lib = File.expand_path('../../lib', __FILE__)
+      out = IO.popen([RbConfig.ruby, '-I', lib, '-e', script]) do |child|
+        begin
+          Timeout.timeout(60) { child.read }
+        rescue Timeout::Error
+          Process.kill('KILL', child.pid)
+          flunk "the child was still running after 60s"
+        end
+      end
+      assert $?.success?, "child failed (#{$?.inspect}) after: #{out.lines.size} reserves"
+      assert_equal ['Beaneater::NotConnected -'] * 20, out.lines.map(&:chomp)
+    end
+
     it "should unblock a reserve waiting in another thread" do
       client = Beaneater.new('localhost')
       client.tubes.watch!('close-unblocks-reserve')
@@ -610,7 +645,8 @@ describe Beaneater::Connection do
       sleep 0.3 # the waiter is blocked in reserve
       client.close
       assert waiter.join(1), "reserve still blocked 1s after close"
-      assert_kind_of IOError, result
+      assert_kind_of Beaneater::NotConnected, result
+      assert_nil client.connection.connection
     ensure
       waiter.kill if waiter
     end

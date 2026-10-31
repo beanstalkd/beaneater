@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-* `close` called from a signal handler while the same thread is waiting in a command (a `reserve`, say) now makes that command raise `NotConnected`; 1.1.x raised `IOError`. A `close` from a `job_parser` lets its command finish, then closes the socket (@nesquena)
+* `close` while a command is waiting on the connection (a `reserve`, say), whether from a signal handler or from another thread, now makes that command raise `NotConnected`; 1.1.x raised `IOError`, and on Ruby 3.3 a `close` from a signal handler could crash the process. A `close` from a `job_parser` lets its command finish, then closes the socket (@nesquena)
 * Drop the connection when a command is interrupted mid-reply (for example by `Timeout.timeout`), so the next command no longer reads the stale reply (reported by @tdegrunt)
 * Honour `stop!` while `process!` is waiting for a job with `reserve_timeout` set (reported by @martint17r)
 * Keep `process!` running when a handler deletes or releases its job, or overruns its TTR, and then raises; it used to stop with `NotFoundError` or `JobNotReserved` (reported by @pagojo)
