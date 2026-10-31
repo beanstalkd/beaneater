@@ -292,6 +292,36 @@ describe Beaneater::Jobs do
       stop_beanstalkd(@pid) if @pid
     end
 
+    it "forgets the job when burying it fails, so the next run buries its own bad job" do
+      Beaneater.configure.job_parser = lambda do |body|
+        stop_beanstalkd(@pid) if body == 'kill' # the server dies before the bad job is buried
+        JSON.parse(body)
+      end
+      handled = []
+      @client.jobs.register('bury_fails') do |job|
+        handled << job.body
+        @client.jobs.stop!
+      end
+      @client.tubes.find('bury_fails').put('kill')
+      assert_raises(Beaneater::NotConnected) { Timeout.timeout(10) { @client.jobs.process!(:reserve_timeout => 1) } }
+      assert_nil @client.jobs.current_job
+
+      @pid = start_beanstalkd(@port) # a new server: job ids start again at 1
+      producer = Beaneater.new("127.0.0.1:#{@port}")
+      producer.tubes.find('bury_fails_filler').put('filler') # takes the id the lost job had
+      producer.tubes.find('bury_fails').put('not json', :pri => 1)
+      producer.tubes.find('bury_fails').put('{"ok":1}', :pri => 2)
+      Timeout.timeout(10) { @client.jobs.process!(:reserve_timeout => 1) }
+      assert_equal [{ 'ok' => 1 }], handled
+      Beaneater.configure.job_parser = lambda { |body| body }
+      buried = producer.tubes.find('bury_fails').peek(:buried)
+      refute_nil buried, "the bad job was not buried"
+      assert_equal 'not json', buried.body
+      producer.close
+    ensure
+      Beaneater.configure.job_parser = lambda { |body| body }
+    end
+
     it "raises NotConnected instead of looping, and the client resumes once the server is back" do
       seen = []
       @client.jobs.register('reconnect') do |job|

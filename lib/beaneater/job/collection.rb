@@ -140,8 +140,11 @@ class Beaneater
           @current_job ||= Job.new(client, :id => ex.job_id, :status => 'RESERVED')
         rescue StandardError # handles unspecified errors: the ensure below buries the job
         ensure # bury if still reserved
-          bury_if_reserved(@current_job)
-          @current_job = nil
+          begin
+            bury_if_reserved(@current_job)
+          ensure
+            @current_job = nil # even when burying fails, so no later loop sees this job
+          end
         end
       end
     end # process!
