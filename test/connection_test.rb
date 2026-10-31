@@ -543,6 +543,30 @@ describe Beaneater::Connection do
       assert_raises(Beaneater::NotConnected) { @bc.transmit 'stats' }
     end
 
+    it "should close the socket once a command whose job_parser closed the client is over" do
+      client = Beaneater.new('localhost')
+      client.tubes.find('close-from-parser').put('x')
+      client.tubes.watch!('close-from-parser')
+      socket = client.connection.connection
+      Beaneater.configure.job_parser = lambda { |body| client.close; body }
+      assert_equal 'x', client.tubes.reserve(0).body
+      assert_nil client.connection.connection
+      assert socket.closed?, "the shut-down socket is still open"
+    ensure
+      Beaneater.configure.job_parser = lambda { |body| body }
+    end
+
+    it "should not raise when the socket is closed by another thread while #close shuts it down" do
+      client = Beaneater.new('localhost')
+      client.tubes.find('close-race').put('x')
+      client.tubes.watch!('close-race')
+      client.connection.connection.stubs(:shutdown).raises(IOError, 'closed stream')
+      Beaneater.configure.job_parser = lambda { |body| client.close; body }
+      assert_equal 'x', client.tubes.reserve(0).body
+    ensure
+      Beaneater.configure.job_parser = lambda { |body| body }
+    end
+
     it "should end a reserve when a signal handler on the same thread closes the client" do
       # in a child process: on Ruby 3.3 closing the socket under the wait could crash the VM
       script = <<-RUBY

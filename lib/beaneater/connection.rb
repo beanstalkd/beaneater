@@ -94,6 +94,7 @@ class Beaneater
         :draining_tries => MAX_RETRIES,
         :connecting     => false
       }
+      reentrant = @mutex.mon_owned?
       loop do
         done, value = @mutex.synchronize { _attempt(command, state) }
         return value if done
@@ -102,6 +103,10 @@ class Beaneater
         # holds its outer command's lock here.
         sleep(value)
       end
+    ensure
+      # #close from this thread's own command (a job_parser, a signal handler) only shut the
+      # socket down; close it once the command is over and nothing waits on it
+      @mutex.synchronize { _drop_connection if @closed && @connection } if @closed && !reentrant
     end
 
     # Close connection with beanstalkd server.
@@ -121,8 +126,8 @@ class Beaneater
       else
         _drop_connection
       end
-    rescue SystemCallError
-      nil # already disconnected
+    rescue SystemCallError, IOError
+      nil # already disconnected, or closed by another thread meanwhile
     end
 
     # Returns string representation of job.
