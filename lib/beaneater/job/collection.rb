@@ -111,9 +111,7 @@ class Beaneater
       client.tubes.watch!(*processors.keys)
       while !stop? do
         begin
-          # cleared here, not only in the ensure: a retry below re-enters this block without
-          # running the ensure, and a job left over would be taken for the next one
-          @current_job = nil
+          @current_job = nil # never take an earlier iteration's job for this one
           @current_job = client.tubes.reserve(reserve_timeout)
           processor = processors[@current_job.tube]
           begin
@@ -127,7 +125,10 @@ class Beaneater
         rescue AbortProcessingError
           break
         rescue Beaneater::JobNotReserved, Beaneater::NotFoundError, Beaneater::TimedOutError
-          retry unless stop?
+          # No job yet (reserve timed out), or the job is gone (its handler deleted or released
+          # it, or its TTR ran out). If a handler raised this with its job still reserved, the
+          # ensure buries that job like any failure; then the loop goes on.
+          nil
         rescue Beaneater::NotConnected
           # Only when this client's own connection is gone (reconnecting failed, or it was
           # closed): the server releases a job reserved on it. A NotConnected from a handler that

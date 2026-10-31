@@ -257,8 +257,8 @@ describe Beaneater::Jobs do
       assert_equal 'not json', buried.body
     end
 
-    # process! retries after NotFoundError (and JobNotReserved, TimedOutError) without its
-    # ensure; the job it had must not be taken for the bad job that follows.
+    # process! goes on after NotFoundError (and JobNotReserved, TimedOutError); the job it had
+    # must not be taken for the bad job that follows.
     def put_after_retry_jobs
       tube = @beanstalk.tubes.find('tube_bad_body')
       first = tube.put('{"first":1}', :pri => 1)[:id]
@@ -281,7 +281,7 @@ describe Beaneater::Jobs do
       assert_equal 'buried', stats_of(bad)['state']
     end
 
-    it "buries the bad job, not the earlier one, after a handler raised NotFoundError" do
+    it "buries both the failed job and the bad job after a handler raised NotFoundError" do
       @jobs.register('tube_bad_body') do |job|
         if job.body == { 'stop' => 1 }
           @jobs.stop!
@@ -292,7 +292,7 @@ describe Beaneater::Jobs do
       tube, first, bad = put_after_retry_jobs
       Timeout.timeout(10) { @jobs.process!(:reserve_timeout => 1) }
       assert_equal 'buried', stats_of(bad)['state']
-      refute_equal 'buried', stats_of(first)['state']
+      assert_equal 'buried', stats_of(first)['state'] # its handler failed, with the job still reserved
     ensure
       begin
         @beanstalk.connection.transmit("delete #{first}") if first
@@ -341,6 +341,35 @@ describe Beaneater::Jobs do
         nil
       end
       cleanup_tubes!(['tube_bad_body_other'])
+    end
+  end
+
+  describe "for process! when a handler raises NotFoundError with its job reserved" do
+    before do
+      cleanup_tubes!(['tube_not_found'])
+    end
+
+    after do
+      cleanup_tubes!(['tube_not_found'])
+    end
+
+    it "buries the job once instead of reserving in a loop near its TTR" do
+      runs = 0
+      @jobs.register('tube_not_found') do |job|
+        runs += 1
+        @beanstalk.connection.transmit('delete 999999') # NOT_FOUND for some other job
+      end
+      id = @beanstalk.tubes.find('tube_not_found').put('x', :ttr => 2)[:id]
+      worker = Thread.new { @jobs.process!(:reserve_timeout => 1) }
+      sleep 3 # past the job's TTR
+      @jobs.stop!
+      assert worker.join(5), "process! did not stop"
+      checker = Beaneater.new('localhost')
+      stats = checker.connection.transmit("stats-job #{id}")[:body]
+      checker.close
+      assert_equal 1, runs
+      assert_equal 'buried', stats['state']
+      assert_equal 0, stats['timeouts']
     end
   end
 
