@@ -580,6 +580,42 @@ describe Beaneater::Connection do
       Beaneater.configure.job_parser = lambda { |body| body }
     end
 
+    describe "in a forked child" do
+      before do
+        skip("needs fork") unless Process.respond_to?(:fork)
+        @client = Beaneater.new('localhost')
+        cleanup_tubes!(['fork-close'], @client)
+        @client.tubes.find('fork-close').put('work')
+        @client.tubes.watch!('fork-close')
+      end
+
+      after do
+        Beaneater.configure.job_parser = lambda { |body| body }
+        @client.close if @client
+        cleaner = Beaneater.new('localhost')
+        cleanup_tubes!(['fork-close'], cleaner) # a failed run leaves the job behind
+        cleaner.close
+      end
+
+      # The parent still holds the job it reserved: another client cannot get it, and the
+      # parent can delete it on its own connection.
+      def assert_parent_keeps(job)
+        other = Beaneater.new('localhost')
+        other.tubes.watch!('fork-close')
+        assert_raises(Beaneater::TimedOutError) { other.tubes.reserve(0) }
+        assert_equal 'DELETED', @client.connection.transmit("delete #{job.id}")[:status]
+      ensure
+        other.close if other
+      end
+
+      it "should leave the parent's connection alone" do
+        job = @client.tubes.reserve(0)
+        child = fork { @client.close; exit!(0) }
+        Process.wait(child)
+        assert_parent_keeps(job)
+      end
+    end
+
     it "should end a reserve when a signal handler on the same thread closes the client" do
       # Guards the contract: the reserve ends with NotConnected. It also runs the case that
       # crashed Ruby 3.3 (closing the socket under the wait), but that crash came in about one

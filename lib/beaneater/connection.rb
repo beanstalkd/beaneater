@@ -125,23 +125,17 @@ class Beaneater
         # closes the socket on its way out.
         socket.shutdown(Socket::SHUT_RDWR) if socket && !socket.closed?
       else
-        # Shut down before closing, so that a command that starts waiting in the window below
-        # still sees end-of-file and the server lets go of the connection.
-        begin
-          socket.shutdown(Socket::SHUT_RDWR) if socket && !socket.closed?
-        rescue SystemCallError, IOError
-          nil
-        end
         # ceiling: a thread can take the lock between the check above and this close and start
-        # waiting on the socket. In a signal handler Ruby then raises ThreadError (ignored
-        # below). On 3.3 and 3.4 the waiting thread gets a TypeError from Ruby instead of
-        # NotConnected, and Ruby keeps the shut-down socket's fd open; on 3.1, 3.2 and 4.0 it
-        # gets IOError. Closing under the lock would shut the window, but a signal handler
-        # cannot wait for the lock.
+        # waiting on the socket. A close from a signal handler then raises ThreadError on Ruby
+        # 3.3 and 3.4 (ignored below); the waiting thread gets a TypeError from Ruby, and Ruby
+        # keeps the fd open (and the server that connection's pending command) until garbage
+        # collection. On 3.1, 3.2 and 4.0, and from a plain thread, the waiter gets IOError.
+        # Closing under the lock would shut the window, but a signal handler cannot wait for
+        # the lock.
         _drop_connection
       end
     rescue ThreadError
-      nil # IO#close refused in a signal handler (see the ceiling above); Ruby has marked it closed
+      nil # IO#close refused in a signal handler (see the ceiling above)
     rescue SystemCallError, IOError
       nil # already disconnected, or closed by another thread meanwhile
     end
