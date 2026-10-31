@@ -1,5 +1,9 @@
 # CHANGELOG for Beaneater
 
+## Unreleased
+
+* Release through a GitHub Actions workflow with RubyGems trusted publishing (@nesquena)
+
 ## 1.2.0 (October 31 2026)
 
 * `Jobs#process!` buries a job whose body the `job_parser` rejects (`JSON.parse` on a non-JSON job, say); it used to stay reserved until its TTR ran out and then fail again, for ever. A parser that raises `AbortProcessingError` has its job buried and stops the loop, as a handler's abort does. The job is not buried when the parser raises `NotConnected` while this client's connection is gone (`process!` raises it, and beanstalkd releases the job), an exception that isn't a `StandardError` (`process!` raises it, and the job stays reserved until its TTR runs out or the connection closes), or one that can't be copied (raised untagged, so `process!` can't tell which job it came from: the job stays reserved and `process!` keeps failing on it; make parser exceptions copyable). A plain `tubes.reserve` raises a copy of the parser's error with the same class, message, cause and backtrace (a frozen exception, for which Ruby records no backtrace, gets one that starts in beaneater), so `rescue JSON::ParserError` keeps working; the copy is also a `Beaneater::JobParseFailure`, whose `#job_id` names the job, still reserved by the connection (@nesquena)
