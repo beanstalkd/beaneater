@@ -405,6 +405,24 @@ describe Beaneater::Jobs do
       assert_equal 0, stats['timeouts']
     end
 
+    it "goes on when the job stops being reserved just before it is buried" do
+      @jobs.register('tube_not_found') do |job|
+        @jobs.stop!
+        raise 'handler failed'
+      end
+      id = @beanstalk.tubes.find('tube_not_found').put('x')[:id]
+      Beaneater::Job.any_instance.stubs(:bury).raises(Beaneater::JobNotReserved) # another client's reservation ended
+      Timeout.timeout(10) { @jobs.process!(:reserve_timeout => 1) } # must not raise JobNotReserved
+      assert_nil @jobs.current_job
+    ensure
+      Beaneater::Job.any_instance.unstub(:bury)
+      begin
+        @beanstalk.connection.transmit("delete #{id}") if id
+      rescue Beaneater::NotFoundError
+        nil
+      end
+    end
+
     it "releases the job for another try instead when the error is in retry_on" do
       runs = 0
       @jobs.register('tube_not_found', :retry_on => [Beaneater::NotFoundError], :max_retries => 1) do |job|

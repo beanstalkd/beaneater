@@ -162,8 +162,8 @@ class Beaneater
     # deleted it, or its TTR ran out and the server released it), so there is nothing to bury.
     def bury_if_reserved(job)
       job.bury if job && job.exists? && job.reserved?
-    rescue Beaneater::NotFoundError
-      nil
+    rescue Beaneater::NotFoundError, Beaneater::JobNotReserved
+      nil # gone, or no longer reserved by us by the time bury ran
     end
   end # Jobs
 end # Beaneater
