@@ -257,6 +257,50 @@ describe Beaneater::Jobs do
       assert_equal 'not json', buried.body
     end
 
+    # process! retries after NotFoundError (and JobNotReserved, TimedOutError) without its
+    # ensure; the job it had must not be taken for the bad job that follows.
+    def put_after_retry_jobs
+      tube = @beanstalk.tubes.find('tube_bad_body')
+      first = tube.put('{"first":1}', :pri => 1)[:id]
+      bad = tube.put('not json', :pri => 2)[:id]
+      tube.put('{"stop":1}', :pri => 3)
+      [tube, first, bad]
+    end
+
+    def stats_of(id)
+      Beaneater.configure.job_parser = lambda { |body| body }
+      @beanstalk.connection.transmit("stats-job #{id}")[:body]
+    end
+
+    it "buries the bad job after a handler deleted its own job" do
+      @jobs.register('tube_bad_body') do |job|
+        job.body == { 'stop' => 1 } ? @jobs.stop! : job.delete # process!'s own delete then gets NOT_FOUND
+      end
+      tube, _first, bad = put_after_retry_jobs
+      Timeout.timeout(10) { @jobs.process!(:reserve_timeout => 1) }
+      assert_equal 'buried', stats_of(bad)['state']
+    end
+
+    it "buries the bad job, not the earlier one, after a handler raised NotFoundError" do
+      @jobs.register('tube_bad_body') do |job|
+        if job.body == { 'stop' => 1 }
+          @jobs.stop!
+        else
+          @beanstalk.connection.transmit('delete 999999') # NOT_FOUND for some other job
+        end
+      end
+      tube, first, bad = put_after_retry_jobs
+      Timeout.timeout(10) { @jobs.process!(:reserve_timeout => 1) }
+      assert_equal 'buried', stats_of(bad)['state']
+      refute_equal 'buried', stats_of(first)['state']
+    ensure
+      begin
+        @beanstalk.connection.transmit("delete #{first}") if first
+      rescue Beaneater::NotFoundError
+        nil
+      end
+    end
+
     it "buries the job when the parser raises a frozen exception" do
       frozen = ArgumentError.new('frozen').freeze
       Beaneater.configure.job_parser = lambda { |body| body == 'bad' ? raise(frozen) : body }

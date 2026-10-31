@@ -111,6 +111,9 @@ class Beaneater
       client.tubes.watch!(*processors.keys)
       while !stop? do
         begin
+          # cleared here, not only in the ensure: a retry below re-enters this block without
+          # running the ensure, and a job left over would be taken for the next one
+          @current_job = nil
           @current_job = client.tubes.reserve(reserve_timeout)
           processor = processors[@current_job.tube]
           begin
