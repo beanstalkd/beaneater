@@ -118,6 +118,10 @@ class Beaneater
             # The job_parser rejected the job just reserved, so there was no job to handle: it is
             # ours to bury (the ensure below does), whatever the parser raised, rather than leave
             # it reserved to be released and fail again when its TTR runs out.
+            # ceiling: a parser exception that can't be copied is raised untagged, so process!
+            # can't tell which job it came from; the job stays reserved, and near its TTR process!
+            # keeps reserving (DEADLINE_SOON) until beanstalkd releases it, then fails on it again.
+            # Upgrade path: have the connection record the id of the job whose parse failed.
             @current_job = Job.new(client, :id => ex.job_id, :status => 'RESERVED')
             raise
           end
