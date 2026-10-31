@@ -508,6 +508,24 @@ describe Beaneater::Connection do
       assert_raises(Beaneater::NotConnected) { @bc.transmit 'stats' }
     end
 
+    it "should end a reserve when a signal handler on the same thread closes the client" do
+      # in a child process: on Ruby 3.3 closing the socket under the wait could crash the VM
+      script = <<-RUBY
+        require 'beaneater'
+        20.times do
+          client = Beaneater.new('localhost')
+          client.tubes.watch!('close-from-trap')
+          Signal.trap('USR2') { client.close }
+          Thread.new { sleep 0.05; Process.kill('USR2', Process.pid) }
+          puts(begin; client.tubes.reserve; 'reserved'; rescue Exception => ex; ex.class.name; end)
+        end
+      RUBY
+      lib = File.expand_path('../../lib', __FILE__)
+      out = IO.popen([RbConfig.ruby, '-I', lib, '-e', script], &:read)
+      assert $?.success?, "child failed (#{$?.inspect}) after: #{out.lines.size} reserves"
+      assert_equal ['Beaneater::NotConnected'] * 20, out.lines.map(&:chomp)
+    end
+
     it "should unblock a reserve waiting in another thread" do
       client = Beaneater.new('localhost')
       client.tubes.watch!('close-unblocks-reserve')
