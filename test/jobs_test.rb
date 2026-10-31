@@ -301,6 +301,39 @@ describe Beaneater::Jobs do
       end
     end
 
+    it "buries the job when the parser raises an error process! handles itself" do
+      Beaneater.configure.job_parser = lambda do |body|
+        raise Beaneater::NotFoundError.new('NOT_FOUND', 'parse') if body == 'not found'
+        raise Beaneater::TimedOutError.new('TIMED_OUT', 'parse') if body == 'timed out'
+        body
+      end
+      handled = []
+      @jobs.register('tube_bad_body') do |job|
+        handled << job.body
+        @jobs.stop!
+      end
+      tube = @beanstalk.tubes.find('tube_bad_body')
+      not_found = tube.put('not found', :pri => 1, :ttr => 2)[:id]
+      timed_out = tube.put('timed out', :pri => 2, :ttr => 2)[:id]
+      tube.put('stop', :pri => 3)
+
+      Timeout.timeout(10) { @jobs.process!(:reserve_timeout => 1) }
+      assert_equal ['stop'], handled
+      [not_found, timed_out].each do |id|
+        stats = stats_of(id)
+        assert_equal 'buried', stats['state'], "job #{id}"
+        assert_equal 0, stats['timeouts'], "job #{id}"
+      end
+    end
+
+    it "buries the job and stops when the parser raises AbortProcessingError" do
+      Beaneater.configure.job_parser = lambda { |body| raise Beaneater::AbortProcessingError if body == 'abort'; body }
+      @jobs.register('tube_bad_body') { |job| }
+      id = @beanstalk.tubes.find('tube_bad_body').put('abort')[:id]
+      Timeout.timeout(10) { @jobs.process!(:reserve_timeout => 1) }
+      assert_equal 'buried', stats_of(id)['state']
+    end
+
     it "buries the job when the parser raises a frozen exception" do
       frozen = ArgumentError.new('frozen').freeze
       Beaneater.configure.job_parser = lambda { |body| body == 'bad' ? raise(frozen) : body }

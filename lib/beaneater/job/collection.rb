@@ -112,7 +112,15 @@ class Beaneater
       while !stop? do
         begin
           @current_job = nil # never take an earlier iteration's job for this one
-          @current_job = client.tubes.reserve(reserve_timeout)
+          begin
+            @current_job = client.tubes.reserve(reserve_timeout)
+          rescue Beaneater::JobParseFailure => ex
+            # The job_parser rejected the job just reserved, so there was no job to handle: it is
+            # ours to bury (the ensure below does), whatever the parser raised, rather than leave
+            # it reserved to be released and fail again when its TTR runs out.
+            @current_job = Job.new(client, :id => ex.job_id, :status => 'RESERVED')
+            raise
+          end
           processor = processors[@current_job.tube]
           begin
             processor[:block].call(@current_job)
@@ -137,11 +145,6 @@ class Beaneater
             @current_job = nil
             raise
           end
-        rescue Beaneater::JobParseFailure => ex
-          # The job_parser rejected the reserved job's body, so reserve raised before there was a
-          # job to handle: bury it (below) rather than leave it reserved, to be released and fail
-          # again when its TTR runs out. (Raised from a handler, it is that handler's failure.)
-          @current_job ||= Job.new(client, :id => ex.job_id, :status => 'RESERVED')
         rescue StandardError # handles unspecified errors: the ensure below buries the job
         ensure # bury if still reserved
           begin
