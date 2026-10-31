@@ -254,19 +254,19 @@ class Beaneater
     end
 
     # Runs the job_parser on a job's body. If it raises for a job this connection has just
-    # reserved, the parser's own exception is re-raised (so `rescue JSON::ParserError` still
-    # works) tagged with Beaneater::JobParseFailure, which gives the job's id: Jobs#process!
-    # uses it to bury the job instead of leaving it reserved until its TTR.
+    # reserved, a copy of the parser's exception is raised instead (same class, message,
+    # backtrace and cause, so `rescue JSON::ParserError` still works), tagged with
+    # Beaneater::JobParseFailure, which gives the job's id: Jobs#process! uses it to bury the job
+    # instead of leaving it reserved until its TTR. A copy, so that an exception the parser
+    # froze or raises again later is never changed or tagged with an old id.
     def _parse_job(status, id, raw_body)
       config.job_parser.call(raw_body)
     rescue StandardError => ex
-      # ceiling: a frozen exception can't be extended; it goes up untagged, and process! leaves
-      # that job reserved as before. Upgrade path: a wrapper error, at the cost of the rescue.
-      if status == 'RESERVED' && !ex.frozen?
-        ex.extend(JobParseFailure)
-        ex.job_id = id
-      end
-      raise
+      raise unless status == 'RESERVED'
+      tagged = ex.clone(:freeze => false)
+      tagged.extend(JobParseFailure)
+      tagged.job_id = id
+      raise tagged, :cause => ex.cause
     end
 
     # Returns configuration options for beaneater

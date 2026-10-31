@@ -135,8 +135,37 @@ describe Beaneater::Tube do
       error = assert_raises(JSON::ParserError) { @beanstalk.tubes.reserve(0) }
       assert_kind_of Beaneater::JobParseFailure, error
       assert_equal @poison_id, error.job_id
+      assert_nil error.cause # the parser's error had none
       Beaneater.configure.job_parser = lambda { |b| b }
       assert_equal 'reserved', @beanstalk.connection.transmit("stats-job #{error.job_id}")[:body]['state']
+    end
+
+    it "should keep the parser's error intact: class, message, backtrace and cause" do
+      original = nil
+      Beaneater.configure.job_parser = lambda do |b|
+        begin
+          JSON.parse(b)
+        rescue JSON::ParserError => ex
+          original = ex
+          raise ArgumentError, 'not a job' # its cause is the ParserError
+        end
+      end
+      error = assert_raises(ArgumentError) { @beanstalk.tubes.reserve(0) }
+      assert_equal @poison_id, error.job_id
+      assert_equal 'not a job', error.message
+      assert_same original, error.cause
+      assert_operator error.backtrace.first, :include?, 'tube_test.rb'
+      refute_nil error.backtrace_locations
+    end
+
+    it "should not tag an exception the parser reuses, so a later error carries no old id" do
+      shared = JSON::ParserError.new('always this one')
+      Beaneater.configure.job_parser = lambda { |b| raise shared }
+      error = assert_raises(JSON::ParserError) { @beanstalk.tubes.reserve(0) }
+      assert_equal @poison_id, error.job_id
+      peeked = assert_raises(JSON::ParserError) { @tube.peek(:ready) } # not a reserve: not tagged
+      refute_kind_of Beaneater::JobParseFailure, peeked
+      refute_kind_of Beaneater::JobParseFailure, shared
     end
 
     it "should keep the connection, so the bad job stays reserved and the next job is delivered" do

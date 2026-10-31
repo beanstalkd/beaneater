@@ -257,6 +257,24 @@ describe Beaneater::Jobs do
       assert_equal 'not json', buried.body
     end
 
+    it "buries the job when the parser raises a frozen exception" do
+      frozen = ArgumentError.new('frozen').freeze
+      Beaneater.configure.job_parser = lambda { |body| body == 'bad' ? raise(frozen) : body }
+      handled = []
+      @jobs.register('tube_bad_body') do |job|
+        handled << job.body
+        @jobs.stop!
+      end
+      tube = @beanstalk.tubes.find('tube_bad_body')
+      tube.put('bad', :pri => 1)
+      tube.put('good', :pri => 2)
+
+      Timeout.timeout(10) { @jobs.process!(:reserve_timeout => 1) }
+      assert_equal ['good'], handled
+      Beaneater.configure.job_parser = lambda { |body| body }
+      assert_equal 'bad', (tube.peek(:buried) || flunk("the bad job was not buried")).body
+    end
+
     it "buries the handler's job, not the one its own reserve rejected, when a handler raises it" do
       cleanup_tubes!(['tube_bad_body_other'])
       other_id = @beanstalk.tubes.find('tube_bad_body_other').put('not json')[:id]

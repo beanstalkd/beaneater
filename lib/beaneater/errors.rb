@@ -9,9 +9,10 @@ class Beaneater
   # next command. Not to be confused with {TimedOutError}, which is
   # beanstalkd's own TIMED_OUT reply to reserve-with-timeout.
   class SocketTimeout < NotConnected; end
-  # Added to the exception a job_parser raises for a job just reserved. The exception keeps
-  # its own class (JSON::ParserError, say); #job_id names the job, still reserved by this
-  # connection, so the caller can bury, release or delete it.
+  # Added to a copy of the exception a job_parser raises for a job just reserved. The copy
+  # keeps the exception's class (JSON::ParserError, say), message, backtrace and cause; #job_id
+  # names the job, still reserved by this connection, so the caller can bury, release or
+  # delete it.
   module JobParseFailure
     # @return [String] id of the reserved job whose body the parser rejected
     attr_accessor :job_id
