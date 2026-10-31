@@ -104,8 +104,8 @@ class Beaneater
         sleep(value)
       end
     ensure
-      # #close from this thread's own command (a job_parser, a signal handler) only shut the
-      # socket down; close it once the command is over and nothing waits on it
+      # #close during a command (from its job_parser, a signal handler or another thread) only
+      # shut the socket down; close it once the command is over and nothing waits on it
       @mutex.synchronize { _drop_connection if @closed && @connection } if @closed && !reentrant
     end
 
@@ -120,27 +120,28 @@ class Beaneater
       if @mutex.mon_locked?
         # A thread (this one or another) is inside a command and may be waiting on the socket.
         # IO#close from a signal handler while any thread waits on that IO can crash Ruby 3.3
-        # (segfault in IO#wait_readable) or raise ThreadError. Shut the socket down instead:
+        # and 3.4 (segfault in IO#wait_readable) or raise ThreadError. Shut it down instead:
         # the wait ends with end-of-file, the command raises NotConnected, and its transmit
         # closes the socket on its way out.
         socket.shutdown(Socket::SHUT_RDWR) if socket && !socket.closed?
       else
+        # Shut down before closing, so that a command that starts waiting in the window below
+        # still sees end-of-file and the server lets go of the connection.
+        begin
+          socket.shutdown(Socket::SHUT_RDWR) if socket && !socket.closed?
+        rescue SystemCallError, IOError
+          nil
+        end
         # ceiling: a thread can take the lock between the check above and this close and start
-        # waiting on the socket. If this runs in a signal handler, Ruby then raises ThreadError
-        # (handled below), and on 3.3 the waiting thread gets a TypeError from Ruby instead of
-        # NotConnected. Closing under the lock would shut the window, but a signal handler
+        # waiting on the socket. In a signal handler Ruby then raises ThreadError (ignored
+        # below). On 3.3 and 3.4 the waiting thread gets a TypeError from Ruby instead of
+        # NotConnected, and Ruby keeps the shut-down socket's fd open; on 3.1, 3.2 and 4.0 it
+        # gets IOError. Closing under the lock would shut the window, but a signal handler
         # cannot wait for the lock.
         _drop_connection
       end
     rescue ThreadError
-      # IO#close refused from a signal handler (a thread is waiting on the socket): shut it
-      # down so that thread's command ends, and leave it for that command to close.
-      @connection ||= socket
-      begin
-        socket.shutdown(Socket::SHUT_RDWR) if socket && !socket.closed?
-      rescue SystemCallError, IOError
-        nil
-      end
+      nil # IO#close refused in a signal handler (see the ceiling above); Ruby has marked it closed
     rescue SystemCallError, IOError
       nil # already disconnected, or closed by another thread meanwhile
     end
@@ -457,8 +458,8 @@ class Beaneater
       # Past the deadline this still polls once (timeout 0): data that is already there is
       # not a timeout.
       remaining = deadline && [deadline - _now, 0].max
-      # IO#wait_* rather than IO.select: a thread waiting here is woken (with IOError) when
-      # another thread calls #close, as a blocked read was before.
+      # IO#wait_* rather than IO.select: a thread waiting here is woken by end-of-file when
+      # #close shuts the socket down (its command then raises NotConnected).
       ready = direction == :read ? connection.wait_readable(remaining) : connection.wait_writable(remaining)
       return if ready
 
