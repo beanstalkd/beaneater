@@ -133,6 +133,11 @@ class Beaneater
             @current_job = nil
             raise
           end
+        rescue Beaneater::JobParseFailure => ex
+          # The job_parser rejected the reserved job's body, so reserve raised before there was a
+          # job to handle: bury it (below) rather than leave it reserved, to be released and fail
+          # again when its TTR runs out. (Raised from a handler, it is that handler's failure.)
+          @current_job ||= Job.new(client, :id => ex.job_id, :status => 'RESERVED')
         rescue StandardError # handles unspecified errors: the ensure below buries the job
         ensure # bury if still reserved
           bury_if_reserved(@current_job)

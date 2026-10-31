@@ -216,7 +216,7 @@ class Beaneater
         body = if status == 'OK'
           parse_yaml_body(cmd, raw_body)
         else
-          config.job_parser.call(raw_body)
+          _parse_job(status, body_values[1], raw_body)
         end
       end
       id = body_values[1]
@@ -251,6 +251,22 @@ class Beaneater
           hash[key] = _stat_value(value.to_s, text_fields.include?(key)) unless key.to_s.empty?
         end
       end
+    end
+
+    # Runs the job_parser on a job's body. If it raises for a job this connection has just
+    # reserved, the parser's own exception is re-raised (so `rescue JSON::ParserError` still
+    # works) tagged with Beaneater::JobParseFailure, which gives the job's id: Jobs#process!
+    # uses it to bury the job instead of leaving it reserved until its TTR.
+    def _parse_job(status, id, raw_body)
+      config.job_parser.call(raw_body)
+    rescue StandardError => ex
+      # ceiling: a frozen exception can't be extended; it goes up untagged, and process! leaves
+      # that job reserved as before. Upgrade path: a wrapper error, at the cost of the rescue.
+      if status == 'RESERVED' && !ex.frozen?
+        ex.extend(JobParseFailure)
+        ex.job_id = id
+      end
+      raise
     end
 
     # Returns configuration options for beaneater

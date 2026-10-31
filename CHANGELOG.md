@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* `Jobs#process!` buries a job whose body the `job_parser` rejects (`JSON.parse` on a non-JSON job, say); it used to stay reserved until its TTR ran out and then fail again, for ever. A plain `tubes.reserve` still raises the parser's own error, so `rescue JSON::ParserError` keeps working; the error is now also a `Beaneater::JobParseFailure`, whose `#job_id` names the job, still reserved by the connection (@nesquena)
 * `close` while a command is waiting on the connection (a `reserve`, say), whether from a signal handler or from another thread, now makes that command raise `NotConnected`; 1.1.x raised `IOError`, and on Ruby 3.3 and 3.4 a `close` from a signal handler could crash the process. A `close` from a `job_parser` lets its command finish, then closes the socket (@nesquena)
 * Drop the connection when a command is interrupted mid-reply (for example by `Timeout.timeout`), so the next command no longer reads the stale reply (reported by @tdegrunt)
 * Honour `stop!` while `process!` is waiting for a job with `reserve_timeout` set (reported by @martint17r)

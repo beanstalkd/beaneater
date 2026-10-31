@@ -228,6 +228,36 @@ describe Beaneater::Jobs do
     end
   end
 
+  describe "for process! when the job_parser rejects a job" do
+    before do
+      cleanup_tubes!(['tube_bad_body'])
+      Beaneater.configure.job_parser = lambda { |body| JSON.parse(body) }
+    end
+
+    after do
+      Beaneater.configure.job_parser = lambda { |body| body }
+      cleanup_tubes!(['tube_bad_body'])
+    end
+
+    it "buries the job and goes on to the next one" do
+      handled = []
+      @jobs.register('tube_bad_body') do |job|
+        handled << job.body
+        @jobs.stop!
+      end
+      tube = @beanstalk.tubes.find('tube_bad_body')
+      tube.put('not json', :pri => 1)
+      tube.put('{"ok":1}', :pri => 2)
+
+      Timeout.timeout(10) { @jobs.process!(:reserve_timeout => 1) }
+      assert_equal [{ 'ok' => 1 }], handled
+      Beaneater.configure.job_parser = lambda { |body| body }
+      buried = tube.peek(:buried)
+      refute_nil buried, "the job the parser rejected was not buried"
+      assert_equal 'not json', buried.body
+    end
+  end
+
   describe "for process! when a handler raises NotConnected for another server" do
     before do
       cleanup_tubes!(['tube_other_down'])
