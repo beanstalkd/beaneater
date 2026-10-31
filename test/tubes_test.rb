@@ -60,6 +60,13 @@ describe Beaneater::Tubes do
         assert @beanstalk.tubes.all.map(&:name).include?(t)
       end
     end
+
+    it 'should return tube names that look like numbers or dates as strings' do
+      names = ['1.10', '2026-10-30', 'true', 'a-b']
+      names.each { |t| @beanstalk.tubes.find(t).put 'x' }
+      all = @beanstalk.tubes.all.map(&:name)
+      names.each { |t| assert_includes all, t }
+    end
   end # all
 
   describe "for Enumerable" do
@@ -157,8 +164,16 @@ describe Beaneater::Tubes do
       @tube.reserve.delete
       @tube.put "foo reserve #{@time}", :ttr => 1
       @beanstalk.tubes.watch 'tube'
-      @beanstalk.tubes.reserve
+      job = @beanstalk.tubes.reserve
       assert_raises(Beaneater::DeadlineSoonError) { @beanstalk.tubes.reserve(0) }
+    ensure
+      # left reserved, the job would be released (TTR, or the socket being collected) into a
+      # later #reserve test
+      begin
+        job.delete if job
+      rescue Beaneater::NotFoundError
+        nil
+      end
     end
 
   end # reserve

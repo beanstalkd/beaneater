@@ -111,7 +111,20 @@ class Beaneater
       client.tubes.watch!(*processors.keys)
       while !stop? do
         begin
-          @current_job = client.tubes.reserve(reserve_timeout)
+          @current_job = nil # never take an earlier iteration's job for this one
+          begin
+            @current_job = client.tubes.reserve(reserve_timeout)
+          rescue Beaneater::JobParseFailure => ex
+            # The job_parser rejected the job just reserved, so there was no job to handle: it is
+            # ours to bury (the ensure below does), whatever the parser raised, rather than leave
+            # it reserved to be released and fail again when its TTR runs out.
+            # ceiling: a parser exception that can't be copied is raised untagged, so process!
+            # can't tell which job it came from; the job stays reserved, and near its TTR process!
+            # keeps reserving (DEADLINE_SOON) until beanstalkd releases it, then fails on it again.
+            # Upgrade path: have the connection record the id of the job whose parse failed.
+            @current_job = Job.new(client, :id => ex.job_id, :status => 'RESERVED')
+            raise
+          end
           processor = processors[@current_job.tube]
           begin
             processor[:block].call(@current_job)
@@ -124,14 +137,37 @@ class Beaneater
         rescue AbortProcessingError
           break
         rescue Beaneater::JobNotReserved, Beaneater::NotFoundError, Beaneater::TimedOutError
-          retry
-        rescue StandardError # handles unspecified errors
-          @current_job.bury if @current_job
+          # No job yet (reserve timed out), or the job is gone (its handler deleted or released
+          # it, or its TTR ran out). If a handler or the job_parser raised this with the job still
+          # reserved, the ensure buries that job like any failure; then the loop goes on.
+          nil
+        rescue Beaneater::NotConnected
+          # Only when this client's own connection is gone (reconnecting failed, or it was
+          # closed): the server releases a job reserved on it. A NotConnected from a handler that
+          # uses another client is a failed job like any other, buried by the ensure below.
+          unless client.connection.connection
+            @current_job = nil
+            raise
+          end
+        rescue StandardError # handles unspecified errors: the ensure below buries the job
         ensure # bury if still reserved
-          @current_job.bury if @current_job && @current_job.exists? && @current_job.reserved?
-          @current_job = nil
+          begin
+            bury_if_reserved(@current_job)
+          ensure
+            @current_job = nil # even when burying fails, so no later loop sees this job
+          end
         end
       end
     end # process!
+
+    private
+
+    # Buries a job this worker still holds. NOT_FOUND means it no longer holds it (the handler
+    # deleted it, or its TTR ran out and the server released it), so there is nothing to bury.
+    def bury_if_reserved(job)
+      job.bury if job && job.exists? && job.reserved?
+    rescue Beaneater::NotFoundError, Beaneater::JobNotReserved
+      nil # gone, or no longer reserved by us by the time bury ran
+    end
   end # Jobs
 end # Beaneater

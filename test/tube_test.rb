@@ -96,10 +96,133 @@ describe Beaneater::Tube do
       assert_equal 'hi: there! this: is a long message', @tube.peek(:ready).body['message']
     end
 
+    it "should keep the connection usable when the custom parser raises" do
+      Beaneater.configure.job_parser = lambda { |b| JSON.parse(b) }
+      @tube.put('not json')
+      socket = @beanstalk.connection.connection
+      assert_raises(JSON::ParserError) { @tube.peek(:ready) }
+      assert_same socket, @beanstalk.connection.connection
+      assert_equal 'baz', @beanstalk.tubes.used.name
+    end
+
     after do
       Beaneater.configure.job_parser = lambda { |b| b }
     end
   end # peek
+
+  describe "for a job_parser that raises on reserve" do
+    before do
+      Beaneater.configure.job_parser = lambda { |b| JSON.parse(b) }
+      @tube = @beanstalk.tubes.find('poison_tube')
+      @poison_id = @tube.put('not json', :pri => 1)[:id]
+      @tube.put('{"ok":1}', :pri => 2)
+      @beanstalk.tubes.watch!('poison_tube')
+    end
+
+    after do
+      Beaneater.configure.job_parser = lambda { |b| b }
+      # The bad job is still reserved by this connection, which clearing the tube can't touch;
+      # left alone, it would be released when the socket is collected, into a later test.
+      begin
+        @beanstalk.connection.transmit("delete #{@poison_id}")
+      rescue Beaneater::NotFoundError
+        nil
+      end
+      cleanup_tubes!(['poison_tube'])
+    end
+
+    it "should raise the parser's own error from reserve, tagged with the job id" do
+      error = assert_raises(JSON::ParserError) { @beanstalk.tubes.reserve(0) }
+      assert_kind_of Beaneater::JobParseFailure, error
+      assert_equal @poison_id, error.job_id
+      assert_nil error.cause # the parser's error had none
+      Beaneater.configure.job_parser = lambda { |b| b }
+      assert_equal 'reserved', @beanstalk.connection.transmit("stats-job #{error.job_id}")[:body]['state']
+    end
+
+    it "should keep the parser's error intact: class, message, backtrace and cause" do
+      original = nil
+      Beaneater.configure.job_parser = lambda do |b|
+        begin
+          JSON.parse(b)
+        rescue JSON::ParserError => ex
+          original = ex
+          raise ArgumentError, 'not a job' # its cause is the ParserError
+        end
+      end
+      error = assert_raises(ArgumentError) { @beanstalk.tubes.reserve(0) }
+      assert_equal @poison_id, error.job_id
+      assert_equal 'not a job', error.message
+      assert_same original, error.cause
+      assert_operator error.backtrace.first, :include?, 'tube_test.rb'
+      refute_nil error.backtrace_locations
+    end
+
+    # An exception class that can't be copied on any Ruby (clone calls initialize_copy)
+    class UncopyableError < StandardError
+      def initialize_copy(_original)
+        raise TypeError, "can't copy"
+      end
+    end
+
+    # An exception class whose #cause is not an exception
+    class OddCauseError < StandardError
+      def cause
+        'not an exception'
+      end
+    end
+
+    it "should raise the parser's own exception, untagged, when it can't be copied" do
+      Beaneater.configure.job_parser = lambda { |b| raise UncopyableError, 'no copies' }
+      error = assert_raises(UncopyableError) { @beanstalk.tubes.reserve(0) }
+      assert_equal 'no copies', error.message
+      refute_kind_of Beaneater::JobParseFailure, error
+    end
+
+    it "should raise a frozen exception that can't be copied as it is" do
+      frozen = UncopyableError.new('frozen, no copies').freeze
+      Beaneater.configure.job_parser = lambda { |b| raise frozen }
+      error = assert_raises(UncopyableError) { @beanstalk.tubes.reserve(0) }
+      assert_same frozen, error
+      assert_nil error.cause
+    end
+
+    it "should tag the copy when the exception's cause is not an exception" do
+      Beaneater.configure.job_parser = lambda { |b| raise OddCauseError, 'odd' }
+      error = assert_raises(OddCauseError) { @beanstalk.tubes.reserve(0) }
+      assert_equal @poison_id, error.job_id
+    end
+
+    it "should not tag an exception the parser reuses, so a later error carries no old id" do
+      shared = JSON::ParserError.new('always this one')
+      Beaneater.configure.job_parser = lambda { |b| raise shared }
+      error = assert_raises(JSON::ParserError) { @beanstalk.tubes.reserve(0) }
+      assert_equal @poison_id, error.job_id
+      peeked = assert_raises(JSON::ParserError) { @tube.peek(:ready) } # not a reserve: not tagged
+      refute_kind_of Beaneater::JobParseFailure, peeked
+      refute_kind_of Beaneater::JobParseFailure, shared
+    end
+
+    it "should keep the connection, so the bad job stays reserved and the next job is delivered" do
+      socket = @beanstalk.connection.connection
+      assert_raises(JSON::ParserError) { @beanstalk.tubes.reserve(0) }
+      assert_same socket, @beanstalk.connection.connection
+      job = @beanstalk.tubes.reserve(0)
+      assert_equal({ 'ok' => 1 }, job.body)
+      job.delete
+    end
+
+    it "should keep the connection when the raising parser used the same client first" do
+      tube = 'poison_tube'
+      Beaneater.configure.job_parser = lambda { |b| @beanstalk.connection.transmit("use #{tube}"); JSON.parse(b) }
+      socket = @beanstalk.connection.connection
+      assert_raises(JSON::ParserError) { @beanstalk.tubes.reserve(0) }
+      assert_same socket, @beanstalk.connection.connection
+      job = @beanstalk.tubes.reserve(0)
+      assert_equal({ 'ok' => 1 }, job.body)
+      job.delete
+    end
+  end # job_parser that raises on reserve
 
   describe "for #reserve" do
     before do

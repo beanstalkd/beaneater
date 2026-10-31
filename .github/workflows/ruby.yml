@@ -22,10 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ruby-version: ['2.6', '2.7', '3.0', '3.1']
+        ruby-version: ['2.7', '3.0', '3.1', '3.2', '3.3', '3.4', '4.0']
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Download & Extract beanstalkd
       run: curl -L https://github.com/beanstalkd/beanstalkd/archive/refs/tags/v1.13.tar.gz | tar xz
     - name: Make beanstalkd
@@ -40,3 +40,5 @@ jobs:
       run: ./beanstalkd-1.13/beanstalkd &
     - name: Run tests
       run: bundle exec rake test:full
+      env:
+        BEANSTALKD_BIN: ${{ github.workspace }}/beanstalkd-1.13/beanstalkd

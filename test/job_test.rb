@@ -208,6 +208,17 @@ describe Beaneater::Job do
       assert_equal @tube.name, job.tube
       job.release
     end
+
+    it("should keep dashes and dots in the tube name") do
+      tube = @beanstalk.tubes.find('email-jobs.v1')
+      tube.put 'bar'
+      job = tube.reserve
+      assert_equal 'email-jobs.v1', job.tube
+      assert_equal 'email-jobs.v1', job.stats.tube
+      assert_equal 'reserved', job.stats.state
+      assert_kind_of Integer, job.stats.id
+      job.delete
+    end
   end # tube
 
   describe "for #pri" do

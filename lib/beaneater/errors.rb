@@ -3,6 +3,20 @@
 class Beaneater
   # Raises when a beanstalkd instance is no longer accessible.
   class NotConnected < RuntimeError; end
+  # Raises when beanstalkd does not answer within the configured read_timeout,
+  # or a command cannot be written within write_timeout. The connection is
+  # closed, since a late reply would otherwise be read as the answer to the
+  # next command. Not to be confused with {TimedOutError}, which is
+  # beanstalkd's own TIMED_OUT reply to reserve-with-timeout.
+  class SocketTimeout < NotConnected; end
+  # Added to a copy of the exception a job_parser raises for a job just reserved. The copy
+  # keeps the exception's class (JSON::ParserError, say), message, backtrace and cause; #job_id
+  # names the job, still reserved by this connection, so the caller can bury, release or
+  # delete it.
+  module JobParseFailure
+    # @return [String] id of the reserved job whose body the parser rejected
+    attr_accessor :job_id
+  end
   # Raises when the tube name specified is invalid.
   class InvalidTubeName < RuntimeError; end
   # Raises when a job has not been reserved properly.

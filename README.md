@@ -142,7 +142,11 @@ end
 
 The above options are all defaults, so only include a configuration block if you need to make changes.
 
-`connect_timeout` and `resolv_timeout` are passed through to `TCPSocket.new` on Ruby 3.0 and newer (ignored on Ruby < 3.0 for compatibility). `read_timeout` and `write_timeout` apply socket read and write timeouts via `setsockopt`.
+`connect_timeout` and `resolv_timeout` are passed through to `TCPSocket.new` on Ruby 3.0 and newer (ignored on Ruby < 3.0 for compatibility). `read_timeout` bounds how long beaneater waits for beanstalkd's reply to a command; for `reserve(timeout)` it is added to the reserve's own timeout, and a plain `reserve` (no timeout) still waits as long as it takes for a job. `write_timeout` bounds how long sending a command may take. When either runs out, `Beaneater::SocketTimeout` (a `Beaneater::NotConnected`) is raised and the connection is dropped; the next command reconnects. Timeouts are in seconds; `read_timeout` and `write_timeout` may also be numeric strings (from `ENV`, say).
+
+A `SocketTimeout` on `put` does not tell you whether beanstalkd stored the job: the command may have reached the server and only the reply been lost. Retrying the `put` can therefore enqueue the job twice, so retry a timed-out `put` only if running the job twice is harmless.
+
+While beanstalkd is unreachable, every command tries to reconnect three times, one second apart, before raising `Beaneater::NotConnected`, so each command takes about 2 seconds to fail (longer per attempt when connecting itself hangs, as with an unreachable host). Threads sharing a client pause between their retries side by side, but the connection attempts themselves still run one at a time. Apps that enqueue jobs inside web requests should set `connect_timeout` and expect this delay while beanstalkd is down.
 
 ### Connection
 
@@ -418,6 +422,23 @@ The `process!` command is ideally suited for a beanstalk job processing daemon.
 Even though `process!` is intended to be a long-running process, you can stop the loop at any time
 by raising `AbortProcessingError` while processing is running.
 
+If the `job_parser` raises for a job (a body that isn't JSON, say), `process!` buries that job and
+goes on; if it raises `AbortProcessingError`, `process!` buries the job and stops, as for a
+handler's abort. The job is not buried when the parser raises `NotConnected` while this client's
+connection is gone (`process!` raises it, and beanstalkd releases the job), an exception that isn't
+a `StandardError` (`process!` raises it, and the job stays reserved until its TTR runs out or the
+connection closes), or one that can't be copied (raised untagged, so `process!` can't tell which job
+it came from: the job stays reserved and `process!` keeps failing on it; make parser exceptions
+copyable). A direct `tubes.reserve` raises a copy of
+the parser's error (same class, message, cause and backtrace; a frozen exception, for which Ruby
+records no backtrace, gets one that starts in beaneater) that is also a
+`Beaneater::JobParseFailure`: its `job_id` names the job, still reserved by your connection, so
+you can bury, release or delete it.
+
+If beanstalkd goes away and reconnecting fails, `process!` raises `Beaneater::NotConnected`.
+The client reconnects on its next command, so calling `process!` again (for example from a
+supervisor loop) resumes once the server is back.
+
 ### Handling Errors
 
 While using Beaneater, certain errors may be encountered. Errors are encountered when
@@ -430,6 +451,7 @@ are listed below:
 | Beaneater::InvalidTubeName  | Specified tube name for use or watch is not valid.    |
 | Beaneater::NotFoundError    | Specified job or tube could not be found.             |
 | Beaneater::TimedOutError    | Job could not be reserved within time specified.      |
+| Beaneater::SocketTimeout    | No reply within `read_timeout` (or the write exceeded `write_timeout`); the connection is dropped and the next command reconnects. A subclass of `NotConnected`, not to be confused with `TimedOutError`. |
 | Beaneater::JobNotReserved   | Job has not been reserved and action cannot be taken. |
 
 There are other exceptions that are less common such as `OutOfMemoryError`, `DrainingError`,

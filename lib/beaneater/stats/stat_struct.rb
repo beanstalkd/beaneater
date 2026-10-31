@@ -19,13 +19,18 @@ class Beaneater
 
     # Access value for stat with specified key.
     #
+    # Keys are stored underscored (see {.from_hash}), so hyphenated beanstalkd
+    # names like "current-jobs-ready" are underscored before lookup. This also
+    # avoids defining an invalid, hyphenated method name via method_missing.
+    #
     # @param [String] key Key to fetch from stats.
     # @return [String, Integer] Value for specified stat key.
     # @example
     #  @stats['foo'] # => "bar"
+    #  @stats['current-jobs-ready'] # => 5
     #
     def [](key)
-      self.send(key.to_s)
+      self.send(key.to_s.gsub(/-/, '_'))
     end
 
     # Returns set of keys within this struct
