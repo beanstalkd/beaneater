@@ -119,8 +119,8 @@ class Beaneater
       if @mutex.mon_owned?
         # Called on a thread that is inside a command, so from a signal handler or a job_parser.
         # Closing a socket that this thread is waiting on can crash Ruby 3.3 (segfault in
-        # IO#wait_readable). Shut it down instead: the wait ends with end-of-file, and the
-        # command closes the socket on its way out and raises NotConnected.
+        # IO#wait_readable). Shut it down instead: a wait in progress ends with end-of-file and
+        # its command raises NotConnected, and transmit closes the socket on its way out.
         socket = @connection
         socket.shutdown(Socket::SHUT_RDWR) if socket && !socket.closed?
       else

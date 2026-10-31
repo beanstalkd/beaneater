@@ -568,7 +568,10 @@ describe Beaneater::Connection do
     end
 
     it "should end a reserve when a signal handler on the same thread closes the client" do
-      # in a child process: on Ruby 3.3 closing the socket under the wait could crash the VM
+      # Guards the contract: the reserve ends with NotConnected. It also runs the case that
+      # crashed Ruby 3.3 (closing the socket under the wait), but that crash came in about one
+      # run in four, so 20 runs catch it with high probability, not certainty. A child process
+      # keeps a crash from taking the suite down.
       script = <<-RUBY
         require 'beaneater'
         20.times do
@@ -580,7 +583,14 @@ describe Beaneater::Connection do
         end
       RUBY
       lib = File.expand_path('../../lib', __FILE__)
-      out = IO.popen([RbConfig.ruby, '-I', lib, '-e', script], &:read)
+      out = IO.popen([RbConfig.ruby, '-I', lib, '-e', script]) do |child|
+        begin
+          Timeout.timeout(60) { child.read }
+        rescue Timeout::Error
+          Process.kill('KILL', child.pid)
+          flunk "the child was still running after 60s"
+        end
+      end
       assert $?.success?, "child failed (#{$?.inspect}) after: #{out.lines.size} reserves"
       assert_equal ['Beaneater::NotConnected'] * 20, out.lines.map(&:chomp)
     end
