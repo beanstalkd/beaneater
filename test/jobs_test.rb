@@ -256,6 +256,30 @@ describe Beaneater::Jobs do
       refute_nil buried, "the job the parser rejected was not buried"
       assert_equal 'not json', buried.body
     end
+
+    it "buries the handler's job, not the one its own reserve rejected, when a handler raises it" do
+      cleanup_tubes!(['tube_bad_body_other'])
+      other_id = @beanstalk.tubes.find('tube_bad_body_other').put('not json')[:id]
+      @jobs.register('tube_bad_body') do |job|
+        @jobs.stop!
+        @beanstalk.tubes.watch('tube_bad_body_other')
+        @beanstalk.tubes.reserve(0) # raises: the parser rejects the other tube's job
+      end
+      @beanstalk.tubes.find('tube_bad_body').put('{"ok":1}')
+
+      Timeout.timeout(10) { @jobs.process!(:reserve_timeout => 1) }
+      Beaneater.configure.job_parser = lambda { |body| body }
+      assert_equal '{"ok":1}', (@beanstalk.tubes.find('tube_bad_body').peek(:buried) || flunk("the handler's job was not buried")).body
+      assert_equal 'reserved', @beanstalk.connection.transmit("stats-job #{other_id}")[:body]['state']
+    ensure
+      Beaneater.configure.job_parser = lambda { |body| body }
+      begin
+        @beanstalk.connection.transmit("delete #{other_id}") if other_id
+      rescue Beaneater::NotFoundError
+        nil
+      end
+      cleanup_tubes!(['tube_bad_body_other'])
+    end
   end
 
   describe "for process! when a handler raises NotConnected for another server" do
