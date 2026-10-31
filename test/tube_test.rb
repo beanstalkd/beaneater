@@ -121,7 +121,14 @@ describe Beaneater::Tube do
 
     after do
       Beaneater.configure.job_parser = lambda { |b| b }
-      cleanup_tubes!(['poison_tube']) # a failed test can leave the bad job behind
+      # The bad job is still reserved by this connection, which clearing the tube can't touch;
+      # left alone, it would be released when the socket is collected, into a later test.
+      begin
+        @beanstalk.connection.transmit("delete #{@poison_id}")
+      rescue Beaneater::NotFoundError
+        nil
+      end
+      cleanup_tubes!(['poison_tube'])
     end
 
     it "should raise the parser's own error from reserve, tagged with the job id" do
@@ -139,7 +146,6 @@ describe Beaneater::Tube do
       job = @beanstalk.tubes.reserve(0)
       assert_equal({ 'ok' => 1 }, job.body)
       job.delete
-      @beanstalk.connection.transmit("delete #{@poison_id}")
     end
 
     it "should keep the connection when the raising parser used the same client first" do
@@ -151,7 +157,6 @@ describe Beaneater::Tube do
       job = @beanstalk.tubes.reserve(0)
       assert_equal({ 'ok' => 1 }, job.body)
       job.delete
-      @beanstalk.connection.transmit("delete #{@poison_id}")
     end
   end # job_parser that raises on reserve
 
