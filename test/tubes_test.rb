@@ -164,8 +164,16 @@ describe Beaneater::Tubes do
       @tube.reserve.delete
       @tube.put "foo reserve #{@time}", :ttr => 1
       @beanstalk.tubes.watch 'tube'
-      @beanstalk.tubes.reserve
+      job = @beanstalk.tubes.reserve
       assert_raises(Beaneater::DeadlineSoonError) { @beanstalk.tubes.reserve(0) }
+    ensure
+      # left reserved, the job would be released (TTR, or the socket being collected) into a
+      # later #reserve test
+      begin
+        job.delete if job
+      rescue Beaneater::NotFoundError
+        nil
+      end
     end
 
   end # reserve
