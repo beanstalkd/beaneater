@@ -556,6 +556,24 @@ describe Beaneater::Connection do
       assert_raises(Beaneater::NotConnected) { @bc.transmit 'stats' }
     end
 
+    # Removes the job a test left in tube name. Its client was closed with the job reserved, so
+    # wait (briefly) for the server to release it before clearing the tube.
+    def clear_after_close(name)
+      cleaner = Beaneater.new('localhost')
+      20.times do
+        cleanup_tubes!([name], cleaner)
+        stats = begin
+          cleaner.tubes.find(name).stats
+        rescue Beaneater::NotFoundError
+          break # the tube is gone: no jobs left
+        end
+        break if stats.current_jobs_reserved.zero? && stats.current_jobs_ready.zero?
+        sleep 0.05
+      end
+    ensure
+      cleaner.close if cleaner
+    end
+
     it "should close the socket once a command whose job_parser closed the client is over" do
       client = Beaneater.new('localhost')
       client.tubes.find('close-from-parser').put('x')
@@ -567,6 +585,7 @@ describe Beaneater::Connection do
       assert socket.closed?, "the shut-down socket is still open"
     ensure
       Beaneater.configure.job_parser = lambda { |body| body }
+      clear_after_close('close-from-parser')
     end
 
     it "should not raise when the socket is closed by another thread while #close shuts it down" do
@@ -578,6 +597,7 @@ describe Beaneater::Connection do
       assert_equal 'x', client.tubes.reserve(0).body
     ensure
       Beaneater.configure.job_parser = lambda { |body| body }
+      clear_after_close('close-race')
     end
 
     describe "in a forked child" do
@@ -619,6 +639,7 @@ describe Beaneater::Connection do
         child = nil
         Beaneater.configure.job_parser = lambda { |body| child = fork { @client.close; exit!(0) }; body }
         job = @client.tubes.reserve(0)
+        Beaneater.configure.job_parser = lambda { |body| body } # no second fork if anything below fails
         Process.wait(child)
         assert_parent_keeps(job)
       end
