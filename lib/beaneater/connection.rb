@@ -64,6 +64,7 @@ class Beaneater
     def initialize(address)
       @address = address || _host_from_env || Beaneater.configuration.beanstalkd_url
       @mutex = Monitor.new # reentrant: a job_parser that uses this client runs under the lock
+      @reconnect_wait = @mutex.new_cond # waits between retries with the lock released
       @tube_used = 'default'
       @tubes_watched = ['default']
 
@@ -306,7 +307,7 @@ class Beaneater
           _drop_connection
           raise
         end
-        sleep(retry_interval)
+        @reconnect_wait.wait(retry_interval) # with the lock released, as in _reconnect
         retry
       end
     end
@@ -318,19 +319,22 @@ class Beaneater
     # @param [Integer] tries The maximum number of attempts to reconnect
     def _reconnect(original_exception, retry_interval, tries=MAX_RETRIES)
       _drop_connection
-      _raise_not_connected! if @closed
-      establish_connection
-      if @closed # #close ran while connecting
-        _drop_connection
-        _raise_not_connected!
+      begin
+        _raise_not_connected! if @closed
+        establish_connection
+        if @closed # #close ran while connecting
+          _drop_connection
+          _raise_not_connected!
+        end
+      rescue SystemCallError, SocketError, IOError
+        tries -= 1
+        _raise_not_connected! if tries.zero?
+        # Wait with the lock released, so threads sharing this client wait out their retries
+        # side by side rather than one after another.
+        @reconnect_wait.wait(retry_interval || DEFAULT_RETRY_INTERVAL)
+        return if connection # another thread reconnected meanwhile: use its connection
+        retry
       end
-    rescue SystemCallError, SocketError, IOError
-      tries -= 1
-      if tries.zero?
-        _raise_not_connected!
-      end
-      sleep(retry_interval || DEFAULT_RETRY_INTERVAL)
-      retry
     end
 
     # Closes the socket without marking the connection closed, so the next command reconnects.

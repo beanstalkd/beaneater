@@ -408,6 +408,45 @@ describe Beaneater::Connection do
         assert_equal %w[default reconnect-watched], @client.tubes.watched.map(&:name).sort
       end
 
+      it "lets threads sharing the client wait out their reconnect retries side by side" do
+        stop_beanstalkd(@pid)
+        now = -> { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
+        started = now.call
+        waits = 4.times.map do
+          Thread.new do
+            t = now.call
+            begin
+              @client.connection.transmit('stats', retry_interval: 0.5)
+            rescue Beaneater::NotConnected
+            end
+            now.call - t
+          end
+        end.map(&:value)
+        # each thread waits out about 1 s of retries; one after another that would be 4 s
+        assert_operator now.call - started, :<, 2, "waits: #{waits.inspect}"
+
+        @pid = start_beanstalkd(@port)
+        assert_equal 'OK', @client.connection.transmit('stats')[:status]
+      end
+
+      it "lets threads sharing the client wait out their draining retries side by side" do
+        Process.kill('USR1', @pid) # beanstalkd answers DRAINING to put from now on
+        sleep 0.2
+        started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        errors = 4.times.map do
+          Thread.new do
+            begin
+              @client.connection.transmit("put 0 0 100 1\r\nx", retry_interval: 0.3)
+            rescue Beaneater::DrainingError => ex
+              ex.class
+            end
+          end
+        end.map(&:value)
+        assert_equal [Beaneater::DrainingError] * 4, errors
+        # each put waits 2 x 0.3 s between its tries; one after another that would be 2.4 s
+        assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - started, :<, 1.5
+      end
+
       it "lets threads sharing the client recover when the server restarts under them" do
         @client.tubes.use('restart-used')
         stop = false
