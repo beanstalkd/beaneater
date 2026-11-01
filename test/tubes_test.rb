@@ -46,6 +46,13 @@ describe Beaneater::Tubes do
     it 'should raise invalid name for bad tube' do
       assert_raises(Beaneater::InvalidTubeName) { @beanstalk.tubes.watch('; ') }
     end
+
+    it 'should remember each watched tube once, by name, for a reconnect to restore' do
+      @beanstalk.tubes.watch('a')
+      @beanstalk.tubes.watch('a')
+      @beanstalk.tubes.watch(:a)
+      assert_equal ['default', 'a'], @beanstalk.connection.tubes_watched
+    end
   end # watch! & watched
 
   describe "for #all" do
@@ -122,6 +129,13 @@ describe Beaneater::Tubes do
       @beanstalk.tubes.watch('bar')
       @beanstalk.tubes.ignore('foo')
       assert_equal ['default', 'bar'].sort, @beanstalk.tubes.watched.map(&:name).sort
+    end
+
+    it 'should forget an ignored tube however its name is given' do
+      @beanstalk.tubes.watch('foo')
+      @beanstalk.tubes.watch('bar')
+      @beanstalk.tubes.ignore(:foo)
+      assert_equal ['default', 'bar'], @beanstalk.connection.tubes_watched
     end
   end # ignore
 

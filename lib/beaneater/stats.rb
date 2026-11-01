@@ -65,6 +65,12 @@ class Beaneater
       end
     end
 
+    # Answers true for the stats keys method_missing looks up.
+    # @api public
+    def respond_to_missing?(name, include_private = false)
+      data.keys.include?(name.to_s) || super
+    end
+
     protected
 
     # Returns struct based on stats data from response.

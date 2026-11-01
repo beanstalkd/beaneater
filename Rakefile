@@ -71,7 +71,7 @@ task "release:check", [:remote] do |_, args|
   if local_tag.nil? || remote_tag.nil?
     errors << "couldn't check for tag #{tag}"
   elsif !(local_tag.empty? && remote_tag.empty?)
-    errors << "tag #{tag} already exists"
+    errors << "tag #{tag} already exists (if only the gem push failed: gem push pkg/beaneater-#{version}.gem)"
   end
 
   begin

@@ -448,11 +448,16 @@ are listed below:
 | Errors                      | Description   |
 | --------------------        | ------------- |
 | Beaneater::NotConnected     | Client connection to beanstalk cannot be established. |
-| Beaneater::InvalidTubeName  | Specified tube name for use or watch is not valid.    |
+| Beaneater::InvalidTubeName  | Specified tube name is not valid: beanstalkd takes up to 200 letters, digits and `-+/;.$_()`, not starting with a hyphen. |
 | Beaneater::NotFoundError    | Specified job or tube could not be found.             |
 | Beaneater::TimedOutError    | Job could not be reserved within time specified.      |
 | Beaneater::SocketTimeout    | No reply within `read_timeout` (or the write exceeded `write_timeout`); the connection is dropped and the next command reconnects. A subclass of `NotConnected`, not to be confused with `TimedOutError`. |
 | Beaneater::JobNotReserved   | Job has not been reserved and action cannot be taken. |
+
+A job id that is not a whole number (an Integer or a String of digits), a priority, delay, TTR or
+pause delay that is not a whole number from 0 to 4294967295, a reserve timeout or kick count that is
+neither a whole number nor a Float, and a peek state other than `ready`, `delayed` or `buried` raise
+`ArgumentError` before anything is sent.
 
 There are other exceptions that are less common such as `OutOfMemoryError`, `DrainingError`,
 `DeadlineSoonError`, `InternalError`, `BadFormatError`, `UnknownCommandError`,

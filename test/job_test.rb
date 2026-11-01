@@ -37,6 +37,14 @@ describe Beaneater::Job do
       assert_equal "foo bury #{@time}", @tube.peek(:buried).body
     end
 
+    it "should not look up the job's stats when pri is given" do
+      job = @tube.reserve
+      job.expects(:stats).never
+      job.bury(:pri => 10)
+      assert_equal 'buried', @beanstalk.jobs.find(job.id).stats.state
+      assert_equal 10, @beanstalk.jobs.find(job.id).stats.pri
+    end
+
     it "should not bury if not reserved" do
       job = @tube.peek(:ready)
       assert_raises(Beaneater::JobNotReserved) { job.bury }
@@ -74,6 +82,23 @@ describe Beaneater::Job do
       assert_equal 'delayed', job.stats.state
       assert_equal 10, job.stats.pri
       assert_equal 2, job.stats.delay
+    end
+
+    it "should not look up the job's stats when pri and delay are given" do
+      job = @tube.reserve
+      job.expects(:stats).never
+      job.release :pri => 10, :delay => 2
+      job_stats = @beanstalk.jobs.find(job.id).stats
+      assert_equal 'delayed', job_stats.state
+      assert_equal [10, 2], [job_stats.pri, job_stats.delay]
+    end
+
+    it "should look up the job's stats once for the pri and delay it keeps" do
+      job = @tube.reserve
+      job.expects(:stats).once.returns(@beanstalk.jobs.find(job.id).stats)
+      job.release :delay => 2
+      job_stats = @beanstalk.jobs.find(job.id).stats
+      assert_equal [5, 2], [job_stats.pri, job_stats.delay]
     end
 
     it "should not released if not reserved" do

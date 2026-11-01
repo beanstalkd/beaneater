@@ -38,8 +38,8 @@ class Beaneater
     #
     # @api public
     def bury(options={})
-      options = { :pri => stats.pri }.merge(options)
-      with_reserved("bury #{id} #{options[:pri]}") do
+      pri = Arguments.unsigned(options.fetch(:pri) { stats.pri }, 'pri')
+      with_reserved("bury #{command_id} #{pri}") do
         @reserved = false
       end
     end
@@ -56,8 +56,10 @@ class Beaneater
     #
     # @api public
     def release(options={})
-      options = { :pri => stats.pri, :delay => stats.delay }.merge(options)
-      with_reserved("release #{id} #{options[:pri]} #{options[:delay]}") do
+      job_stats = stats unless options.key?(:pri) && options.key?(:delay) # one stats-job for both defaults
+      pri = Arguments.unsigned(options.fetch(:pri) { job_stats.pri }, 'pri')
+      delay = Arguments.unsigned(options.fetch(:delay) { job_stats.delay }, 'delay')
+      with_reserved("release #{command_id} #{pri} #{delay}") do
         @reserved = false
       end
     end
@@ -71,7 +73,7 @@ class Beaneater
     #
     # @api public
     def touch
-      with_reserved("touch #{id}")
+      with_reserved("touch #{command_id}")
     end
 
     # Sends command to delete a job.
@@ -83,7 +85,7 @@ class Beaneater
     #
     # @api public
     def delete
-      transmit("delete #{id}") { @reserved = false }
+      transmit("delete #{command_id}") { @reserved = false }
     end
 
     # Sends command to kick a buried job.
@@ -95,7 +97,7 @@ class Beaneater
     #
     # @api public
     def kick
-      transmit("kick-job #{id}")
+      transmit("kick-job #{command_id}")
     end
 
     # Sends command to get stats about job.
@@ -107,7 +109,7 @@ class Beaneater
     #
     # @api public
     def stats
-      res = transmit("stats-job #{id}")
+      res = transmit("stats-job #{command_id}")
       StatStruct.from_hash(res[:body])
     end
 
@@ -194,6 +196,13 @@ class Beaneater
     alias :inspect :to_s
 
     protected
+
+    # The job's id, checked before it is written into a command.
+    #
+    # @raise [ArgumentError] The id is not a whole number.
+    def command_id
+      Arguments.integer(id, 'job id')
+    end
 
     # Transmit command to beanstalkd instance and fetch response.
     #

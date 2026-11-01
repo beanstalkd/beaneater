@@ -152,13 +152,15 @@ class Beaneater
     end
     alias :inspect :to_s
 
+    # The watched tubes are kept by name, once each: a reconnect watches them again.
     def add_to_watched(tube_name)
-      @tubes_watched << tube_name
-      @tubes_watched.uniq
+      @tubes_watched << tube_name.to_s
+      @tubes_watched.uniq!
+      @tubes_watched
     end
 
     def remove_from_watched(tube_name)
-      @tubes_watched.delete(tube_name)
+      @tubes_watched.delete(tube_name.to_s)
     end
 
     protected
@@ -323,13 +325,13 @@ class Beaneater
     def _initialize_tubes
       if @tubes_watched != ['default']
         tubes_watched.each do |t|
-          _exchange("watch #{t}")
+          _exchange("watch #{Arguments.tube_name(t)}")
         end
 
         _exchange("ignore default") unless tubes_watched.include?('default')
       end
 
-      _exchange("use #{tube_used}") if @tube_used != 'default'
+      _exchange("use #{Arguments.tube_name(tube_used)}") if @tube_used != 'default'
     end
 
     # One attempt at a command, made holding the lock: reconnect (and restore the tubes) if the
@@ -500,7 +502,10 @@ class Beaneater
     # Raises an error to be triggered when the connection has failed
     # @raise [Beaneater::NotConnected] Beanstalkd is no longer connected
     def _raise_not_connected!
-      raise Beaneater::NotConnected, "Connection to beanstalk '#{@host}:#{@port}' is closed!"
+      # host and port stay unset for an address establish_connection can't parse: name it as given,
+      # leaving out any user and password (user:password@)
+      where = (@host ? "#{@host}:#{@port}" : @address.to_s).sub(%r{\A(\w[\w+.-]*://)?.*@}m, '\1')
+      raise Beaneater::NotConnected, "Connection to beanstalk '#{where}' is closed!"
     end
 
   end # Connection

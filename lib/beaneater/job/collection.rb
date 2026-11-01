@@ -53,7 +53,7 @@ class Beaneater
     #
     # @api public
     def find(id)
-      res = transmit("peek #{id}")
+      res = transmit("peek #{Arguments.integer(id, 'job id')}")
       Job.new(client, res)
     rescue Beaneater::NotFoundError
       nil
@@ -103,9 +103,11 @@ class Beaneater
     # @param [Hash{String => Integer}] options Settings for processing
     # @option options [Integer] release_delay Delay in seconds before to make job ready again
     # @option options [Integer] reserve_timeout Number of seconds to wait for a job before checking a different server
+    # @raise [ArgumentError] No processor is registered (see {#register}).
     #
     # @api public
     def process!(options={})
+      raise ArgumentError, "no processors registered: call jobs.register(tube_name) { |job| ... } first" unless processors
       release_delay = options.delete(:release_delay) || RELEASE_DELAY
       reserve_timeout = options.delete(:reserve_timeout) || RESERVE_TIMEOUT
       client.tubes.watch!(*processors.keys)

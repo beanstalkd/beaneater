@@ -34,6 +34,19 @@ describe Beaneater::StatStruct do
       assert_equal 'demo', @struct['under-score']
       assert_equal 'demo', @struct[:"under-score"]
     end
+
+    it "should read a stat whose name is also a method name" do
+      struct = Beaneater::StatStruct.from_hash('hash' => 'h', 'class' => 'c')
+      assert_equal 'h', struct['hash']
+      assert_equal 'c', struct[:class]
+    end
+
+    it "should return nil for a key that is not a stat" do
+      [:object_id, 'send', 'freeze', 'foo=', 'no such key'].each do |key|
+        assert_nil @struct[key], "Expected nil for #{key.inspect}"
+      end
+      refute @struct.frozen?
+    end
   end # []
 
   describe "for #keys" do
@@ -45,6 +58,18 @@ describe Beaneater::StatStruct do
       assert_equal ['foo', 'bar', 'baz', 'under_score'].sort, @struct.keys.sort
     end
   end # keys
+
+  describe "for #respond_to?" do
+    it "should respond to a key before it is first read" do
+      struct = Beaneater::StatStruct.from_hash('rusage-utime' => 0.5)
+      assert struct.respond_to?(:rusage_utime), "Expected struct to respond to rusage_utime"
+      assert_equal 0.5, struct.method(:rusage_utime).call
+    end
+
+    it "should not respond to a name that is not a key" do
+      refute @struct.respond_to?(:no_such_key)
+    end
+  end # respond_to?
 
   describe "for #to_h" do
     it "should return 4 keys / values" do

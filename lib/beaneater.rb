@@ -2,7 +2,7 @@
 
 require 'thread' unless defined?(Mutex)
 
-%w(version configuration errors connection tube job stats).each do |f|
+%w(version configuration errors arguments connection tube job stats).each do |f|
   require "beaneater/#{f}"
 end
 

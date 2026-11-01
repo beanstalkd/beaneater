@@ -42,4 +42,20 @@ describe Beaneater::Stats do
       assert_raises(NoMethodError) { @stats.cmd }
     end
   end # method_missing
+
+  describe 'for #respond_to?' do
+    before do
+      connection = stub(:transmit => { :body => { 'max-job-size' => 65535 }, :status => "OK" })
+      @stats = Beaneater::Stats.new(stub(:connection => connection))
+    end
+
+    it "should respond to a stats key before it is first read" do
+      assert @stats.respond_to?(:max_job_size), "Expected stats to respond to max_job_size"
+      assert_equal 65535, @stats.method(:max_job_size).call
+    end
+
+    it "should not respond to a name that is not a stats key" do
+      refute @stats.respond_to?(:no_such_stat)
+    end
+  end # respond_to?
 end # Beaneater::Stats
