@@ -502,7 +502,9 @@ class Beaneater
     # Raises an error to be triggered when the connection has failed
     # @raise [Beaneater::NotConnected] Beanstalkd is no longer connected
     def _raise_not_connected!
-      raise Beaneater::NotConnected, "Connection to beanstalk '#{@host}:#{@port}' is closed!"
+      # host and port stay unset for an address establish_connection can't parse: name it as given
+      where = @host ? "#{@host}:#{@port}" : @address
+      raise Beaneater::NotConnected, "Connection to beanstalk '#{where}' is closed!"
     end
 
   end # Connection

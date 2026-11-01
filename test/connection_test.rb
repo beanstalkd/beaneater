@@ -30,7 +30,15 @@ describe Beaneater::Connection do
     end
 
     it "should raise on invalid connection" do
-      assert_raises(Beaneater::NotConnected) { Beaneater::Connection.new("localhost:8544") }
+      error = assert_raises(Beaneater::NotConnected) { Beaneater::Connection.new("localhost:8544") }
+      assert_equal "Connection to beanstalk 'localhost:8544' is closed!", error.message
+    end
+
+    it "should name an address it can't parse as given" do
+      ['[::1]:11300', '::1', 'beanstalk://127.0.0.1:11300'].each do |address|
+        error = assert_raises(Beaneater::NotConnected) { Beaneater::Connection.new(address) }
+        assert_equal "Connection to beanstalk '#{address}' is closed!", error.message
+      end
     end
 
     it "should support array connection to single connection" do

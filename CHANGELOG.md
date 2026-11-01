@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* `NotConnected` for an address beaneater can't parse (`[::1]:11300`, `::1`, `beanstalk://host:11300`) names the address as given; the message read "Connection to beanstalk ':' is closed!". IPv6 addresses and URLs are still not supported (@nesquena)
 * `jobs.process!` with no processor registered raises `ArgumentError` ("no processors registered: call jobs.register(tube_name) { |job| ... } first") instead of `NoMethodError: undefined method 'keys' for nil`; it sends nothing to the server (@nesquena)
 * `respond_to?` on `client.stats` and on a `StatStruct` (`job.stats`, `tube.stats`) answers true for every stats key, also before the key is first read (it was false until then), so `respond_to?` and `method(:key)` agree with the readers. `client.stats.respond_to?` asks the server for the keys, as reading a stat does (@nesquena)
 * The connection remembers each watched tube once and by name, so a reconnect no longer re-sends `watch` for every repeated `tubes.watch(name)`, and `tubes.ignore(:name)` forgets a tube watched as `"name"` (and the other way round); `connection.tubes_watched` holds only strings (@nesquena)
