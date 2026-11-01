@@ -71,7 +71,7 @@ task "release:check", [:remote] do |_, args|
   if local_tag.nil? || remote_tag.nil?
     errors << "couldn't check for tag #{tag}"
   elsif !(local_tag.empty? && remote_tag.empty?)
-    errors << "tag #{tag} already exists (if only the gem push failed: gem push pkg/beaneater-#{version}.gem)"
+    errors << "tag #{tag} already exists (if only the gem push failed: gem push pkg/beaneater-#{version}.gem, then rake release:github)"
   end
 
   begin
@@ -86,5 +86,40 @@ task "release:check", [:remote] do |_, args|
 end
 Rake::Task["release"].prerequisites.unshift("release:check")
 %w[release:source_control_push release:rubygem_push].each { |t| Rake::Task[t].enhance(["release:check"]) }
+
+# rake release:github (rake release runs it last, once the tag and the gem are pushed):
+# creates the GitHub release page for the tag through the gh CLI, with GitHub's generated
+# notes and a link to the CHANGELOG, on the remote's repository. If the page already
+# exists it does nothing, so it can also be run by hand to finish a release.
+desc "Create the GitHub release page for v#{Beaneater::VERSION}"
+task "release:github", [:remote] do |_, args|
+  tag = "v#{Beaneater::VERSION}"
+  git = ->(*a) { out = IO.popen(["git", *a], err: File::NULL, &:read); out.strip if $?.success? }
+  branch = git.("rev-parse", "--abbrev-ref", "HEAD").to_s
+  remote = args[:remote] || git.("config", "--get", "branch.#{branch}.remote") || "origin"
+  url = git.("config", "--get", "remote.#{remote}.url").to_s
+  repo = url[%r{github\.com[:/]([^/]+/[^/]+?)(?:\.git)?/?\z}, 1] or abort "#{remote} (#{url}) isn't a GitHub repository"
+  notes = "See [CHANGELOG.md](https://github.com/#{repo}/blob/#{tag}/CHANGELOG.md) for what changed, and what to do when upgrading."
+
+  if system("gh", "release", "view", tag, "-R", repo, out: File::NULL, err: File::NULL)
+    puts "GitHub release #{tag} already exists on #{repo}"
+  elsif system("gh", "release", "create", tag, "-R", repo, "--verify-tag", "--title", tag, "--generate-notes", "--notes", notes)
+    puts "Created GitHub release #{tag} on #{repo}"
+  else
+    abort "Couldn't create GitHub release #{tag} on #{repo} (is gh installed and signed in?)"
+  end
+end
+# The gem is out by then, so a failure here only warns and says how to finish.
+Rake::Task["release"].enhance do |_, args|
+  if %w[n no nil false off 0].include?(ENV["gem_push"].to_s.downcase)
+    puts "gem_push is off, so no GitHub release page"
+    next
+  end
+  begin
+    Rake::Task["release:github"].invoke(args[:remote])
+  rescue SystemExit
+    warn "The tag and the gem are pushed; only the GitHub release page is missing. Run: rake release:github"
+  end
+end
 
 task :default => 'test:full'
