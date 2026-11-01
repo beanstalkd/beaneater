@@ -38,8 +38,8 @@ class Beaneater
     #
     # @api public
     def bury(options={})
-      options = { :pri => stats.pri }.merge(options)
-      with_reserved("bury #{id} #{options[:pri]}") do
+      pri = options.fetch(:pri) { stats.pri }
+      with_reserved("bury #{id} #{pri}") do
         @reserved = false
       end
     end
@@ -56,8 +56,10 @@ class Beaneater
     #
     # @api public
     def release(options={})
-      options = { :pri => stats.pri, :delay => stats.delay }.merge(options)
-      with_reserved("release #{id} #{options[:pri]} #{options[:delay]}") do
+      job_stats = stats unless options.key?(:pri) && options.key?(:delay) # one stats-job for both defaults
+      pri = options.fetch(:pri) { job_stats.pri }
+      delay = options.fetch(:delay) { job_stats.delay }
+      with_reserved("release #{id} #{pri} #{delay}") do
         @reserved = false
       end
     end
