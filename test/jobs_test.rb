@@ -58,6 +58,17 @@ describe Beaneater::Jobs do
     end
   end # register!
 
+  describe "for process! with no processors" do
+    it "should raise ArgumentError without sending a command" do
+      client = Beaneater.new('localhost') # not @beanstalk, which the teardown uses
+      client.connection.expects(:transmit).never
+      error = assert_raises(ArgumentError) { Beaneater::Jobs.new(client).process! }
+      assert_match(/register/, error.message)
+    ensure
+      client.close if client
+    end
+  end # process! with no processors
+
   describe "for process!" do
     before do
       $foo = []

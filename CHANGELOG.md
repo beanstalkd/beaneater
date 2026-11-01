@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* `jobs.process!` with no processor registered raises `ArgumentError` ("no processors registered: call jobs.register(tube_name) { |job| ... } first") instead of `NoMethodError: undefined method 'keys' for nil`; it sends nothing to the server (@nesquena)
 * `respond_to?` on `client.stats` and on a `StatStruct` (`job.stats`, `tube.stats`) answers true for every stats key, also before the key is first read (it was false until then), so `respond_to?` and `method(:key)` agree with the readers. `client.stats.respond_to?` asks the server for the keys, as reading a stat does (@nesquena)
 * The connection remembers each watched tube once and by name, so a reconnect no longer re-sends `watch` for every repeated `tubes.watch(name)`, and `tubes.ignore(:name)` forgets a tube watched as `"name"` (and the other way round); `connection.tubes_watched` holds only strings (@nesquena)
 * `Job#release` and `Job#bury` no longer send `stats-job` for a `:pri` or `:delay` the caller gave: `release(:pri => p, :delay => d)` and `bury(:pri => p)` now take no extra round trip (they took 2 and 1), and `release` with either one missing takes one (it took 2) (@nesquena)
