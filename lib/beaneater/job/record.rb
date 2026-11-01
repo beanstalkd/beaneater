@@ -38,7 +38,7 @@ class Beaneater
     #
     # @api public
     def bury(options={})
-      pri = Arguments.integer(options.fetch(:pri) { stats.pri }, 'pri')
+      pri = Arguments.unsigned(options.fetch(:pri) { stats.pri }, 'pri')
       with_reserved("bury #{command_id} #{pri}") do
         @reserved = false
       end
@@ -57,8 +57,8 @@ class Beaneater
     # @api public
     def release(options={})
       job_stats = stats unless options.key?(:pri) && options.key?(:delay) # one stats-job for both defaults
-      pri = Arguments.integer(options.fetch(:pri) { job_stats.pri }, 'pri')
-      delay = Arguments.integer(options.fetch(:delay) { job_stats.delay }, 'delay')
+      pri = Arguments.unsigned(options.fetch(:pri) { job_stats.pri }, 'pri')
+      delay = Arguments.unsigned(options.fetch(:delay) { job_stats.delay }, 'delay')
       with_reserved("release #{command_id} #{pri} #{delay}") do
         @reserved = false
       end

@@ -113,6 +113,26 @@ describe "Command arguments" do
       assert_nil @tube.peek(:ready)
     end
 
+    it "should raise ArgumentError for a negative priority, delay or TTR" do
+      [-1, "-1"].each do |bad|
+        [:pri, :delay, :ttr].each do |key|
+          assert_raises(ArgumentError, "put #{key} #{bad.inspect}") { @tube.put('stats', key => bad) }
+          assert_in_step
+        end
+        assert_raises(ArgumentError, "pause #{bad.inspect}") { @tube.pause(bad) }
+        assert_in_step
+
+        @tube.put('job')
+        job = @tube.reserve(0)
+        assert_raises(ArgumentError, "release pri #{bad.inspect}") { job.release(:pri => bad, :delay => 0) }
+        assert_raises(ArgumentError, "release delay #{bad.inspect}") { job.release(:pri => 1, :delay => bad) }
+        assert_raises(ArgumentError, "bury pri #{bad.inspect}") { job.bury(:pri => bad) }
+        assert_in_step
+        job.delete
+      end
+      assert_nil @tube.peek(:ready)
+    end
+
     it "should accept Integers and Strings of digits, and Floats where beanstalkd does" do
       @tube.put('job', :pri => '5', :delay => '0', :ttr => '60')
       job = @tube.reserve(0.5)

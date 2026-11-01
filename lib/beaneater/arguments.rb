@@ -10,6 +10,8 @@ class Beaneater
     TUBE_NAME = %r{\A[A-Za-z0-9+/;.$_()][A-Za-z0-9\-+/;.$_()]{0,199}\z}
     # A whole number, as an Integer or a String of digits
     INTEGER = /\A-?\d+\z/
+    # One that isn't negative
+    UNSIGNED = /\A\d+\z/
     # The job states a tube can be peeked at
     PEEK_STATES = %w(ready delayed buried).freeze
 
@@ -28,6 +30,15 @@ class Beaneater
     def integer(value, what)
       return value if integer?(value)
       raise ArgumentError, "#{what} must be an integer, not #{value.inspect}"
+    end
+
+    # Like {.integer}, for values beanstalkd takes only as a whole number that isn't negative (a priority,
+    # a delay, a TTR): any other would fail on the server, and for put only after its body is sent.
+    # @return [Integer, String] value
+    # @raise [ArgumentError] value is anything else
+    def unsigned(value, what)
+      return value if value.is_a?(Integer) ? value >= 0 : value.is_a?(String) && value.match?(UNSIGNED)
+      raise ArgumentError, "#{what} must be a whole number of at least 0, not #{value.inspect}"
     end
 
     # Like {.integer}, also accepting a Float, which beanstalkd reads up to the decimal point

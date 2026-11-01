@@ -52,7 +52,7 @@ class Beaneater
           :ttr   => config.default_put_ttr
         }.merge(options)
 
-        pri, delay, ttr = %i(pri delay ttr).map { |key| Arguments.integer(options[key], key.to_s) }
+        pri, delay, ttr = %i(pri delay ttr).map { |key| Arguments.unsigned(options[key], key.to_s) }
         cmd_options = "#{pri} #{delay} #{ttr} #{serialized_body.bytesize}"
         transmit("put #{cmd_options}\r\n#{serialized_body}")
       end
@@ -124,7 +124,7 @@ class Beaneater
     #
     # @api public
     def pause(delay)
-      transmit("pause-tube #{Arguments.tube_name(name)} #{Arguments.integer(delay, 'delay')}")
+      transmit("pause-tube #{Arguments.tube_name(name)} #{Arguments.unsigned(delay, 'delay')}")
     end
 
     # Clears all unreserved jobs in all states from the tube

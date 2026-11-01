@@ -455,7 +455,7 @@ are listed below:
 | Beaneater::JobNotReserved   | Job has not been reserved and action cannot be taken. |
 
 A job id, priority, delay, TTR, kick count or reserve timeout that is not a whole number (an Integer
-or a String of digits) raises `ArgumentError` before anything is sent.
+or a String of digits), or a negative priority, delay or TTR, raises `ArgumentError` before anything is sent.
 
 There are other exceptions that are less common such as `OutOfMemoryError`, `DrainingError`,
 `DeadlineSoonError`, `InternalError`, `BadFormatError`, `UnknownCommandError`,
