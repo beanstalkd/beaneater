@@ -34,6 +34,15 @@ describe Beaneater::Connection do
       assert_equal "Connection to beanstalk 'localhost:8544' is closed!", error.message
     end
 
+    it "should leave the user and password out of the address it names" do
+      { 'user:secret@127.0.0.1:1'                 => '127.0.0.1:1',
+        'beanstalk://user:secret@127.0.0.1:11300' => 'beanstalk://127.0.0.1:11300',
+        'user@localhost:8544'                     => 'localhost:8544' }.each do |address, shown|
+        error = assert_raises(Beaneater::NotConnected) { Beaneater::Connection.new(address) }
+        assert_equal "Connection to beanstalk '#{shown}' is closed!", error.message
+      end
+    end
+
     it "should name an address it can't parse as given" do
       ['[::1]:11300', '::1', 'beanstalk://127.0.0.1:11300'].each do |address|
         error = assert_raises(Beaneater::NotConnected) { Beaneater::Connection.new(address) }
