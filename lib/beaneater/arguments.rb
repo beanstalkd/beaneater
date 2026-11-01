@@ -12,6 +12,8 @@ class Beaneater
     INTEGER = /\A-?\d+\z/
     # One that isn't negative
     UNSIGNED = /\A\d+\z/
+    # The largest priority, delay or TTR beanstalkd reads (a 32-bit unsigned number)
+    UINT32_MAX = 4_294_967_295
     # The job states a tube can be peeked at
     PEEK_STATES = %w(ready delayed buried).freeze
 
@@ -32,13 +34,14 @@ class Beaneater
       raise ArgumentError, "#{what} must be an integer, not #{value.inspect}"
     end
 
-    # Like {.integer}, for values beanstalkd takes only as a whole number that isn't negative (a priority,
-    # a delay, a TTR): any other would fail on the server, and for put only after its body is sent.
+    # Like {.integer}, for values beanstalkd takes only as a whole number from 0 to {UINT32_MAX} (a
+    # priority, a delay, a TTR): any other would fail on the server, and for put only after its body is sent.
     # @return [Integer, String] value
     # @raise [ArgumentError] value is anything else
     def unsigned(value, what)
-      return value if value.is_a?(Integer) ? value >= 0 : value.is_a?(String) && value.match?(UNSIGNED)
-      raise ArgumentError, "#{what} must be a whole number of at least 0, not #{value.inspect}"
+      number = value.is_a?(String) && value.match?(UNSIGNED) ? Integer(value, 10) : value
+      return value if number.is_a?(Integer) && number >= 0 && number <= UINT32_MAX
+      raise ArgumentError, "#{what} must be a whole number from 0 to #{UINT32_MAX}, not #{value.inspect}"
     end
 
     # Like {.integer}, also accepting a Float, which beanstalkd reads up to the decimal point

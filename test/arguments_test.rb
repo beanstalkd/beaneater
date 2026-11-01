@@ -113,8 +113,8 @@ describe "Command arguments" do
       assert_nil @tube.peek(:ready)
     end
 
-    it "should raise ArgumentError for a negative priority, delay or TTR" do
-      [-1, "-1"].each do |bad|
+    it "should raise ArgumentError for a priority, delay or TTR outside 0 to 4294967295" do
+      [-1, "-1", 2**32, "4294967296"].each do |bad|
         [:pri, :delay, :ttr].each do |key|
           assert_raises(ArgumentError, "put #{key} #{bad.inspect}") { @tube.put('stats', key => bad) }
           assert_in_step
@@ -125,12 +125,27 @@ describe "Command arguments" do
         @tube.put('job')
         job = @tube.reserve(0)
         assert_raises(ArgumentError, "release pri #{bad.inspect}") { job.release(:pri => bad, :delay => 0) }
+        assert_in_step
         assert_raises(ArgumentError, "release delay #{bad.inspect}") { job.release(:pri => 1, :delay => bad) }
+        assert_in_step
         assert_raises(ArgumentError, "bury pri #{bad.inspect}") { job.bury(:pri => bad) }
         assert_in_step
         job.delete
       end
       assert_nil @tube.peek(:ready)
+    end
+
+    it "should accept the largest priority beanstalkd takes" do
+      [4294967295, "4294967295"].each do |pri|
+        @tube.put('job', :pri => pri)
+        job = @tube.reserve(0)
+        assert_equal 4294967295, job.stats.pri
+        job.release(:pri => pri, :delay => 0)
+        job = @tube.reserve(0)
+        job.bury(:pri => pri)
+        assert_equal 4294967295, job.stats.pri
+        job.delete
+      end
     end
 
     it "should accept Integers and Strings of digits, and Floats where beanstalkd does" do
