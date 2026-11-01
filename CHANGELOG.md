@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* Set the gem's homepage (it was empty) and add `changelog_uri`, `source_code_uri` and `bug_tracker_uri` to its metadata, so rubygems.org links to the repository, this changelog and the issues; set `rubygems_mfa_required`, so pushing a release to rubygems.org now requires MFA; remove the unused `.travis.yml` (@nesquena)
 * `NotConnected` for an address beaneater can't parse (`[::1]:11300`, `::1`, `beanstalk://host:11300`) names the address as given; the message read "Connection to beanstalk ':' is closed!". IPv6 addresses and URLs are still not supported (@nesquena)
 * `jobs.process!` with no processor registered raises `ArgumentError` ("no processors registered: call jobs.register(tube_name) { |job| ... } first") instead of `NoMethodError: undefined method 'keys' for nil`; it sends nothing to the server (@nesquena)
 * `respond_to?` on `client.stats` and on a `StatStruct` (`job.stats`, `tube.stats`) answers true for every stats key, also before the key is first read (it was false until then), so `respond_to?` and `method(:key)` agree with the readers. `client.stats.respond_to?` asks the server for the keys, as reading a stat does (@nesquena)

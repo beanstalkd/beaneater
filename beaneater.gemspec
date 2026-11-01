@@ -11,8 +11,14 @@ Gem::Specification.new do |gem|
   gem.email         = ["nico.taing@gmail.com"]
   gem.description   = %q{Simple beanstalkd client for ruby}
   gem.summary       = %q{Simple beanstalkd client for ruby.}
-  gem.homepage      = ""
+  gem.homepage      = "https://github.com/beanstalkd/beaneater"
   gem.license       = 'MIT'
+  gem.metadata      = {
+    "changelog_uri"         => "https://github.com/beanstalkd/beaneater/blob/master/CHANGELOG.md",
+    "source_code_uri"       => "https://github.com/beanstalkd/beaneater",
+    "bug_tracker_uri"       => "https://github.com/beanstalkd/beaneater/issues",
+    "rubygems_mfa_required" => "true"
+  }
 
   gem.files         = `git ls-files`.split($/)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
