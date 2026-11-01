@@ -23,7 +23,7 @@ class Beaneater
     # @raise [Beaneater::InvalidTubeName] name isn't a tube name beanstalkd accepts
     def tube_name(name)
       name = name.to_s
-      raise InvalidTubeName, "Tube cannot be named '#{name}'" unless name.match?(TUBE_NAME)
+      raise InvalidTubeName, "Tube cannot be named '#{name}'" unless name.valid_encoding? && name.match?(TUBE_NAME)
       name
     end
 

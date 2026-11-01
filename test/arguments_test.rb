@@ -25,7 +25,7 @@ describe "Command arguments" do
         'stats' => ->(name) { @beanstalk.tubes.find(name).stats },
         'pause' => ->(name) { @beanstalk.tubes.find(name).pause(0) }
       }
-      ["a\r\nb", "a\nb", "a\rb", "a b", "-a", "a" * 201, "", "tubeé"].each do |name|
+      ["a\r\nb", "a\nb", "a\rb", "a b", "-a", "a" * 201, "", "tubeé", "a\xffb", "a\xffb".b].each do |name|
         calls.each do |call, block|
           assert_raises(Beaneater::InvalidTubeName, "#{call} #{name.inspect}") { block.call(name) }
           assert_in_step
