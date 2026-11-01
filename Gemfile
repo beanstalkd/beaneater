@@ -6,7 +6,7 @@ source 'https://rubygems.org'
 gemspec
 
 group :development do
-  gem 'redcarpet', '~> 1'
+  gem 'redcarpet', '~> 3.6'
   gem 'github-markup'
   gem 'yard'
 end
