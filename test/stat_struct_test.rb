@@ -46,6 +46,18 @@ describe Beaneater::StatStruct do
     end
   end # keys
 
+  describe "for #respond_to?" do
+    it "should respond to a key before it is first read" do
+      struct = Beaneater::StatStruct.from_hash('rusage-utime' => 0.5)
+      assert struct.respond_to?(:rusage_utime), "Expected struct to respond to rusage_utime"
+      assert_equal 0.5, struct.method(:rusage_utime).call
+    end
+
+    it "should not respond to a name that is not a key" do
+      refute @struct.respond_to?(:no_such_key)
+    end
+  end # respond_to?
+
   describe "for #to_h" do
     it "should return 4 keys / values" do
       assert_equal 4, @struct.to_h.size

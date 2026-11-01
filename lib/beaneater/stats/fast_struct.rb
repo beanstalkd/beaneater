@@ -50,6 +50,13 @@ class Beaneater
       end
     end
 
+    # Answers true for the keys the hash holds (string or symbol), as OpenStruct does for its
+    # members; method_missing reads and writes those.
+    def respond_to_missing?(method_name_sym, include_private = false)
+      name = method_name_sym.to_s.chomp("=")
+      @hash.key?(name) || @hash.key?(name.to_sym) || super
+    end
+
     def __new_ostruct_member__(method_name_sym)
       self.class.module_eval <<-END_EVAL, __FILE__, __LINE__ + 1
       def #{ method_name_sym }
