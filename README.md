@@ -454,8 +454,10 @@ are listed below:
 | Beaneater::SocketTimeout    | No reply within `read_timeout` (or the write exceeded `write_timeout`); the connection is dropped and the next command reconnects. A subclass of `NotConnected`, not to be confused with `TimedOutError`. |
 | Beaneater::JobNotReserved   | Job has not been reserved and action cannot be taken. |
 
-A job id, priority, delay, TTR, kick count or reserve timeout that is not a whole number (an Integer
-or a String of digits), or a priority, delay or TTR outside 0 to 4294967295, raises `ArgumentError` before anything is sent.
+A job id that is not a whole number (an Integer or a String of digits), a priority, delay, TTR or
+pause delay that is not a whole number from 0 to 4294967295, a reserve timeout or kick count that is
+neither a whole number nor a Float, and a peek state other than `ready`, `delayed` or `buried` raise
+`ArgumentError` before anything is sent.
 
 There are other exceptions that are less common such as `OutOfMemoryError`, `DrainingError`,
 `DeadlineSoonError`, `InternalError`, `BadFormatError`, `UnknownCommandError`,
