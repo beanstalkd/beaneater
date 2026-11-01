@@ -63,7 +63,7 @@ class Beaneater
     # @api public
     def reserve(timeout=nil, &block)
       res = transmit(
-        timeout ? "reserve-with-timeout #{timeout}" : 'reserve')
+        timeout ? "reserve-with-timeout #{Arguments.number(timeout, 'timeout')}" : 'reserve')
       job = Job.new(client, res)
       block.call(job) if block_given?
       job
@@ -132,7 +132,7 @@ class Beaneater
     #
     # @api public
     def watch(*names)
-      names.each do |t|
+      names.map { |t| Arguments.tube_name(t) }.each do |t|
         transmit "watch #{t}"
         client.connection.add_to_watched(t)
       end
@@ -162,7 +162,7 @@ class Beaneater
     #
     # @api public
     def ignore(*names)
-      names.each do |w|
+      names.map { |w| Arguments.tube_name(w) }.each do |w|
         transmit "ignore #{w}"
         client.connection.remove_from_watched(w)
       end
@@ -175,9 +175,11 @@ class Beaneater
     #  @conn.tubes.use("some-tube")
     #
     def use(tube)
-      return tube if last_used == tube
-      transmit("use #{tube}")
-      self.last_used = tube
+      name = Arguments.tube_name(tube)
+      return tube if last_used == name
+      transmit("use #{name}")
+      self.last_used = name
+      tube
     rescue BadFormatError
       raise InvalidTubeName, "Tube cannot be named '#{tube}'"
     end

@@ -325,13 +325,13 @@ class Beaneater
     def _initialize_tubes
       if @tubes_watched != ['default']
         tubes_watched.each do |t|
-          _exchange("watch #{t}")
+          _exchange("watch #{Arguments.tube_name(t)}")
         end
 
         _exchange("ignore default") unless tubes_watched.include?('default')
       end
 
-      _exchange("use #{tube_used}") if @tube_used != 'default'
+      _exchange("use #{Arguments.tube_name(tube_used)}") if @tube_used != 'default'
     end
 
     # One attempt at a command, made holding the lock: reconnect (and restore the tubes) if the

@@ -53,7 +53,7 @@ class Beaneater
     #
     # @api public
     def find(id)
-      res = transmit("peek #{id}")
+      res = transmit("peek #{Arguments.integer(id, 'job id')}")
       Job.new(client, res)
     rescue Beaneater::NotFoundError
       nil

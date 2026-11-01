@@ -52,7 +52,8 @@ class Beaneater
           :ttr   => config.default_put_ttr
         }.merge(options)
 
-        cmd_options = "#{options[:pri]} #{options[:delay]} #{options[:ttr]} #{serialized_body.bytesize}"
+        pri, delay, ttr = %i(pri delay ttr).map { |key| Arguments.integer(options[key], key.to_s) }
+        cmd_options = "#{pri} #{delay} #{ttr} #{serialized_body.bytesize}"
         transmit("put #{cmd_options}\r\n#{serialized_body}")
       end
     end
@@ -67,7 +68,7 @@ class Beaneater
     # @api public
     def peek(state)
       safe_use do
-        res = transmit("peek-#{state}")
+        res = transmit("peek-#{Arguments.peek_state(state)}")
         Job.new(client, res)
       end
     rescue Beaneater::NotFoundError
@@ -99,7 +100,7 @@ class Beaneater
     #
     # @api public
     def kick(bounds=1)
-      safe_use { transmit("kick #{bounds}") }
+      safe_use { transmit("kick #{Arguments.number(bounds, 'bounds')}") }
     end
 
     # Returns related stats for this tube.
@@ -110,7 +111,7 @@ class Beaneater
     #
     # @api public
     def stats
-      res = transmit("stats-tube #{name}")
+      res = transmit("stats-tube #{Arguments.tube_name(name)}")
       StatStruct.from_hash(res[:body])
     end
 
@@ -123,7 +124,7 @@ class Beaneater
     #
     # @api public
     def pause(delay)
-      transmit("pause-tube #{name} #{delay}")
+      transmit("pause-tube #{Arguments.tube_name(name)} #{Arguments.integer(delay, 'delay')}")
     end
 
     # Clears all unreserved jobs in all states from the tube
