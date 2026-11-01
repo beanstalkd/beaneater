@@ -103,12 +103,14 @@ task "release:github", [:remote] do |_, args|
   remote = args[:remote] || git.("config", "--get", "branch.#{branch}.remote") || "origin"
   url = git.("remote", "get-url", "--push", remote).to_s.split("\n").first.to_s
   repo = url[%r{(?:\A|[@/.])github\.com[:/]([^/]+/[^/]+?)(?:\.git)?/?\z}i, 1] or abort "#{remote} isn't a GitHub repository"
-  tags = git.("ls-remote", "--tags", remote, "refs/tags/v*") or abort "Couldn't list the tags on #{remote}"
+  # the push URL's tags, not the fetch URL's: the page goes to the repository the tag was pushed to
+  tags = git.("ls-remote", "--tags", url, "refs/tags/v*") or abort "Couldn't list the tags on #{remote}"
   tagged = tags.split("\n").filter_map { |l| l[%r{\trefs/tags/v(\d+\.\d+\.\d+)\z}, 1] }.map { |v| Gem::Version.new(v) }
   previous = tagged.select { |v| v < version }.max
   options = ["--latest=#{tagged.none? { |v| v > version }}"]
   options += ["--notes-start-tag", "v#{previous}"] if previous
-  notes = "See [CHANGELOG.md](https://github.com/#{repo}/blob/#{tag}/CHANGELOG.md) for what changed, and what to do when upgrading."
+  # gh adds the generated notes after a single newline; the second one keeps them out of this paragraph
+  notes = "See [CHANGELOG.md](https://github.com/#{repo}/blob/#{tag}/CHANGELOG.md) for what changed, and what to do when upgrading.\n"
   gh_repo = "github.com/#{repo}" # so an exported GH_HOST doesn't send it elsewhere
 
   if system("gh", "release", "view", tag, "-R", gh_repo, out: File::NULL, err: File::NULL)
@@ -129,7 +131,7 @@ Rake::Task["release"].enhance do |_, args|
   begin
     Rake::Task["release:github"].invoke(args[:remote])
   rescue SystemExit, StandardError => e
-    warn "#{e.class}: #{e.message}" unless e.is_a?(SystemExit)
+    warn "#{e.class}: #{e.message} (#{e.backtrace&.first})" unless e.is_a?(SystemExit)
     page = args[:remote] ? "rake 'release:github[#{args[:remote]}]'" : "rake release:github"
     warn "The tag and the gem are pushed; only the GitHub release page is missing. Run: #{page}"
   end
