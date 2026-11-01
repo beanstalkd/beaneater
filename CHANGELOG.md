@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* The connection remembers each watched tube once and by name, so a reconnect no longer re-sends `watch` for every repeated `tubes.watch(name)`, and `tubes.ignore(:name)` forgets a tube watched as `"name"` (and the other way round); `connection.tubes_watched` holds only strings (@nesquena)
 * `Job#release` and `Job#bury` no longer send `stats-job` for a `:pri` or `:delay` the caller gave: `release(:pri => p, :delay => d)` and `bury(:pri => p)` now take no extra round trip (they took 2 and 1), and `release` with either one missing takes one (it took 2) (@nesquena)
 
 ## 1.2.0 (October 31 2026)

@@ -152,13 +152,15 @@ class Beaneater
     end
     alias :inspect :to_s
 
+    # The watched tubes are kept by name, once each: a reconnect watches them again.
     def add_to_watched(tube_name)
-      @tubes_watched << tube_name
-      @tubes_watched.uniq
+      @tubes_watched << tube_name.to_s
+      @tubes_watched.uniq!
+      @tubes_watched
     end
 
     def remove_from_watched(tube_name)
-      @tubes_watched.delete(tube_name)
+      @tubes_watched.delete(tube_name.to_s)
     end
 
     protected
