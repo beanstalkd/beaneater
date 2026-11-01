@@ -71,7 +71,8 @@ task "release:check", [:remote] do |_, args|
   if local_tag.nil? || remote_tag.nil?
     errors << "couldn't check for tag #{tag}"
   elsif !(local_tag.empty? && remote_tag.empty?)
-    errors << "tag #{tag} already exists (if only the gem push failed: gem push pkg/beaneater-#{version}.gem, then rake release:github)"
+    page = args[:remote] ? "rake 'release:github[#{args[:remote]}]'" : "rake release:github"
+    errors << "tag #{tag} already exists (if only the gem push failed: gem push pkg/beaneater-#{version}.gem, then #{page})"
   end
 
   begin
@@ -88,22 +89,32 @@ Rake::Task["release"].prerequisites.unshift("release:check")
 %w[release:source_control_push release:rubygem_push].each { |t| Rake::Task[t].enhance(["release:check"]) }
 
 # rake release:github (rake release runs it last, once the tag and the gem are pushed):
-# creates the GitHub release page for the tag through the gh CLI, with GitHub's generated
-# notes and a link to the CHANGELOG, on the remote's repository. If the page already
-# exists it does nothing, so it can also be run by hand to finish a release.
+# creates the GitHub release page for the tag through the gh CLI, on the github.com
+# repository the remote pushes to, with a link to the CHANGELOG and GitHub's generated
+# notes since the previous version's tag. It is marked Latest only when no higher version
+# is tagged, so a release from an X.Y-stable branch doesn't take that from a newer one.
+# If the page already exists it does nothing, so it can also be run by hand to finish a release.
 desc "Create the GitHub release page for v#{Beaneater::VERSION}"
 task "release:github", [:remote] do |_, args|
-  tag = "v#{Beaneater::VERSION}"
+  version = Gem::Version.new(Beaneater::VERSION)
+  tag = "v#{version}"
   git = ->(*a) { out = IO.popen(["git", *a], err: File::NULL, &:read); out.strip if $?.success? }
   branch = git.("rev-parse", "--abbrev-ref", "HEAD").to_s
   remote = args[:remote] || git.("config", "--get", "branch.#{branch}.remote") || "origin"
-  url = git.("config", "--get", "remote.#{remote}.url").to_s
-  repo = url[%r{github\.com[:/]([^/]+/[^/]+?)(?:\.git)?/?\z}, 1] or abort "#{remote} (#{url}) isn't a GitHub repository"
+  url = git.("remote", "get-url", "--push", remote).to_s.split("\n").first.to_s
+  repo = url[%r{(?:\A|[@/.])github\.com[:/]([^/]+/[^/]+?)(?:\.git)?/?\z}i, 1] or abort "#{remote} isn't a GitHub repository"
+  tags = git.("ls-remote", "--tags", remote, "refs/tags/v*") or abort "Couldn't list the tags on #{remote}"
+  tagged = tags.split("\n").filter_map { |l| l[%r{\trefs/tags/v(\d+\.\d+\.\d+)\z}, 1] }.map { |v| Gem::Version.new(v) }
+  previous = tagged.select { |v| v < version }.max
+  options = ["--latest=#{tagged.none? { |v| v > version }}"]
+  options += ["--notes-start-tag", "v#{previous}"] if previous
   notes = "See [CHANGELOG.md](https://github.com/#{repo}/blob/#{tag}/CHANGELOG.md) for what changed, and what to do when upgrading."
+  gh_repo = "github.com/#{repo}" # so an exported GH_HOST doesn't send it elsewhere
 
-  if system("gh", "release", "view", tag, "-R", repo, out: File::NULL, err: File::NULL)
+  if system("gh", "release", "view", tag, "-R", gh_repo, out: File::NULL, err: File::NULL)
     puts "GitHub release #{tag} already exists on #{repo}"
-  elsif system("gh", "release", "create", tag, "-R", repo, "--verify-tag", "--title", tag, "--generate-notes", "--notes", notes)
+  elsif system("gh", "release", "create", tag, "-R", gh_repo, "--verify-tag", "--title", tag, *options,
+               "--generate-notes", "--notes", notes)
     puts "Created GitHub release #{tag} on #{repo}"
   else
     abort "Couldn't create GitHub release #{tag} on #{repo} (is gh installed and signed in?)"
@@ -117,8 +128,10 @@ Rake::Task["release"].enhance do |_, args|
   end
   begin
     Rake::Task["release:github"].invoke(args[:remote])
-  rescue SystemExit
-    warn "The tag and the gem are pushed; only the GitHub release page is missing. Run: rake release:github"
+  rescue SystemExit, StandardError => e
+    warn "#{e.class}: #{e.message}" unless e.is_a?(SystemExit)
+    page = args[:remote] ? "rake 'release:github[#{args[:remote]}]'" : "rake release:github"
+    warn "The tag and the gem are pushed; only the GitHub release page is missing. Run: #{page}"
   end
 end
 
