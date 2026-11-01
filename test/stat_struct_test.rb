@@ -34,6 +34,19 @@ describe Beaneater::StatStruct do
       assert_equal 'demo', @struct['under-score']
       assert_equal 'demo', @struct[:"under-score"]
     end
+
+    it "should read a stat whose name is also a method name" do
+      struct = Beaneater::StatStruct.from_hash('hash' => 'h', 'class' => 'c')
+      assert_equal 'h', struct['hash']
+      assert_equal 'c', struct[:class]
+    end
+
+    it "should return nil for a key that is not a stat" do
+      [:object_id, 'send', 'freeze', 'foo=', 'no such key'].each do |key|
+        assert_nil @struct[key], "Expected nil for #{key.inspect}"
+      end
+      refute @struct.frozen?
+    end
   end # []
 
   describe "for #keys" do
