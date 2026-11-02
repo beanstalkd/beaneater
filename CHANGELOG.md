@@ -3,7 +3,7 @@
 ## Unreleased
 
 * `jobs.process!` no longer sends `stats-job` for a job whose handler finished and that `process!` then deleted (the reply was always `NOT_FOUND`): each processed job now takes 3 commands (`reserve`, `stats-job`, `delete`) instead of 4, one round trip less per job. A job whose handler raised is still buried as before (@nesquena)
-* `client.stats`, `tube.stats` and `job.stats` spend less time parsing the server's reply (the stats keys are underscored with `String#tr` rather than a regular expression, and numeric values are recognised without setting match data), so polling stats takes noticeably less CPU; the results are unchanged (@nesquena)
+* `client.stats`, `tube.stats` and `job.stats` parse the server's reply with less work, so polling stats takes noticeably less CPU; the results are unchanged (@nesquena)
 
 ## 1.3.0 (November 1 2026)
 
