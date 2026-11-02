@@ -118,6 +118,36 @@ describe Beaneater::Jobs do
     end
   end # for_process!
 
+  describe "for process! when the handler succeeds" do
+    before do
+      $ran = []
+      cleanup_tubes!(['tube_done'])
+      @sent = []
+      sent = @sent
+      @beanstalk.connection.define_singleton_method(:transmit) do |command, **options|
+        sent << command.to_s
+        super(command, **options)
+      end
+      @jobs.register('tube_done') { |job| $ran << job.id; @jobs.stop! if $ran.size == 2 }
+      2.times { |i| @beanstalk.tubes.find('tube_done').put("done #{i}") }
+      @jobs.process!
+    end
+
+    after do
+      @beanstalk.connection.singleton_class.send(:remove_method, :transmit)
+    end
+
+    it "deletes each job and sends nothing more about it" do
+      assert_equal 2, $ran.size
+      $ran.each do |id|
+        after_delete = @sent.drop(@sent.index("delete #{id}") + 1)
+        assert_empty after_delete.grep(/ #{id}\z/), "sent after deleting job #{id}: #{after_delete.inspect}"
+      end
+      stats = @beanstalk.tubes.find('tube_done').stats
+      assert_equal [0, 0, 0], [stats.current_jobs_ready, stats.current_jobs_reserved, stats.current_jobs_buried]
+    end
+  end # process! when the handler succeeds
+
   describe "for process! with a dashed tube name" do
     before do
       $ran = []
