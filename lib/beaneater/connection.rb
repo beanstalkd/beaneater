@@ -414,9 +414,9 @@ class Beaneater
         value[1..-2]
       elsif text
         value
-      elsif value =~ /\A-?\d+\z/
+      elsif value.match?(/\A-?\d+\z/)
         value.to_i
-      elsif value =~ /\A-?\d+\.\d+\z/
+      elsif value.match?(/\A-?\d+\.\d+\z/)
         value.to_f
       elsif value == 'true' || value == 'false'
         value == 'true'

@@ -118,6 +118,54 @@ describe Beaneater::Jobs do
     end
   end # for_process!
 
+  describe "for process! when it deletes or releases a job" do
+    before do
+      $ran = []
+      cleanup_tubes!(['tube_done', 'tube_retry'])
+      @sent = []
+      sent = @sent
+      @beanstalk.connection.define_singleton_method(:transmit) do |command, **options|
+        sent << command.to_s
+        super(command, **options)
+      end
+      @jobs.register('tube_retry', :retry_on => [Timeout::Error], :max_retries => 1) do |job|
+        $ran << job.id
+        raise Timeout::Error
+      end
+      @jobs.register('tube_done') { |job| $ran << job.id; @jobs.stop! if $ran.size == 4 }
+      @retry_id = @beanstalk.tubes.find('tube_retry').put("retry", :pri => 1)[:id]
+      @done_ids = 2.times.map { |i| @beanstalk.tubes.find('tube_done').put("done #{i}", :pri => 2)[:id] }
+      Timeout.timeout(10) { @jobs.process!(:release_delay => 0, :reserve_timeout => 1) }
+    end
+
+    after do
+      connection = @beanstalk.connection
+      connection.singleton_class.send(:remove_method, :transmit) if connection.singleton_methods(false).include?(:transmit)
+    end
+
+    # The commands naming job id after the given command, up to the next reserve
+    def sent_about(id, command)
+      start = @sent.index(command)
+      refute_nil start, "#{command.inspect} was not sent: #{@sent.inspect}"
+      @sent.drop(start + 1).take_while { |c| !c.start_with?('reserve') }.select { |c| c.split(' ')[1] == id.to_s }
+    end
+
+    it "sends nothing more about a job it deleted" do
+      @done_ids.each do |id|
+        assert_empty sent_about(id, "delete #{id}"), "sent after deleting job #{id}: #{@sent.inspect}"
+      end
+      stats = @beanstalk.tubes.find('tube_done').stats
+      assert_equal [0, 0, 0], [stats.current_jobs_ready, stats.current_jobs_reserved, stats.current_jobs_buried]
+    end
+
+    it "sends nothing more about a job it released, and buries it when it runs out of retries" do
+      assert_empty sent_about(@retry_id, "release #{@retry_id} 1 0"), "sent after releasing job #{@retry_id}: #{@sent.inspect}"
+      assert_equal [@retry_id, @retry_id], $ran.first(2)
+      job = @beanstalk.jobs.find(@retry_id)
+      assert_equal ['buried', 1], [job.stats.state, job.stats.releases]
+    end
+  end # process! when it deletes or releases a job
+
   describe "for process! with a dashed tube name" do
     before do
       $ran = []
