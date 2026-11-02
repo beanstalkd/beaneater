@@ -13,9 +13,18 @@ class Beaneater
     #
     def self.from_hash(hash)
       return unless hash.is_a?(Hash)
-      underscore_hash = hash.inject({}) { |r, (k, v)| r[k.to_s.gsub(/-/, '_')] = v; r }
+      underscore_hash = hash.inject({}) { |r, (k, v)| r[underscore(k)] = v; r }
       self.new(underscore_hash)
     end
+
+    # The key as a String with its hyphens turned into underscores, with String#tr for speed. A key
+    # in an encoding that isn't ASCII-compatible (UTF-16, say) takes gsub, so that it raises
+    # gsub's Encoding::CompatibilityError rather than tr's.
+    def self.underscore(key)
+      key = key.to_s
+      key.encoding.ascii_compatible? ? key.tr('-', '_') : key.gsub(/-/, '_')
+    end
+    private_class_method :underscore
 
     # Access value for stat with specified key.
     #
@@ -30,7 +39,7 @@ class Beaneater
     #  @stats['current-jobs-ready'] # => 5
     #
     def [](key)
-      name = key.to_s.gsub(/-/, '_')
+      name = self.class.send(:underscore, key)
       @hash.fetch(name) { @hash[name.to_sym] }
     end
 
