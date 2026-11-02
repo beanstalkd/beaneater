@@ -135,6 +135,7 @@ class Beaneater
           rescue *processor[:retry_on]
             if @current_job.stats.releases < processor[:max_retries]
               @current_job.release(:delay => release_delay)
+              @current_job = nil # released for another try, so no longer ours to bury
             end
           end
         rescue AbortProcessingError

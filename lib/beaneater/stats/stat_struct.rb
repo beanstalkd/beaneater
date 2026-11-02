@@ -18,8 +18,8 @@ class Beaneater
     end
 
     # The key as a String with its hyphens turned into underscores, with String#tr for speed. A key
-    # in an encoding that isn't ASCII-compatible (UTF-16, say) takes gsub, so that it raises
-    # gsub's Encoding::CompatibilityError rather than tr's.
+    # in an encoding that isn't ASCII-compatible (UTF-16, say) takes gsub, so that the
+    # Encoding::CompatibilityError it raises keeps gsub's message.
     def self.underscore(key)
       key = key.to_s
       key.encoding.ascii_compatible? ? key.tr('-', '_') : key.gsub(/-/, '_')
