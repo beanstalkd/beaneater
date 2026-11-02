@@ -135,7 +135,7 @@ describe Beaneater::Jobs do
       @jobs.register('tube_done') { |job| $ran << job.id; @jobs.stop! if $ran.size == 4 }
       @retry_id = @beanstalk.tubes.find('tube_retry').put("retry", :pri => 1)[:id]
       @done_ids = 2.times.map { |i| @beanstalk.tubes.find('tube_done').put("done #{i}", :pri => 2)[:id] }
-      @jobs.process!(:release_delay => 0)
+      Timeout.timeout(10) { @jobs.process!(:release_delay => 0, :reserve_timeout => 1) }
     end
 
     after do
