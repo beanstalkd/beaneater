@@ -1,6 +1,6 @@
 # CHANGELOG for Beaneater
 
-## Unreleased
+## 1.3.1 (November 4 2026)
 
 * `jobs.process!` no longer checks with the server on a job it has just deleted, or released for another try, before moving on (the check sent `stats-job` and could never bury the job): a job whose handler finishes now takes 3 commands (`reserve`, `stats-job`, `delete`) instead of 4, and a retried job takes 2 fewer. A job whose handler raised and that isn't released is still buried as before (@nesquena)
 * `client.stats`, `tube.stats` and `job.stats` parse the server's reply with less work, so polling stats takes noticeably less CPU; the results are unchanged (@nesquena)
